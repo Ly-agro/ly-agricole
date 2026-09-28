@@ -119,6 +119,9 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
 - **Livewire : sans réseau, rien ne se passe et rien ne le signale.** Raison de D2.
 - **Un iframe dans un composant Livewire a besoin de `wire:ignore`**, sinon chaque
   rendu le recharge.
+- **Tester dans Chrome sur `http://localhost:8000`, pas `127.0.0.1:8000`** : un service
+  worker de VistaResidence contrôle `127.0.0.1:8000` sur ce poste et bloque les
+  navigations sans erreur visible (requêtes `/sw.js` dans le journal d'`artisan serve`).
 - **Git Bash réécrit les chemins d'URL** : `/entreprise` devient
   `C:/Program Files/Git/entreprise`. Préfixer `MSYS_NO_PATHCONV=1`.
 - **Un chemin POSIX (`/tmp/...`) passé à PHP n'écrit nulle part** (PHP Windows le lit

@@ -1,0 +1,148 @@
+<?php
+
+namespace App\Livewire\Utilisateurs;
+
+use App\Enums\Role;
+use App\Models\User;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+/**
+ * Création et modification des comptes par l'admin (pas d'inscription publique).
+ * Chaque action revérifie le droit : une action Livewire est un point d'entrée public.
+ */
+#[Title('Utilisateurs')]
+class GestionUtilisateurs extends Component
+{
+    public const MOT_DE_PASSE_MIN = 8;
+
+    /** null = pas de formulaire ouvert ; 0 = nouveau compte ; sinon l'id modifié. */
+    public ?int $editionId = null;
+
+    public string $nom = '';
+
+    public string $telephone = '';
+
+    public string $email = '';
+
+    public string $role = '';
+
+    public string $motDePasse = '';
+
+    public bool $actif = true;
+
+    /** Confirmation affichée après un enregistrement (pas `$message` : @error l'écrase). */
+    public string $statut = '';
+
+    public function mount(): void
+    {
+        $this->authorize('gerer-utilisateurs');
+    }
+
+    /** @return Collection<int, User> */
+    #[Computed]
+    public function utilisateurs(): Collection
+    {
+        return User::query()->orderByDesc('actif')->orderBy('nom')->get();
+    }
+
+    public function nouveau(): void
+    {
+        $this->authorize('gerer-utilisateurs');
+
+        $this->resetErrorBag();
+        $this->reset('nom', 'telephone', 'email', 'role', 'motDePasse', 'actif', 'statut');
+        $this->editionId = 0;
+    }
+
+    public function modifier(int $id): void
+    {
+        $this->authorize('gerer-utilisateurs');
+
+        $user = User::findOrFail($id);
+
+        $this->resetErrorBag();
+        $this->statut = '';
+        $this->editionId = $user->id;
+        $this->nom = $user->nom;
+        $this->telephone = $user->telephone ?? '';
+        $this->email = $user->email;
+        $this->role = $user->role->value ?? '';
+        $this->motDePasse = '';
+        $this->actif = $user->actif;
+    }
+
+    public function annuler(): void
+    {
+        $this->resetErrorBag();
+        $this->editionId = null;
+    }
+
+    public function enregistrer(): void
+    {
+        $this->authorize('gerer-utilisateurs');
+
+        $existant = $this->editionId ? User::findOrFail($this->editionId) : null;
+
+        $donnees = $this->validate([
+            'nom' => ['required', 'string', 'max:255'],
+            'telephone' => ['nullable', 'string', 'max:20', Rule::unique('users', 'telephone')->ignore($existant)],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($existant)],
+            'role' => ['required', Rule::enum(Role::class)],
+            'motDePasse' => [$existant ? 'nullable' : 'required', 'string', 'min:'.self::MOT_DE_PASSE_MIN],
+            'actif' => ['boolean'],
+        ], attributes: [
+            'nom' => 'nom',
+            'telephone' => 'téléphone',
+            'email' => 'adresse e-mail',
+            'role' => 'rôle',
+            'motDePasse' => 'mot de passe',
+        ]);
+
+        // L'admin ne peut pas se retirer ses propres droits ni se bloquer dehors :
+        // sinon plus personne ne peut gérer les comptes.
+        if ($existant?->is(auth()->user())) {
+            if ($donnees['role'] !== Role::Admin->value) {
+                throw ValidationException::withMessages(['role' => 'Vous ne pouvez pas changer votre propre rôle.']);
+            }
+            if (! $donnees['actif']) {
+                throw ValidationException::withMessages(['actif' => 'Vous ne pouvez pas désactiver votre propre compte.']);
+            }
+        }
+
+        $attributs = [
+            'nom' => $donnees['nom'],
+            'telephone' => $donnees['telephone'] ?: null,
+            'email' => $donnees['email'],
+            'role' => $donnees['role'],
+            'actif' => $donnees['actif'],
+        ];
+
+        if (filled($donnees['motDePasse'])) {
+            $attributs['password'] = $donnees['motDePasse'];
+        }
+
+        if ($existant) {
+            $existant->update($attributs);
+            $this->statut = "Compte de {$existant->nom} modifié.";
+        } else {
+            $cree = User::create($attributs);
+            $this->statut = "Compte de {$cree->nom} créé.";
+        }
+
+        $this->editionId = null;
+        unset($this->utilisateurs);
+    }
+
+    public function render(): View
+    {
+        return view('livewire.utilisateurs.gestion-utilisateurs', [
+            'roles' => Role::cases(),
+        ]);
+    }
+}
