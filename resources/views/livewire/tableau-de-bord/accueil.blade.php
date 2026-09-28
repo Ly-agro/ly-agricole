@@ -11,7 +11,7 @@
         ? $campagnes->where('produit_id', $campagne->produit_id)->whereNotNull('prix_officiel_kg_fcfa')->sortBy('debut')->values()
             ->map(fn ($c) => ['label' => $c->code, 'valeur' => $c->prix_officiel_kg_fcfa])
         : collect();
-    $genres = ['pret' => 'Prêt', 'versement' => 'Versement', 'depense' => 'Dépense', 'producteur' => 'Terrain'];
+    $genres = ['pret' => 'Prêt', 'versement' => 'Versement', 'depense' => 'Dépense', 'achat' => 'Achat', 'producteur' => 'Terrain'];
 @endphp
 
 <div class="space-y-8">
@@ -214,6 +214,7 @@
                                 <th class="pb-2 text-right font-medium">Producteurs</th>
                                 <th class="pb-2 text-right font-medium">Prêts accordés</th>
                                 <th class="pb-2 text-right font-medium">Remis</th>
+                                <th class="pb-2 text-right font-medium">Remboursé</th>
                                 <th class="pb-2 text-right font-medium">Dépenses</th>
                             </tr>
                         </thead>
@@ -227,6 +228,7 @@
                                     <td class="py-3 text-right tabular-nums">{{ $ligne['producteurs'] }}</td>
                                     <td class="py-3 text-right tabular-nums">{{ Format::fcfa($ligne['accordes']) }} <span class="text-xs text-stone-500">({{ $ligne['prets'] }})</span></td>
                                     <td class="py-3 text-right tabular-nums">{{ Format::fcfa($ligne['remis']) }}</td>
+                                    <td class="py-3 text-right tabular-nums">{{ Format::fcfa($ligne['rembourse']) }}</td>
                                     <td class="py-3 text-right tabular-nums">{{ Format::fcfa($ligne['depenses']) }}</td>
                                 </tr>
                             @endforeach
@@ -236,22 +238,55 @@
             </section>
         @endif
 
-        {{-- Ce qui viendra --}}
-        <section aria-label="Modules à venir">
-            <h2 class="mb-3 text-sm font-medium text-stone-600">Bientôt sur cette page</h2>
-            <ul class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                @foreach ([
-                    'Kilos achetés' => 'Achats bord-champ, par lot',
-                    'Stock en magasin' => 'Poids et valeur, pertes',
-                    'Remboursements' => 'En argent ou en kilos livrés',
-                    'Marge par lot' => 'Après reventes et frais',
-                ] as $titre => $aide)
-                    <li class="rounded-xl border border-dashed border-stone-300 p-4">
-                        <p class="font-medium text-stone-700">{{ $titre }}</p>
-                        <p class="mt-0.5 text-xs text-stone-500">{{ $aide }}</p>
-                    </li>
-                @endforeach
-            </ul>
-        </section>
+        {{-- Filière : kilos achetés, stock, remboursements --}}
+        @if ($filiere !== null || ($chiffres !== null && $voitPrets))
+            <section class="grid gap-4 lg:grid-cols-3" aria-label="Kilos, stock et remboursements">
+                <dl class="grid grid-cols-2 gap-4 lg:col-span-2">
+                    @if ($filiere !== null)
+                        <div class="rounded-xl border border-stone-200 bg-white p-4">
+                            <dt class="text-sm text-stone-600">Kilos achetés</dt>
+                            <dd class="mt-1 text-xl font-semibold tabular-nums">{{ Format::kg($filiere['kilos_achetes']) }}</dd>
+                            <dd class="mt-0.5 text-xs text-stone-500">{{ $filiere['achats'] }} {{ $filiere['achats'] > 1 ? 'achats validés' : 'achat validé' }} · {{ Format::fcfa($filiere['montant_achats']) }}</dd>
+                        </div>
+                    @endif
+                    @if ($voitStock && $filiere !== null)
+                        <div class="rounded-xl border border-stone-200 bg-white p-4">
+                            <dt class="text-sm text-stone-600">Stock en magasin</dt>
+                            <dd class="mt-1 text-xl font-semibold tabular-nums">{{ Format::kg($filiere['stock']) }}</dd>
+                            <dd class="mt-0.5 text-xs text-stone-500">Somme des mouvements de stock</dd>
+                        </div>
+                    @endif
+                    @if ($chiffres !== null && $voitPrets)
+                        <div class="rounded-xl border border-stone-200 bg-white p-4">
+                            <dt class="text-sm text-stone-600">Remboursé</dt>
+                            <dd class="mt-1 text-xl font-semibold tabular-nums">{{ Format::fcfa($chiffres['rembourse']) }}</dd>
+                            <dd class="mt-0.5 text-xs text-stone-500">
+                                Argent + kilos rendus
+                                @if ($filiere !== null && $filiere['kilos_rembourses'] > 0)
+                                    ({{ Format::kg($filiere['kilos_rembourses']) }})
+                                @endif
+                            </dd>
+                        </div>
+                        <div class="rounded-xl border border-stone-200 bg-white p-4">
+                            <dt class="text-sm text-stone-600">Restant dû par les producteurs</dt>
+                            <dd class="mt-1 text-xl font-semibold tabular-nums">{{ Format::fcfa($chiffres['restant']) }}</dd>
+                            <dd class="mt-0.5 text-xs text-stone-500">Remis − remboursé</dd>
+                        </div>
+                    @endif
+                </dl>
+
+                @if ($filiere !== null)
+                    <div class="rounded-xl border border-stone-200 bg-white p-5">
+                        <h2 class="font-semibold">Kilos achetés par mois</h2>
+                        <p class="mt-1 mb-4 text-xs text-stone-500">Achats validés · {{ $campagne->code }}</p>
+                        <x-graphiques.barres :lignes="$achatsParMois" format="kg" vide="Aucun achat validé sur cette campagne." />
+                    </div>
+                @endif
+            </section>
+        @endif
+
+        <p class="rounded-xl border border-dashed border-stone-300 p-4 text-xs text-stone-500">
+            Bientôt : marge par lot, après les reventes et les frais.
+        </p>
     @endif
 </div>

@@ -12,7 +12,7 @@
             <li>
                 <div class="mb-1 flex items-baseline justify-between gap-3 text-sm">
                     <span class="text-stone-700">{{ $ligne['label'] }}</span>
-                    <span class="font-medium tabular-nums text-stone-900">{{ $format === 'fcfa' ? \App\Support\Format::fcfa($ligne['valeur']) : $ligne['valeur'] }}</span>
+                    <span class="font-medium tabular-nums text-stone-900">{{ match ($format) { 'fcfa' => \App\Support\Format::fcfa($ligne['valeur']), 'kg' => \App\Support\Format::kg($ligne['valeur']), default => $ligne['valeur'] } }}</span>
                 </div>
                 <div class="h-2 rounded-full bg-stone-100">
                     <div class="h-2 rounded-full bg-emerald-700" style="width: {{ max(intdiv($ligne['valeur'] * 100, $max), $ligne['valeur'] > 0 ? 2 : 0) }}%"></div>

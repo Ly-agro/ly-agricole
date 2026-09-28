@@ -70,6 +70,46 @@ semaines 8-9) ; SMS de confirmation au producteur (semaine 7).
 
 ---
 
+## 2026-09-28 — Tableau de bord branché sur la semaine 6 (achats, stock, remboursements) — FINI, NON COMMITÉ
+
+> Session `ly-agricole-fb`, à la demande de `f9` (qui a écrit la semaine 6 : ne pas la
+> retoucher). Je n'ai modifié **que** le tableau de bord ; à commiter **après** le
+> commit de la semaine 6, en un commit séparé.
+
+**Fichiers modifiés.** `app/Services/Indicateurs.php`, `app/Livewire/TableauDeBord.php`,
+`resources/views/livewire/tableau-de-bord/accueil.blade.php`,
+`resources/views/components/graphiques/barres.blade.php` (format `kg`).
+**Nouveau :** `tests/Feature/TableauDeBordFiliereTest.php` (4 tests).
+
+**Ce qui change.** Les quatre cases « Bientôt » sont remplacées par des chiffres réels :
+kilos achetés (achats **validés** seulement), stock en magasin (Σ `mouvements_stock`,
+réservé à `gerer-stock`), remboursé (argent + kilos rendus) et restant dû
+(`max(0, remis − remboursé)`), graphique des kilos achetés par mois, colonne « Remboursé »
+dans le bilan par campagne, « achats à valider » dans les actions à mener, achats dans les
+dernières nouvelles. Seule « Marge par lot » reste en « Bientôt » (reventes, phase 2).
+
+**Choix à connaître.**
+
+- Lecture par `DB::table()` de `achats`, `mouvements_stock`, `lots`, `remboursements` :
+  **si `f9` renomme ces colonnes, `Indicateurs` casse** (`statut`, `poids_net_g`,
+  `montant_fcfa`, `grammes`, `type`, `annule_id`, `cree_par`, `campagne_id`, `lot_id`).
+- Les remboursements sont signés (contre-passation négative) : la somme se compense.
+  Les **grammes** ne sont pas signés : les kilos rendus excluent les remboursements en
+  nature annulés (`NOT EXISTS` sur `annule_id`).
+- « Revenus » n'inclut plus une entrée d'argent **contre-passée** (défaut trouvé en
+  écrivant les tests : un remboursement annulé restait compté).
+- Les prêts `solde` comptent dans « prêts accordés » (ils disparaîtraient sinon).
+
+**Vérifié.** `php artisan test` : **294 tests** verts ; Larastan 0 erreur sur mes deux
+fichiers ; Pint propre. **Dans Chrome** (`localhost:8000`, base réelle, sans achat ni
+remboursement) : la section s'affiche, restant dû 22 000 000 FCFA = 21 000 000 (7 prêts)
++ 1 000 000 (prêt mixte de `f9`), menu avec Achats et Lots, aucune exception.
+
+**Pas vérifié dans Chrome.** Les chiffres non nuls (aucun achat en base) : couverts par les
+tests avec les vrais services (`Achats`, `Remboursements`), pas à l'écran.
+
+---
+
 ## 2026-09-28 — Front : menu latéral, barre du haut, page d'accueil analytique — FINI, COMMITÉ (`3c36505`)
 
 > Session `ly-agricole-fb`. Le front est **terminé et vérifié** ; ne pas le refaire. Il
