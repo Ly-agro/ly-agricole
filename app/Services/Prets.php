@@ -195,6 +195,7 @@ class Prets
             ]);
 
             self::marquerSiToutRemis($pret);
+            ConfirmationsSms::pourDecaissement($decaissement);
 
             return $decaissement;
         });

@@ -61,7 +61,12 @@ vendor/bin/pint                        # style
 vendor/bin/phpstan analyse --memory-limit=1G   # Larastan niveau 6 (phpstan.neon), plusieurs minutes ici
 npm run build                          # Vite + Tailwind 4 (config dans resources/css/app.css)
 php artisan serve                      # http://127.0.0.1:8000
+php artisan queue:work                 # envoie les SMS en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
 ```
+
+API de l'appli terrain (semaine 7) : `POST /api/connexion` (jeton Sanctum par appareil),
+`GET /api/referentiels?depuis=…`, `POST /api/sync` (idempotent par UUID) — contrat
+dans le skill `ly-agricole-terrain-hors-ligne`.
 
 Installé le 2026-09-28 : Laravel 13.33, Livewire 3.8.9 (sans starter kit),
 Tailwind 4.3, PHPUnit 12.5, Larastan 3.12. Base MySQL `ly_agricole` (root, sans mot
@@ -151,5 +156,11 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
   l'argent ») n'est pas échappé : `assertSee` échoue et, pire, **`assertDontSee` passe
   toujours**. Pour un texte du gabarit avec apostrophe : `assertSeeHtml` /
   `assertDontSeeHtml`.
+- **`Queue::fake()` ignore `afterCommit`** : il enregistre le job même si la
+  transaction est annulée. Pour tester « rien ne part avant le commit », garder la file
+  `sync` des tests et un faux `EnvoyeurSms` (voir `ConfirmationsSmsTest`).
+- **`php -r` + `preg_replace` qui échoue = fichier vidé** : `preg_replace` rend `null`
+  et `file_put_contents($f, null)` écrit 0 octet, sans erreur fatale (vu le 2026-09-28).
+  Pour du code PHP, l'outil d'édition ; sinon vérifier le retour avant d'écrire.
 - **`assertSessionHas` ne voit pas un message flash Livewire** : vérifier ce que la vue
   affiche (`assertSee`).

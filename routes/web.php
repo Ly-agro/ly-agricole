@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AchatController;
 use App\Http\Controllers\Auth\DeconnexionController;
 use App\Http\Controllers\DepenseController;
 use App\Http\Controllers\PretController;
@@ -91,6 +92,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('achats')->name('achats')->group(function () {
         Route::get('/', ListeAchats::class)->name('');
         Route::get('/nouveau', FormulaireAchat::class)->middleware('can:saisir-achats')->name('.nouveau');
+        Route::get('/{achat}/bon', [AchatController::class, 'bon'])->name('.bon');
     });
 
     Route::prefix('lots')->name('lots')->middleware('can:gerer-stock')->group(function () {

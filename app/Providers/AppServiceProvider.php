@@ -30,6 +30,8 @@ use App\Models\ValidationPret;
 use App\Models\Village;
 use App\Models\Zone;
 use App\Services\Journal;
+use App\Services\Sms\EnvoyeurSms;
+use App\Services\Sms\EnvoyeurSmsJournal;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -45,7 +47,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // D10 : un seul pilote pour l'instant ; un fournisseur réel s'ajoutera ici.
+        $this->app->bind(EnvoyeurSms::class, fn () => match (config('services.sms.pilote')) {
+            'journal' => new EnvoyeurSmsJournal,
+            default => throw new \InvalidArgumentException('Pilote SMS inconnu : '.config('services.sms.pilote')),
+        });
     }
 
     /**

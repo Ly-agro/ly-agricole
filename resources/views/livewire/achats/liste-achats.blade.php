@@ -73,6 +73,7 @@
                             @if ($a->motif_refus) <span class="block text-xs text-red-700">{{ $a->motif_refus }}</span> @endif
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right">
+                            <a href="{{ route('achats.bon', $a) }}" target="_blank" class="mr-1 rounded-md px-2 py-1 text-xs text-emerald-800 hover:bg-emerald-50">Bon PDF</a>
                             @if ($peutValider && $a->statut->value === 'a_valider')
                                 @if ($a->cree_par === $moi)
                                     <span class="text-xs text-stone-500">(à valider par un autre)</span>

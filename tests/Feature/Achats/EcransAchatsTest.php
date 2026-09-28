@@ -12,6 +12,7 @@ use App\Enums\StatutAchat;
 use App\Enums\StatutCampagne;
 use App\Enums\StatutLot;
 use App\Enums\StatutPret;
+use App\Enums\TypeFournisseur;
 use App\Livewire\Achats\FormulaireAchat;
 use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Prets\FichePret;
@@ -27,6 +28,7 @@ use App\Models\Parametre;
 use App\Models\Pret;
 use App\Models\Producteur;
 use App\Models\User;
+use App\Services\Achats;
 use App\Services\Prets;
 use App\Services\Tresorerie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -291,5 +293,28 @@ class EcransAchatsTest extends TestCase
             ->assertSeeHtml('id="restant-du">180'.self::FINE.'000 FCFA</dd>');
 
         $this->assertSame(180_000, $pret->refresh()->restantDu());
+    }
+
+    #[Test]
+    public function le_bon_d_achat_pdf_est_servi_a_l_acheteur_et_au_valideur_seulement(): void
+    {
+        $achat = Achats::enregistrer([
+            'campagne_id' => $this->campagne->id, 'lot_id' => $this->lot->id, 'fournisseur_type' => TypeFournisseur::Producteur,
+            'producteur_id' => $this->producteur->id, 'date_achat' => now()->subMinute(), 'poids_brut_g' => 505_000, 'tare_g' => 5_000,
+            'humidite_pour_mille' => 85, 'kor_centieme_lbs' => 4_805, 'prix_kg_fcfa' => 425, 'compte_id' => $this->caisseAgent->id,
+        ], $this->agent);
+
+        foreach ([$this->agent, $this->comptable] as $qui) {
+            $reponse = $this->actingAs($qui)->get(route('achats.bon', $achat))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+            $this->assertStringStartsWith('%PDF-', (string) $reponse->getContent());
+        }
+        $this->actingAs(User::factory()->role(Role::Agent)->create())->get(route('achats.bon', $achat))->assertForbidden();
+        $this->actingAs(User::factory()->role(Role::Investisseur)->create())->get(route('achats.bon', $achat))->assertForbidden();
+
+        // Contenu : la vue du PDF, rendue en HTML.
+        $html = view('achats.bon-achat', ['achat' => $achat, 'mention' => null, 'valeurRetenue' => 0, 'restantDu' => null])->render();
+        foreach (['505 kg', '500 kg', '8,5 %', '48,05', '212'.self::FINE.'500', 'Payé en espèces', $achat->reference] as $attendu) {
+            $this->assertStringContainsString($attendu, $html);
+        }
     }
 }

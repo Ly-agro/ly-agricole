@@ -191,6 +191,8 @@ class Achats
             'valide_par' => $validation ? $auteur->id : null,
             'valide_at' => $validation ? now() : null,
         ], fn ($v) => $v !== null));
+
+        ConfirmationsSms::pourAchat($achat->refresh());
     }
 
     private static function relireAValider(Achat $achat, User $validateur): Achat

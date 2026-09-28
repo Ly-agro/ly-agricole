@@ -98,6 +98,7 @@ class Remboursements
             ]);
 
             self::mettreAJourStatut($pret);
+            ConfirmationsSms::pourRemboursement($remboursement);
 
             return $remboursement;
         });

@@ -83,9 +83,11 @@ flowchart TD
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `confirmations_sms` | producteur_id, objet_type, objet_id, message, envoye_at, statut, reponse | preuve envoyée au producteur |
+| `confirmations_sms` | producteur_id, objet_type (`achat`, `decaissement`, `remboursement`), objet_id, telephone, message, statut (`en_attente`, `envoye`, `echec`), pilote, envoye_at, erreur | preuve envoyée au producteur ; **une par opération** (unique objet_type + objet_id) ; écrite dans la transaction de l'opération, envoyée **après le commit** (job `EnvoyerConfirmationSms`, `afterCommit`) ; pas de téléphone ⇒ pas de ligne ; achat à valider ⇒ SMS seulement à la validation. `reponse` retirée (pas de réponse du producteur en phase 1) |
 | `journal_activite` 🔒 | user_id, action, objet_type, objet_id, avant, apres, ip, appareil, at | qui a fait quoi |
-| `synchronisations` | appareil_id, user_id, recu_at, nb_operations, nb_rejetees, erreurs | trace des envois de l'appli terrain |
+| `synchronisations` | appareil_id, user_id, recu_at, nb_operations, nb_acceptees, nb_deja_recues, nb_rejetees | un appel à `POST /api/sync` ; `erreurs` remplacée par `operations_recues.motif` |
+| `operations_recues` | **uuid** (clé primaire = UUID du téléphone = id de ce qui est créé), type (`producteur`, `achat`), synchronisation_id, appareil_id, user_id, statut (`accepte`, `rejete`), motif, cree_at (heure du téléphone), recu_at (heure du serveur) | clé d'idempotence : acceptée ⇒ un renvoi répond `deja_recu` sans rien refaire ; rejetée ⇒ renvoyable corrigée avec le même UUID |
+| `personal_access_tokens` | (Sanctum) tokenable, name (= appareil), token, abilities, last_used_at, expires_at | un jeton par téléphone ; révoqué à la déconnexion ; un compte désactivé est refusé même avec un jeton valide |
 | `parametres` | cle, valeur | clés connues du code (`App\Enums\CleParametre`) ; **pas de valeur par défaut** : non défini ≠ 0, le code applique la règle prudente |
 
 ## Invariants à tester dès la semaine où la table naît

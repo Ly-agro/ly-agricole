@@ -5,6 +5,77 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-28 — Semaine 7 (en avance) : API terrain, `/api/sync` idempotent, SMS, bon d'achat — CODE FINI, PARCOURS RÉEL À FAIRE
+
+> Session `ly-agricole-f9`, branche `semaine-7` (depuis `semaine-6`, c66136a). La
+> modification de `.claude/skills/ly-agricole-metier/SKILL.md` est celle de
+> l'utilisateur : **hors commit**, à lui de décider.
+
+**Fait.**
+
+- **Sanctum 4.3** (`composer require`, ~15 min en tâche de fond) ; `HasApiTokens` sur
+  `User` ; migration `personal_access_tokens` renommée `2026_11_07_000002`.
+- `routes/api.php` : `POST /api/connexion` (email, mot de passe, nom de l'appareil ⇒ un
+  jeton ; mêmes règles que l'écran : compte actif, 5 essais puis blocage, même message
+  pour compte désactivé et mauvais mot de passe ; connexion journalisée), `POST
+  /api/deconnexion` (révoque le jeton), `GET /api/referentiels` (villages, groupes,
+  produits, campagnes, lots, points de collecte, pisteurs, producteurs — **delta par
+  `depuis`**, désactivés renvoyés avec `actif=false` ; comptes d'où l'utilisateur peut
+  payer ; prêts en cours toujours en entier avec leur restant dû), `POST /api/sync`.
+  `CompteActif` ajouté au groupe `api` : compte désactivé ⇒ 401 même avec un jeton.
+- `App\Services\Synchronisation` : opérations `producteur` et `achat`, **dans l'ordre
+  reçu, chacune dans sa transaction** ; l'UUID du téléphone **est** l'id créé ;
+  `operations_recues` (une ligne par UUID) : acceptée ⇒ `deja_recu` au renvoi, rejetée ⇒
+  renvoyable corrigée ; UUID déjà servi pour un autre type ⇒ rejet ; collision
+  simultanée (contrainte unique) ⇒ `deja_recu`. Revalidation par les **mêmes services**
+  que le bureau (`Achats::enregistrer`, doublons, consentement) ; poids et prix en
+  **entiers stricts** (`integer:strict` : `505000.5` ou `"425"` refusés, jamais
+  arrondis). Doublon « alerte » (même téléphone) ⇒ rejet « À confirmer » jusqu'à
+  `doublons_confirmes: true`, puis journal `doublon_confirme`. Erreur imprévue ⇒ rejet
+  avec motif + log, jamais perdue en silence. Trace de chaque appel dans
+  `synchronisations`.
+- **SMS (D10)** : interface `App\Services\Sms\EnvoyeurSms`, pilote `journal`
+  (`SMS_PILOTE`, `?:` pour une clé vide) ; `ConfirmationsSms` écrit la ligne dans la
+  transaction de l'achat (à l'exécution : donc à la validation s'il était à valider),
+  du décaissement et du remboursement en espèces ; job `EnvoyerConfirmationSms`
+  **`afterCommit`**, 3 essais, statut `envoye`/`echec` + erreur. Texte sans accents
+  (question 24).
+- **Bon d'achat PDF** (A5, dompdf, sous-ensemble de police) : `GET /achats/{achat}/bon`,
+  lien « Bon PDF » dans la liste des achats ; pesée, qualité (sans float), règlement,
+  kilos retenus, restant dû, signatures ; « EN ATTENTE DE VALIDATION » / « ACHAT
+  REFUSÉ » en rouge. Visible par qui valide les achats, ou par l'agent qui l'a saisi.
+- Docs : `MODELE_DE_DONNEES.md` (confirmations_sms, synchronisations, operations_recues,
+  personal_access_tokens), `QUESTIONS_OUVERTES.md` (24 texte des SMS, 25 expiration des
+  jetons), `CLAUDE.md` (commande `queue:work`, API, 2 pièges).
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **315 tests** verts (294 → 315 : 9 synchronisation, 5 API, 6 SMS,
+  1 bon PDF), Larastan 0, Pint propre.
+- **Livrable de la semaine 7** (`SynchronisationTest`) : le même lot (2 producteurs +
+  2 achats) envoyé deux fois ⇒ 4 `deja_recu`, producteurs, achats, stock, mouvements de
+  trésorerie, SMS et caisse **identiques** ; envoi coupé en deux puis renvoyé en entier
+  ⇒ même résultat ; une opération invalide (prix sous le prix officiel) ⇒ les trois
+  autres passent, puis corrigée et renvoyée avec le même UUID ⇒ acceptée.
+- Mutation : sans `afterCommit()` dans le job, le test « aucun SMS avant le commit ni
+  pour une opération annulée » **échoue** (vérifié, puis remis).
+- **Pas encore fait** : le parcours réel sur MySQL (migrations de la semaine 7 non
+  lancées sur `ly_agricole`), un appel `curl` à l'API sur `artisan serve`, le bon PDF
+  regardé dans Chrome. MySQL et le serveur ont été arrêtés (mémoire faible) : à relancer
+  **quand l'utilisateur le demande**.
+
+**Surpris.**
+
+- `Queue::fake()` ignore `afterCommit` (le job apparaît même après un rollback) : test
+  refait avec la file `sync` et un faux envoyeur.
+- Un `php -r … preg_replace` raté a vidé `TerrainController.php` (0 octet) : réécrit ;
+  piège ajouté à `CLAUDE.md`.
+
+**Reste.** Parcours réel ci-dessus ; semaine 8 : l'appli terrain (SvelteKit + Dexie) qui
+consomme cette API ; questions 22, 24, 25.
+
+---
+
 ## 2026-09-28 — Semaine 6 (en avance) : achats bord-champ, lots, stock, remboursements — FINI, COMMITÉ
 
 > Session `ly-agricole-f9`, branche `semaine-6`. Le tableau de bord qui lit ces tables
