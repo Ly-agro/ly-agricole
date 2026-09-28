@@ -5,7 +5,7 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
-## 2026-09-28 — Semaine 7 (en avance) : API terrain, `/api/sync` idempotent, SMS, bon d'achat — CODE FINI, PARCOURS RÉEL À FAIRE
+## 2026-09-28 — Semaine 7 (en avance) : API terrain, `/api/sync` idempotent, SMS, bon d'achat — FINI, COMMITÉ
 
 > Session `ly-agricole-f9`, branche `semaine-7` (depuis `semaine-6`, c66136a). La
 > modification de `.claude/skills/ly-agricole-metier/SKILL.md` est celle de
@@ -59,10 +59,19 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
   autres passent, puis corrigée et renvoyée avec le même UUID ⇒ acceptée.
 - Mutation : sans `afterCommit()` dans le job, le test « aucun SMS avant le commit ni
   pour une opération annulée » **échoue** (vérifié, puis remis).
-- **Pas encore fait** : le parcours réel sur MySQL (migrations de la semaine 7 non
-  lancées sur `ly_agricole`), un appel `curl` à l'API sur `artisan serve`, le bon PDF
-  regardé dans Chrome. MySQL et le serveur ont été arrêtés (mémoire faible) : à relancer
-  **quand l'utilisateur le demande**.
+- **Parcours réel (MySQL + `artisan serve`, à la demande de l'utilisateur)** :
+  migrations 2026_11_07 lancées ; script PHP/curl : connexion `agent@` ⇒ jeton ;
+  référentiels : 7 producteurs, comptes = « Caisse agent de terrain » seule, 8 prêts en
+  cours ; delta immédiat = 0 producteur ; `/api/sync` (producteur Traoré Mariam + achat
+  100 kg à 425) ⇒ `accepte` ×2, **renvoi ⇒ `deja_recu` ×2** ; MySQL : producteurs 7 → 8,
+  achats 1 → 2 (pas 3) ; achat `a_valider` (seuil non défini) ⇒ stock, caisse et SMS
+  inchangés ; déconnexion ⇒ le jeton rend 401. Chrome (comptable) : ACH-000002 « À
+  valider » ⇒ Valider ⇒ **lot 500 → 600 kg, caisse agent 957 500 → 915 000**, SMS
+  `en_attente` puis `queue:work --once` ⇒ `envoye`, texte dans `laravel.log`. Bon PDF
+  ACH-000002 ouvert dans Chrome : en-tête, fournisseur (carte LYP-000008), pesée
+  101 − 1 = 100 kg, humidité 7,5 %, règlement 42 500, une page.
+- Données de dev ajoutées par ce parcours : producteur LYP-000008 (Traoré Mariam),
+  achat ACH-000002, 2 lignes `synchronisations`, 1 SMS.
 
 **Surpris.**
 
@@ -71,7 +80,7 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 - Un `php -r … preg_replace` raté a vidé `TerrainController.php` (0 octet) : réécrit ;
   piège ajouté à `CLAUDE.md`.
 
-**Reste.** Parcours réel ci-dessus ; semaine 8 : l'appli terrain (SvelteKit + Dexie) qui
+**Reste.** Semaine 8 : l'appli terrain (SvelteKit + Dexie) qui
 consomme cette API ; questions 22, 24, 25.
 
 ---
