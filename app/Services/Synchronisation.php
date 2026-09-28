@@ -9,9 +9,12 @@ use App\Enums\TypeFournisseur;
 use App\Enums\TypePiece;
 use App\Exceptions\OperationRefusee;
 use App\Models\OperationRecue;
+use App\Models\Parcelle;
+use App\Models\PhotoTerrain;
 use App\Models\Producteur;
 use App\Models\Synchronisation as Envoi;
 use App\Models\User;
+use App\Services\Geo\Contour;
 use App\Support\Telephone;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -22,6 +25,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -37,7 +41,7 @@ use Throwable;
  */
 class Synchronisation
 {
-    public const TYPES = ['producteur', 'achat'];
+    public const TYPES = ['producteur', 'achat', 'parcelle', 'depense'];
 
     public const MAX_OPERATIONS = 500;
 
@@ -100,6 +104,8 @@ class Synchronisation
                 match ($type) {
                     'producteur' => self::creerProducteur($uuid, $donnees, $auteur),
                     'achat' => self::creerAchat($uuid, $donnees, $auteur),
+                    'parcelle' => self::creerParcelle($uuid, $donnees, $auteur),
+                    'depense' => self::creerDepense($uuid, $donnees, $auteur),
                     default => throw new OperationRefusee("Type d'opération inconnu : « {$type} »."),
                 };
 
@@ -265,6 +271,7 @@ class Synchronisation
             'grainage_noix_kg' => ['nullable', 'integer:strict'],
             'prix_kg_fcfa' => ['required', 'integer:strict'],
             'pret_id' => ['nullable', 'uuid'],
+            'photo_pesee' => ['nullable', 'uuid'],
             'grammes_rembourses' => ['nullable', 'integer:strict'],
         ]);
         $v->validate();
@@ -288,7 +295,97 @@ class Synchronisation
             'prix_kg_fcfa' => $d['prix_kg_fcfa'],
             'pret_id' => $d['pret_id'] ?? null,
             'grammes_rembourses' => $d['grammes_rembourses'] ?? 0,
+            'photo_pesee' => isset($d['photo_pesee']) ? strtolower((string) $d['photo_pesee']) : null,
         ], $auteur);
+    }
+
+    /**
+     * Parcelle relevée en marchant (contour GPS) : la surface est calculée ICI, par la
+     * même méthode que pour un contour importé ; jamais celle du téléphone.
+     *
+     * @param  array<string, mixed>  $d
+     */
+    private static function creerParcelle(string $uuid, array $d, User $auteur): void
+    {
+        if (! $auteur->can('gerer-producteurs')) {
+            throw new OperationRefusee('Votre rôle ne permet pas de créer une parcelle.');
+        }
+
+        Validator::make($d, [
+            'producteur_id' => ['required', 'uuid', Rule::exists('producteurs', 'id')->where('actif', true)],
+            'nom' => ['required', 'string', 'max:255', Rule::unique('parcelles', 'nom')->where('producteur_id', $d['producteur_id'] ?? null)],
+            'contour' => ['required', 'array'],
+            'contour.type' => ['required', Rule::in(['Polygon'])],
+            'contour.coordinates' => ['required', 'array'],
+            'produit_id' => ['nullable', 'integer:strict', Rule::exists('produits', 'id')],
+            'nb_arbres' => ['nullable', 'integer:strict', 'min:0', 'max:1000000'],
+        ], [
+            'nom.unique' => 'Ce producteur a déjà une parcelle de ce nom.',
+            'producteur_id.exists' => 'Producteur introuvable ou désactivé.',
+        ])->validate();
+
+        try {
+            $contour = Contour::depuisGeometrie(['type' => 'Polygon', 'coordinates' => $d['contour']['coordinates']]);
+        } catch (InvalidArgumentException $e) {
+            throw new OperationRefusee('Contour GPS refusé : '.$e->getMessage());
+        }
+
+        Parcelle::query()->create([
+            'id' => $uuid,
+            'producteur_id' => $d['producteur_id'],
+            'nom' => trim((string) $d['nom']),
+            'contour' => $contour->geometrie,
+            'contour_origine' => 'gps',
+            'produit_id' => $d['produit_id'] ?? null,
+            'nb_arbres' => $d['nb_arbres'] ?? null,
+            'cree_par' => $auteur->id,
+        ]);
+    }
+
+    /**
+     * Dépense terrain : même service que le bureau (seuil, caisse de l'agent, art. 10.3).
+     * Le justificatif est une photo du terrain, envoyée AVANT l'opération par le téléphone.
+     *
+     * @param  array<string, mixed>  $d
+     */
+    private static function creerDepense(string $uuid, array $d, User $auteur): void
+    {
+        if (! $auteur->can('saisir-depenses')) {
+            throw new OperationRefusee('Votre rôle ne permet pas de saisir une dépense.');
+        }
+
+        Validator::make($d, [
+            'categorie_id' => ['required', 'integer:strict'],
+            'compte_id' => ['required', 'integer:strict'],
+            'montant_fcfa' => ['required', 'integer:strict', 'min:1'],
+            'date_depense' => ['required', 'date', 'before_or_equal:today'],
+            'beneficiaire' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'campagne_id' => ['nullable', 'integer:strict'],
+            'justificatif_photo' => ['required', 'uuid'],
+        ], [
+            'justificatif_photo.required' => 'Le justificatif (photo du reçu) est obligatoire.',
+            'date_depense.before_or_equal' => 'La date d\'une dépense ne peut pas être dans le futur.',
+        ])->validate();
+
+        $photo = PhotoTerrain::query()->find(strtolower((string) $d['justificatif_photo']));
+        if ($photo === null) {
+            throw new OperationRefusee('La photo du justificatif n\'est pas encore arrivée : renvoyer quand elle sera partie.');
+        }
+        if ($photo->user_id !== $auteur->id) {
+            throw new OperationRefusee('Ce justificatif a été envoyé par un autre utilisateur.');
+        }
+
+        Depenses::saisir([
+            'id' => $uuid,
+            'categorie_id' => $d['categorie_id'],
+            'compte_id' => $d['compte_id'],
+            'montant_fcfa' => $d['montant_fcfa'],
+            'date_depense' => Carbon::parse($d['date_depense']),
+            'beneficiaire' => (string) $d['beneficiaire'],
+            'description' => $d['description'] ?? null,
+            'campagne_id' => $d['campagne_id'] ?? null,
+        ], $photo->chemin, $auteur);
     }
 
     private static function texte(mixed $valeur): ?string

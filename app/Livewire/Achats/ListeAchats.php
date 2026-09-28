@@ -98,7 +98,7 @@ class ListeAchats extends Component
 
         return view('livewire.achats.liste-achats', [
             'achats' => Achat::query()
-                ->with('producteur', 'pisteur', 'lot', 'pret', 'auteur', 'validateur')
+                ->with('producteur', 'pisteur', 'lot', 'pret', 'auteur', 'validateur', 'photoPesee')
                 ->when(! $toutVoir, fn ($q) => $q->where('cree_par', $moi->id))
                 ->when(StatutAchat::tryFrom($this->filtreStatut), fn ($q, $s) => $q->where('statut', $s))
                 ->orderByRaw('CASE WHEN statut = ? THEN 0 ELSE 1 END', [StatutAchat::AValider->value])

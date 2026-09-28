@@ -3,6 +3,7 @@
 use App\Http\Controllers\AchatController;
 use App\Http\Controllers\Auth\DeconnexionController;
 use App\Http\Controllers\DepenseController;
+use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
 use App\Http\Controllers\ProducteurController;
 use App\Livewire\Achats\FormulaireAchat;
@@ -94,6 +95,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/nouveau', FormulaireAchat::class)->middleware('can:saisir-achats')->name('.nouveau');
         Route::get('/{achat}/bon', [AchatController::class, 'bon'])->name('.bon');
     });
+
+    // Photos du terrain (pesée, justificatifs) : le contrôleur vérifie le droit.
+    Route::get('/photos-terrain/{photo}', [PhotoTerrainController::class, 'afficher'])->name('photos-terrain');
 
     Route::prefix('lots')->name('lots')->middleware('can:gerer-stock')->group(function () {
         Route::get('/', ListeLots::class)->name('');

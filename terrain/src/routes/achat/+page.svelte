@@ -2,7 +2,8 @@
     import { liveQuery } from 'dexie';
     import { db, type Producteur } from '$lib/db';
     import { depuisSaisie, fcfa, fcfaDepuisSaisie, grammesPourSolder, kg, montantAchat } from '$lib/mesure';
-    import ScanQr from '$lib/ScanQr.svelte';
+    import ChoixProducteur from '$lib/ChoixProducteur.svelte';
+    import PrisePhoto from '$lib/PrisePhoto.svelte';
     import { mettreEnFile } from '$lib/synchro';
 
     /**
@@ -23,9 +24,8 @@
     const comptes = liveQuery(() => db.comptes.toArray());
     const points = liveQuery(() => db.points_collecte.filter((p) => p.actif).toArray());
 
-    let recherche = $state('');
     let producteur = $state<Producteur | null>(null);
-    let scan = $state(false);
+    let photoPesee = $state<string | null>(null);
     let lotId = $state<number | null>(null);
     let compteId = $state<number | null>(null);
     let pointId = $state<number | null>(null);
@@ -37,23 +37,6 @@
     let kilosRetenus = $state('');
     let erreur = $state('');
     let succes = $state('');
-
-    // Relu à chaque frappe ($effect suit `recherche` ; un liveQuery ne la suivrait pas).
-    let resultats = $state<Producteur[]>([]);
-    $effect(() => {
-        const q = recherche.trim().toLowerCase();
-        if (q.length < 2) {
-            resultats = [];
-            return;
-        }
-        db.producteurs
-            .filter((p) => p.actif && (`${p.nom} ${p.prenoms}`.toLowerCase().includes(q) || (p.code ?? '').toLowerCase().includes(q) || (p.telephone ?? '').includes(q)))
-            .limit(20)
-            .toArray()
-            .then((r) => {
-                if (recherche.trim().toLowerCase() === q) resultats = r;
-            });
-    });
 
     // $derived ne suit pas un liveQuery recréé : on relit les prêts à chaque changement.
     let prets = $state<{ id: string; reference: string; restant_du_fcfa: number }[]>([]);
@@ -102,18 +85,6 @@
         return { brut: b, tare: t, net, prix: p, montant: montantAchat(net, p), pret, retenus, especes: montantAchat(net - retenus, p) };
     });
 
-    function choisirParCode(code: string) {
-        scan = false;
-        db.producteurs.where('code').equals(code.toUpperCase()).first().then((p) => {
-            if (p && p.actif) {
-                producteur = p;
-                recherche = '';
-            } else {
-                erreur = `Aucun producteur actif « ${code} » sur le téléphone. Télécharger les référentiels ?`;
-            }
-        });
-    }
-
     async function enregistrer(e: SubmitEvent) {
         e.preventDefault();
         erreur = succes = '';
@@ -142,11 +113,13 @@
             prix_kg_fcfa: apercu.prix,
             pret_id: apercu.pret?.id ?? null,
             grammes_rembourses: apercu.pret ? apercu.retenus : 0,
+            photo_pesee: photoPesee,
         }, `${producteur.nom} ${producteur.prenoms} — ${kg(apercu.net)} × ${fcfa(apercu.prix)} = ${fcfa(apercu.montant)}, espèces ${fcfa(apercu.especes)}`);
 
         succes = `Achat enregistré sur le téléphone : ${producteur.nom} ${producteur.prenoms}, ${kg(apercu.net)}, payer ${fcfa(apercu.especes)}. Il partira au prochain envoi.`;
         producteur = null;
         brut = humidite = kilosRetenus = '';
+        photoPesee = null;
         tare = '0';
         window.scrollTo(0, 0);
     }
@@ -154,39 +127,12 @@
     const champ = 'mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2';
 </script>
 
-{#if scan}
-    <ScanQr onCode={choisirParCode} onFermer={() => (scan = false)} />
-{/if}
-
 <form onsubmit={enregistrer} class="space-y-4">
     <h1 class="text-lg font-semibold">Achat bord-champ</h1>
 
     {#if succes}<p class="rounded-md bg-emerald-50 p-3 text-sm text-emerald-900">{succes}</p>{/if}
 
-    <fieldset class="space-y-2 rounded-lg bg-white p-4 shadow-sm">
-        <legend class="sr-only">Producteur</legend>
-        {#if producteur}
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="font-semibold">{producteur.nom} {producteur.prenoms}</p>
-                    <p class="text-sm text-stone-500">{producteur.code ?? 'code à venir'}</p>
-                </div>
-                <button type="button" onclick={() => (producteur = null)} class="text-sm text-emerald-800 underline">Changer</button>
-            </div>
-        {:else}
-            <span class="text-sm text-stone-600">Producteur</span>
-            <div class="flex gap-2">
-                <input bind:value={recherche} placeholder="Nom, code ou téléphone" class="{champ} mt-0" />
-                <button type="button" onclick={() => (scan = true)} class="rounded-md bg-stone-800 px-3 text-sm text-white">Scanner</button>
-            </div>
-            {#each resultats as p (p.id)}
-                <button type="button" onclick={() => { producteur = p; recherche = ''; }}
-                    class="block w-full rounded-md border border-stone-200 px-3 py-2 text-left">
-                    {p.nom} {p.prenoms} <span class="text-sm text-stone-500">{p.code ?? ''}</span>
-                </button>
-            {/each}
-        {/if}
-    </fieldset>
+    <ChoixProducteur bind:producteur />
 
     <fieldset class="space-y-3 rounded-lg bg-white p-4 shadow-sm">
         <label class="block"><span class="text-sm text-stone-600">Lot</span>
@@ -238,6 +184,8 @@
             {/if}
         </fieldset>
     {/if}
+
+    <PrisePhoto libelle="Photo de la pesée (facultative)" bind:uuid={photoPesee} />
 
     {#if apercu}
         <dl class="grid grid-cols-2 gap-y-1 rounded-lg bg-stone-900 p-4 text-sm text-white">

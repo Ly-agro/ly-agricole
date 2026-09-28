@@ -16,11 +16,14 @@ export interface Compte { id: number; nom: string; type: string; titulaire_id: n
 export interface Producteur { id: string; code: string | null; nom: string; prenoms: string; telephone: string | null; village_id: number; groupe_id: number | null; actif: boolean }
 export interface PretEnCours { id: string; reference: string; producteur_id: string; campagne_id: number; restant_du_fcfa: number }
 
-export type StatutOperation = 'en_attente' | 'envoye' | 'rejete';
+export interface CategorieDepense { id: number; nom: string; exclue_fonds_campagne: boolean; actif: boolean }
+
+/** `abandonne` : rejetée et laissée de côté par l'agent (gardée pour la trace). */
+export type StatutOperation = 'en_attente' | 'envoye' | 'rejete' | 'abandonne';
 
 export interface Operation {
     uuid: string;
-    type: 'achat' | 'producteur';
+    type: 'achat' | 'producteur' | 'parcelle' | 'depense';
     /** Heure du téléphone (peut être fausse ; le serveur garde aussi la sienne). */
     cree_at: string;
     donnees: Record<string, unknown>;
@@ -29,6 +32,17 @@ export interface Operation {
     envoye_at: string | null;
     /** Ligne lisible pour l'écran « À envoyer ». */
     resume: string;
+}
+
+/** Photo prise sur le terrain, compressée, envoyée À PART des opérations. */
+export interface Photo {
+    uuid: string;
+    blob: Blob;
+    prise_at: string;
+    lat: number | null;
+    lng: number | null;
+    statut: 'en_attente' | 'envoye' | 'rejete';
+    motif: string | null;
 }
 
 /** Réglages : serveur, jeton, utilisateur, horodatage du dernier téléchargement. */
@@ -45,6 +59,8 @@ export class BaseTerrain extends Dexie {
     producteurs!: EntityTable<Producteur, 'id'>;
     prets_en_cours!: EntityTable<PretEnCours, 'id'>;
     operations!: EntityTable<Operation, 'uuid'>;
+    categories_depense!: EntityTable<CategorieDepense, 'id'>;
+    photos!: EntityTable<Photo, 'uuid'>;
 
     constructor(nom = 'ly-terrain') {
         super(nom);
@@ -60,6 +76,15 @@ export class BaseTerrain extends Dexie {
             prets_en_cours: 'id, producteur_id',
             // uuid v7 : l'ordre des clés est l'ordre de saisie.
             operations: 'uuid, statut',
+        });
+        // Semaine 9 : dépenses terrain et photos. (Ne jamais modifier une version publiée.)
+        this.version(2).stores({
+            categories_depense: 'id',
+            photos: 'uuid, statut',
+        }).upgrade(async (tx) => {
+            // Nouvelle table de référentiel : un delta n'y mettrait que les lignes
+            // modifiées depuis. Le prochain téléchargement doit être complet.
+            await tx.table('reglages').delete('horodatage');
         });
     }
 }

@@ -5,6 +5,75 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-28 — Semaine 9 (en avance) : parcelle au GPS, photos, dépense terrain, rejets — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, branche `semaine-9` (depuis `semaine-8`). Décisions de
+> l'utilisateur : **question 26 en suspens** (pas d'APK pour l'instant) ; **question 27
+> « selon la recommandation »** ⇒ serveur en ligne en HTTPS (décision D11).
+
+**Fait — serveur.**
+
+- Migration `2026_11_14_000001` : table `photos_terrain` (UUID du téléphone, disque
+  privé, heure et position de la prise) ; `parcelles.contour_origine` (`import` posé
+  par le modèle pour tout contour du bureau, `gps` pour un relevé du téléphone).
+- `POST /api/photos` (multipart, image ≤ 5 Mo, **idempotent** : renvoi ⇒ `deja_recu`).
+- `/api/sync` : types `parcelle` (contour Polygon revérifié par `Contour` — fermé, en
+  Côte d'Ivoire —, **surface recalculée au serveur**, celle du téléphone ignorée) et
+  `depense` (même service que le bureau ; justificatif = photo déjà reçue, du même
+  utilisateur ; montant entier strict) ; `achat.photo_pesee` (UUID, la photo peut
+  arriver après). Référentiels : `categories_depense`.
+- Bureau : fiche producteur « relevé GPS en marchant » ; liste des achats « Photo
+  pesée » ou « photo attendue » ; `GET /photos-terrain/{photo}` (valideur d'achats,
+  trésorerie, ou l'agent auteur).
+
+**Fait — appli terrain.**
+
+- Onglets Accueil · Achat · **Saisir** · À envoyer. Écrans : **Relevé de parcelle**
+  (suivi GPS, point gardé si précision ≤ 15 m et à ≥ 3 m du précédent, « point ici »
+  aux coins, pause, périmètre et surface en aperçu), **Dépense terrain** (photo du reçu
+  obligatoire), **Nouveau producteur** (accord obligatoire ; fiche utilisable hors ligne
+  tout de suite), **photo de pesée** facultative sur l'achat. `ChoixProducteur` et
+  `PrisePhoto` partagés.
+- Photos compressées sur le téléphone (JPEG, 1600 px, qualité 0,7) avec position ;
+  envoyées **avant** les opérations, puis le fichier quitte le téléphone.
+- Rejets : « Renvoyer » (même UUID), « Confirmer (même famille) et renvoyer » pour un
+  doublon de téléphone, « Abandonner » (gardé pour la trace, statut `abandonne`).
+- Base locale v2 : la montée de version force un téléchargement **complet** (sinon la
+  nouvelle table des catégories resterait vide) ; un téléchargement complet garde les
+  producteurs créés sur le téléphone et pas encore envoyés.
+- Question 27 : l'appli refuse une adresse `http://` publique (http permis seulement
+  localhost / réseau privé / `.test` / `.local`) ; build Android en HTTPS sauf
+  `LY_TERRAIN_DEV=1` ; permissions de position ajoutées au manifeste.
+
+**Vérifié en l'exécutant.**
+
+- Laravel : **323 tests** (315 → 323), Larastan 0, Pint propre. Terrain : **24 tests**
+  vitest, svelte-check 0, build OK.
+- **Livrable, dans l'émulateur de téléphone de Chrome lancé par l'utilisateur** (appli
+  `localhost:4173`, API `localhost:8000`, MySQL) : base locale v1 de la veille ⇒ passée
+  en v2, « mis à jour : jamais », téléchargement complet ; relevé de parcelle pour Soro
+  Yacouba avec un **GPS simulé** (marche autour d'un carré de 80 m, 82 relevés dont 2 à
+  ± 40 m) ⇒ **80 points gardés, périmètre 320 m, 0,64 ha** ; dépense Carburant 15 000
+  avec photo (36 Ko → 28 Ko, position gardée) ; envoi ⇒ « 2 nouveau(x), 1 photo » ;
+  MySQL : parcelle `gps`, **surface 6 401 m² recalculée par le serveur**, dépense
+  `payee` avec la photo comme justificatif ; **fiche du producteur au bureau :
+  « Champ relevé GPS — 0,64 ha — relevé GPS en marchant »**. Rejet : Coulibaly Adama
+  créé avec le téléphone de Coulibaly Awa ⇒ « Rejeté — À confirmer : le téléphone
+  0711223344 figure déjà… » ⇒ « Confirmer et renvoyer » ⇒ accepté, LYP-000009,
+  `doublon_confirme` au journal.
+- **Pas vérifié** : vrai GPS en marchant, vraie caméra (photo injectée par script),
+  vrai téléphone (question 26 en suspens). Le navigateur bride les minuteries de
+  l'onglet : la marche simulée a dû livrer ses points d'un coup.
+
+**Données de dev ajoutées** : parcelle « Champ relevé GPS » (LYP-000006), dépense
+Carburant 15 000 (caisse agent), photo terrain, producteur LYP-000009.
+
+**Reste.** Semaine 10 (tableaux de bord, exports) ; correction d'un achat rejeté =
+nouvelle saisie (pas d'édition d'une opération sur le téléphone, par principe) ;
+questions 22, 24, 25, 26 (en suspens).
+
+---
+
 ## 2026-09-28 — Semaine 8 (en avance) : appli terrain hors ligne — FINI, COMMITÉ (APK non construit)
 
 > Session `ly-agricole-f9`, branche `semaine-8` (depuis 66f10d2). Tout est dans

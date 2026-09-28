@@ -39,7 +39,7 @@ class Achats
     public const GRAMMES_MAX = 100_000_000; // 100 t en une pesée : borne de bon sens.
 
     /**
-     * @param  array{campagne_id: int, lot_id: int, fournisseur_type: TypeFournisseur, producteur_id?: ?string, pisteur_id?: ?int, fournisseur_nom?: ?string, point_collecte_id?: ?int, date_achat: Carbon, poids_brut_g: int, tare_g: int, humidite_pour_mille?: ?int, kor_centieme_lbs?: ?int, grainage_noix_kg?: ?int, prix_kg_fcfa: int, pret_id?: ?string, grammes_rembourses?: int, compte_id: int, id?: string}  $donnees
+     * @param  array{campagne_id: int, lot_id: int, fournisseur_type: TypeFournisseur, producteur_id?: ?string, pisteur_id?: ?int, fournisseur_nom?: ?string, point_collecte_id?: ?int, date_achat: Carbon, poids_brut_g: int, tare_g: int, humidite_pour_mille?: ?int, kor_centieme_lbs?: ?int, grainage_noix_kg?: ?int, prix_kg_fcfa: int, pret_id?: ?string, grammes_rembourses?: int, compte_id: int, id?: string, photo_pesee?: ?string}  $donnees
      */
     public static function enregistrer(array $donnees, User $auteur): Achat
     {
@@ -134,6 +134,8 @@ class Achats
                 'grammes_rembourses' => $grammesRembourses,
                 'montant_especes_fcfa' => $especes,
                 'compte_id' => $compte->id,
+                // UUID d'une photo du terrain (photos_terrain), qui peut arriver après l'achat.
+                'photo_pesee' => $donnees['photo_pesee'] ?? null,
                 'statut' => StatutAchat::AValider,
                 'cree_par' => $auteur->id,
             ]);

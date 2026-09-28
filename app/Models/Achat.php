@@ -48,7 +48,9 @@ use Illuminate\Support\Carbon;
  * @property-read Producteur|null $producteur
  * @property-read Pisteur|null $pisteur
  * @property-read Pret|null $pret
+ * @property string|null $photo_pesee UUID dans photos_terrain (la photo peut arriver après)
  * @property-read CompteTresorerie $compte
+ * @property-read PhotoTerrain|null $photoPesee
  * @property-read User $auteur
  * @property-read User|null $validateur
  */
@@ -109,6 +111,12 @@ class Achat extends Model
     public function pret(): BelongsTo
     {
         return $this->belongsTo(Pret::class);
+    }
+
+    /** @return BelongsTo<PhotoTerrain, $this> */
+    public function photoPesee(): BelongsTo
+    {
+        return $this->belongsTo(PhotoTerrain::class, 'photo_pesee');
     }
 
     /** @return BelongsTo<CompteTresorerie, $this> */

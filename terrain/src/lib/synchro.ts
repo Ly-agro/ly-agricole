@@ -1,5 +1,6 @@
 import { v7 as uuidv7 } from 'uuid';
 import { type BaseTerrain, type Operation, reglage, regler } from './db';
+import { verifierAdresse } from './serveur';
 
 /**
  * Échanges avec le serveur (contrat : skill terrain-hors-ligne, /api/*).
@@ -33,7 +34,10 @@ async function appeler(base: BaseTerrain, chemin: string, options: RequestInit =
         throw new SessionExpiree();
     }
     const jeton = await reglage<string>(base, 'jeton');
-    const entetes: Record<string, string> = { Accept: 'application/json', 'Content-Type': 'application/json' };
+    const entetes: Record<string, string> = { Accept: 'application/json' };
+    if (!(options.body instanceof FormData)) {
+        entetes['Content-Type'] = 'application/json';
+    }
     if (jeton) {
         entetes.Authorization = `Bearer ${jeton}`;
     }
@@ -75,7 +79,11 @@ export async function appareilId(base: BaseTerrain): Promise<string> {
 export interface Utilisateur { id: number; nom: string; role: string }
 
 export async function connecter(base: BaseTerrain, serveur: string, email: string, motDePasse: string, f: Fetch = fetch): Promise<Utilisateur> {
-    await regler(base, 'serveur', serveur.trim());
+    const adresse = verifierAdresse(serveur);
+    if ('erreur' in adresse) {
+        throw new RefusServeur(adresse.erreur);
+    }
+    await regler(base, 'serveur', adresse.adresse);
     await base.reglages.delete('jeton');
     const appareil = await appareilId(base);
     const r = (await appeler(base, '/connexion', {
@@ -115,6 +123,7 @@ interface Referentiels {
     comptes: object[];
     producteurs: object[];
     prets_en_cours: object[];
+    categories_depense: object[];
 }
 
 /** Télécharge les référentiels : tout la première fois, puis seulement ce qui a changé. */
@@ -122,8 +131,8 @@ export async function telechargerReferentiels(base: BaseTerrain, f: Fetch = fetc
     const depuis = await reglage<string>(base, 'horodatage');
     const r = (await appeler(base, '/referentiels' + (depuis ? '?depuis=' + encodeURIComponent(depuis) : ''), {}, f)) as Referentiels;
 
-    const tables = [base.villages, base.produits, base.campagnes, base.lots, base.points_collecte, base.producteurs] as const;
-    await base.transaction('rw', [...tables, base.comptes, base.prets_en_cours, base.reglages], async () => {
+    const tables = [base.villages, base.produits, base.campagnes, base.lots, base.points_collecte, base.producteurs, base.categories_depense] as const;
+    await base.transaction('rw', [...tables, base.comptes, base.prets_en_cours, base.reglages, base.operations], async () => {
         if (r.complet) {
             await Promise.all(tables.map((t) => t.clear()));
         }
@@ -133,6 +142,15 @@ export async function telechargerReferentiels(base: BaseTerrain, f: Fetch = fetc
         await base.lots.bulkPut(r.lots as never[]);
         await base.points_collecte.bulkPut(r.points_collecte as never[]);
         await base.producteurs.bulkPut(r.producteurs as never[]);
+        await base.categories_depense.bulkPut((r.categories_depense ?? []) as never[]);
+        // Fiches créées sur le téléphone et pas encore au bureau : elles restent utilisables.
+        const locales = await base.operations.filter((o) => o.type === 'producteur' && o.statut !== 'envoye' && o.statut !== 'abandonne').toArray();
+        for (const o of locales) {
+            if (!(await base.producteurs.get(o.uuid))) {
+                const d = o.donnees as { nom: string; prenoms: string; telephone: string | null; village_id: number };
+                await base.producteurs.put({ id: o.uuid, code: null, nom: d.nom, prenoms: d.prenoms, telephone: d.telephone, village_id: d.village_id, groupe_id: null, actif: true });
+            }
+        }
         // Toujours complets : ils changent sans date (soldes, restants dus).
         await base.comptes.clear();
         await base.comptes.bulkPut(r.comptes as never[]);
@@ -161,7 +179,7 @@ export async function mettreEnFile(base: BaseTerrain, type: Operation['type'], d
     return operation;
 }
 
-export interface BilanEnvoi { envoyees: number; dejaRecues: number; rejetees: number }
+export interface BilanEnvoi { envoyees: number; dejaRecues: number; rejetees: number; photos: number }
 
 const PAR_ENVOI = 100;
 
@@ -170,8 +188,11 @@ const PAR_ENVOI = 100;
  * milieu laisse le reste en attente ; un renvoi est sans danger (idempotence serveur).
  */
 export async function envoyer(base: BaseTerrain, f: Fetch = fetch): Promise<BilanEnvoi> {
-    const bilan: BilanEnvoi = { envoyees: 0, dejaRecues: 0, rejetees: 0 };
+    const bilan: BilanEnvoi = { envoyees: 0, dejaRecues: 0, rejetees: 0, photos: 0 };
     const appareil = await appareilId(base);
+
+    // Les photos d'abord : une dépense exige que son justificatif soit déjà au bureau.
+    bilan.photos = await envoyerPhotos(base, appareil, f);
 
     for (;;) {
         const paquet = (await base.operations.where('statut').equals('en_attente').sortBy('uuid')).slice(0, PAR_ENVOI);
@@ -205,5 +226,56 @@ export async function envoyer(base: BaseTerrain, f: Fetch = fetch): Promise<Bila
         if (!paquet.some((o) => traites.has(o.uuid))) {
             throw new RefusServeur('Réponse du serveur incomplète : réessayer plus tard.');
         }
+    }
+}
+
+/**
+ * Envoie les photos en attente, une par une (réseau faible). Une photo refusée (pas une
+ * image, trop lourde) est marquée « rejete » ; l'opération qui la référence sera
+ * rejetée par le serveur avec son motif. Envoyée : le fichier est retiré du téléphone.
+ */
+async function envoyerPhotos(base: BaseTerrain, appareil: string, f: Fetch): Promise<number> {
+    let envoyees = 0;
+    const photos = await base.photos.where('statut').equals('en_attente').sortBy('uuid');
+    for (const photo of photos) {
+        const corps = new FormData();
+        corps.append('uuid', photo.uuid);
+        corps.append('appareil_id', appareil);
+        corps.append('prise_at', photo.prise_at);
+        if (photo.lat !== null && photo.lng !== null) {
+            corps.append('lat', String(photo.lat));
+            corps.append('lng', String(photo.lng));
+        }
+        corps.append('fichier', photo.blob, photo.uuid + '.jpg');
+
+        try {
+            await appeler(base, '/photos', { method: 'POST', body: corps }, f);
+            await base.photos.update(photo.uuid, { statut: 'envoye', motif: null, blob: new Blob([]) });
+            envoyees++;
+        } catch (e) {
+            if (!(e instanceof RefusServeur)) {
+                throw e;
+            }
+            await base.photos.update(photo.uuid, { statut: 'rejete', motif: e.message });
+        }
+    }
+
+    return envoyees;
+}
+
+/** Remet une opération rejetée dans la file, avec le MÊME UUID (corrigée si besoin). */
+export async function renvoyer(base: BaseTerrain, uuid: string, corrections: Record<string, unknown> = {}): Promise<void> {
+    const op = await base.operations.get(uuid);
+    if (!op || op.statut !== 'rejete') {
+        return;
+    }
+    await base.operations.update(uuid, { statut: 'en_attente', motif: null, donnees: { ...op.donnees, ...corrections } });
+}
+
+/** Laisse une opération rejetée de côté : gardée pour la trace, plus jamais envoyée. */
+export async function abandonner(base: BaseTerrain, uuid: string): Promise<void> {
+    const op = await base.operations.get(uuid);
+    if (op?.statut === 'rejete') {
+        await base.operations.update(uuid, { statut: 'abandonne' });
     }
 }

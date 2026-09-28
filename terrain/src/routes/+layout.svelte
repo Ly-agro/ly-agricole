@@ -26,6 +26,7 @@
     const onglets = [
         { href: '/', libelle: 'Accueil' },
         { href: '/achat', libelle: 'Achat' },
+        { href: '/saisir', libelle: 'Saisir' },
         { href: '/envoyer', libelle: 'À envoyer' },
     ];
 </script>
@@ -45,7 +46,7 @@
     </main>
 
     {#if page.url.pathname !== '/connexion'}
-        <nav class="sticky bottom-0 grid grid-cols-3 border-t border-stone-300 bg-white">
+        <nav class="sticky bottom-0 grid grid-cols-4 border-t border-stone-300 bg-white">
             {#each onglets as o (o.href)}
                 <a href={o.href}
                     class="py-3 text-center text-sm font-medium {page.url.pathname === o.href ? 'text-emerald-800' : 'text-stone-500'}">

@@ -73,7 +73,7 @@ npm test                               # vitest (mesures en entiers, file d'envo
 npm run check                          # svelte-check (TypeScript 6 : svelte-check refuse le 7)
 npm run build                          # statique dans build/
 npx vite preview --port 4173           # http://localhost:4173 (l'API reste sur localhost:8000)
-npx cap sync android                   # copie build/ dans le projet Android
+npx cap sync android                   # copie build/ ; build HTTPS seulement (D11) — LY_TERRAIN_DEV=1 pour un serveur http local
 ```
 
 Construire l'APK demande Android Studio (JDK + SDK), **absents de ce poste** au

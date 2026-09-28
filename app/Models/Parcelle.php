@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $nom
  * @property array{type: string, coordinates: array<mixed>}|null $contour
  * @property int|null $surface_m2
+ * @property string|null $contour_origine import (fichier au bureau) | gps (relevé en marchant)
  * @property int|null $produit_id
  * @property int|null $annee_plantation
  * @property int|null $nb_arbres
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Producteur $producteur
  * @property-read Produit|null $produit
  */
-#[Fillable(['id', 'producteur_id', 'nom', 'contour', 'produit_id', 'annee_plantation', 'nb_arbres', 'sol', 'acces_eau', 'cree_par', 'actif'])]
+#[Fillable(['id', 'producteur_id', 'nom', 'contour', 'contour_origine', 'produit_id', 'annee_plantation', 'nb_arbres', 'sol', 'acces_eau', 'cree_par', 'actif'])]
 class Parcelle extends Model
 {
     /** @use HasFactory<ParcelleFactory> */
@@ -43,6 +44,10 @@ class Parcelle extends Model
                 $parcelle->surface_m2 = $parcelle->contour === null
                     ? null
                     : Contour::depuisGeometrie($parcelle->contour)->surfaceM2();
+                // Un contour changé au bureau est un import, sauf origine donnée (GPS).
+                if (! $parcelle->isDirty('contour_origine')) {
+                    $parcelle->contour_origine = $parcelle->contour === null ? null : 'import';
+                }
             }
         });
     }

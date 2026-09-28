@@ -7,6 +7,7 @@ use App\Enums\StatutLot;
 use App\Enums\StatutPret;
 use App\Http\Controllers\Controller;
 use App\Models\Campagne;
+use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\GroupeProducteur;
 use App\Models\Lot;
@@ -59,6 +60,7 @@ class TerrainController extends Controller
             'lots' => $this->delta(Lot::query(), $depuis)->get(['id', 'code', 'produit_id', 'campagne_id', 'magasin_id', 'statut'])
                 ->map(fn (Lot $l) => $l->toArray() + ['actif' => $l->statut === StatutLot::Ouvert]),
             'points_collecte' => $this->delta(PointCollecte::query(), $depuis)->get(['id', 'village_id', 'nom', 'actif']),
+            'categories_depense' => $this->delta(CategorieDepense::query(), $depuis)->get(['id', 'nom', 'exclue_fonds_campagne', 'actif']),
             'pisteurs' => $this->delta(Pisteur::query(), $depuis)->get(['id', 'nom', 'telephone', 'actif']),
             // Seulement les comptes d'où cet utilisateur peut payer (un agent : sa caisse).
             'comptes' => CompteTresorerie::query()->where('actif', true)->orderBy('nom')->get(['id', 'nom', 'type', 'titulaire_id', 'actif'])

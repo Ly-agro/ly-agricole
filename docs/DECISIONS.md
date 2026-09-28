@@ -113,3 +113,19 @@ Money : saisie manuelle de la référence en phase 1, API en phase 2.
 
 **Pourquoi.** Le choix du fournisseur n'est pas fait (question ouverte) et ne doit
 pas bloquer le développement.
+
+## D11 — Le serveur de l'appli terrain est en ligne, en HTTPS (2026-09-28)
+
+**Choix.** Dès le pilote (sem. 11), l'appli terrain parle à un serveur **en ligne en
+HTTPS**. Le http n'est accepté que pour le développement : l'appli le refuse sauf
+pour `localhost`, les adresses privées (10.x, 192.168.x, 172.16-31.x) et les noms en
+`.test` / `.local` (`terrain/src/lib/serveur.ts`) ; la build Android n'autorise le
+trafic en clair que si `LY_TERRAIN_DEV=1` (`capacitor.config.ts`).
+
+**Pourquoi.** Réponse à la question 27, décidée par l'utilisateur « selon la
+recommandation, en vue du projet ». Les agents envoient depuis les villages par les
+données mobiles : un serveur sur le réseau local du bureau ne leur serait pas
+joignable. Et le jeton, les poids et les montants ne doivent pas circuler en clair.
+
+**Ce qui la ferait changer.** Rien pour la production. Pour un essai au bureau, une
+build de dev suffit.

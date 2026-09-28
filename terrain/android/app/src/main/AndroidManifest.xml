@@ -41,4 +41,8 @@
     <!-- Scan du QR de la carte producteur (qr-scanner, getUserMedia dans la WebView). -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Relevé de parcelle en marchant, position des photos de pesée. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>

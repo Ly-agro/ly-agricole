@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { BaseTerrain, regler } from './db';
-import { envoyer, HorsReseau, mettreEnFile, SessionExpiree, telechargerReferentiels } from './synchro';
+import { abandonner, connecter, envoyer, HorsReseau, mettreEnFile, renvoyer, SessionExpiree, telechargerReferentiels } from './synchro';
 
 let base: BaseTerrain;
 let numero = 0;
@@ -67,7 +67,7 @@ describe('file d\'envoi', () => {
         expect(await base.operations.where('statut').equals('en_attente').count()).toBe(5);
 
         const bilan = await envoyer(base, serveur.f);
-        expect(bilan).toEqual({ envoyees: 0, dejaRecues: 5, rejetees: 0 });
+        expect(bilan).toEqual({ envoyees: 0, dejaRecues: 5, rejetees: 0, photos: 0 });
         expect(await base.operations.where('statut').equals('envoye').count()).toBe(5);
         expect(serveur.recus.size).toBe(5);
     });
@@ -78,12 +78,12 @@ describe('file d\'envoi', () => {
 
         const bilan = await envoyer(base, serveur.f);
 
-        expect(bilan).toEqual({ envoyees: 4, dejaRecues: 0, rejetees: 1 });
+        expect(bilan).toEqual({ envoyees: 4, dejaRecues: 0, rejetees: 1, photos: 0 });
         const rejetee = await base.operations.where('statut').equals('rejete').first();
         expect(rejetee?.resume).toBe('Achat 3');
         expect(rejetee?.motif).toContain('prix officiel');
         // Un nouvel envoi ne renvoie pas la rejetée (elle attend une correction).
-        expect(await envoyer(base, serveur.f)).toEqual({ envoyees: 0, dejaRecues: 0, rejetees: 0 });
+        expect(await envoyer(base, serveur.f)).toEqual({ envoyees: 0, dejaRecues: 0, rejetees: 0, photos: 0 });
     });
 
     it('les opérations partent dans l\'ordre de saisie (UUID v7)', async () => {
@@ -109,6 +109,70 @@ describe('file d\'envoi', () => {
     });
 });
 
+describe('photos et rejets (semaine 9)', () => {
+    it('les photos partent avant les opérations, puis leur fichier quitte le téléphone', async () => {
+        const ordre: string[] = [];
+        await base.photos.add({ uuid: '01900000-0000-7000-8000-000000000001', blob: new Blob(['jpeg']), prise_at: 't', lat: 9.4, lng: -5.6, statut: 'en_attente', motif: null });
+        await mettreEnFile(base, 'depense', { justificatif_photo: '01900000-0000-7000-8000-000000000001' }, 'Dépense');
+        const f = (async (url: string, init?: RequestInit) => {
+            ordre.push(url.endsWith('/photos') ? 'photo' : 'sync');
+            if (url.endsWith('/photos')) {
+                expect(init?.body).toBeInstanceOf(FormData);
+                expect((init?.headers as Record<string, string>)['Content-Type']).toBeUndefined();
+
+                return new Response(JSON.stringify({ statut: 'accepte' }), { status: 201 });
+            }
+            const corps = JSON.parse(String(init?.body)) as { operations: { uuid: string }[] };
+
+            return new Response(JSON.stringify({ resultats: corps.operations.map((o) => ({ uuid: o.uuid, statut: 'accepte' })) }));
+        }) as typeof fetch;
+
+        const bilan = await envoyer(base, f);
+
+        expect(ordre).toEqual(['photo', 'sync']);
+        expect(bilan.photos).toBe(1);
+        const photo = await base.photos.get('01900000-0000-7000-8000-000000000001');
+        expect(photo?.statut).toBe('envoye');
+        expect(photo?.blob.size).toBe(0);
+    });
+
+    it('une photo refusée ne bloque pas l\'envoi ; coupure pendant les photos : rien ne part', async () => {
+        await base.photos.add({ uuid: 'p1', blob: new Blob(['x']), prise_at: 't', lat: null, lng: null, statut: 'en_attente', motif: null });
+        const refus = (async (url: string) => url.endsWith('/photos')
+            ? new Response(JSON.stringify({ message: 'Le fichier doit être une image.' }), { status: 422 })
+            : new Response(JSON.stringify({ resultats: [] }))) as typeof fetch;
+        await envoyer(base, refus);
+        expect((await base.photos.get('p1'))?.motif).toContain('image');
+
+        await base.photos.add({ uuid: 'p2', blob: new Blob(['x']), prise_at: 't', lat: null, lng: null, statut: 'en_attente', motif: null });
+        await mettreEnFile(base, 'achat', {}, 'Achat');
+        const coupure = (async () => {
+            throw new TypeError('Failed to fetch');
+        }) as typeof fetch;
+        await expect(envoyer(base, coupure)).rejects.toBeInstanceOf(HorsReseau);
+        expect(await base.operations.where('statut').equals('en_attente').count()).toBe(1);
+    });
+
+    it('rejet : renvoyer avec le même UUID (doublon confirmé) ou abandonner', async () => {
+        const op = await mettreEnFile(base, 'producteur', { nom: 'A' }, 'Producteur A');
+        const autre = await mettreEnFile(base, 'achat', {}, 'Achat');
+        await base.operations.update(op.uuid, { statut: 'rejete', motif: 'À confirmer : même téléphone.' });
+        await base.operations.update(autre.uuid, { statut: 'rejete', motif: 'Prix inférieur' });
+
+        await renvoyer(base, op.uuid, { doublons_confirmes: true });
+        await abandonner(base, autre.uuid);
+
+        const renvoye = await base.operations.get(op.uuid);
+        expect(renvoye?.statut).toBe('en_attente');
+        expect(renvoye?.donnees).toEqual({ nom: 'A', doublons_confirmes: true });
+        expect((await base.operations.get(autre.uuid))?.statut).toBe('abandonne');
+    });
+
+    it('connexion : un serveur en http public est refusé (question 27)', async () => {
+        await expect(connecter(base, 'http://gestion.ly-agricole.ci', 'a@b.c', 'x')).rejects.toThrow('https');
+    });
+});
+
 describe('référentiels', () => {
     const reponse = (corps: object) => (async () => new Response(JSON.stringify(corps))) as typeof fetch;
     const vide = { villages: [], produits: [], campagnes: [], lots: [], points_collecte: [], comptes: [], prets_en_cours: [] };
@@ -123,5 +187,28 @@ describe('référentiels', () => {
         expect((await base.producteurs.toArray()).map((p) => p.id).sort()).toEqual(['a', 'b', 'c']);
         expect(await base.prets_en_cours.count()).toBe(0);
         expect((await base.reglages.get('horodatage'))?.valeur).toBe('t2');
+    });
+
+    it('une base v1 déjà remplie repart sur un téléchargement complet en passant en v2', async () => {
+        const nom = 'migration-' + numero++;
+        const { default: Dexie } = await import('dexie');
+        const v1 = new Dexie(nom);
+        v1.version(1).stores({ reglages: 'cle', operations: 'uuid, statut' });
+        await v1.table('reglages').put({ cle: 'horodatage', valeur: 't1' });
+        await v1.table('operations').put({ uuid: 'u1', statut: 'en_attente' });
+        v1.close();
+
+        const v2 = new BaseTerrain(nom);
+        expect(await v2.reglages.get('horodatage')).toBeUndefined();
+        expect(await v2.operations.count()).toBe(1); // la file n'est jamais touchée
+    });
+
+    it('un téléchargement complet garde les producteurs créés sur le téléphone et pas encore envoyés', async () => {
+        const op = await mettreEnFile(base, 'producteur', { nom: 'Koné', prenoms: 'Awa', telephone: null, village_id: 1 }, 'Koné Awa');
+
+        await telechargerReferentiels(base, reponse({ ...vide, horodatage: 't1', complet: true, producteurs: [{ id: 'a', nom: 'A' }] }));
+
+        expect((await base.producteurs.get(op.uuid))?.nom).toBe('Koné');
+        expect(await base.producteurs.count()).toBe(2);
     });
 });
