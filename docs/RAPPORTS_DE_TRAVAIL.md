@@ -5,7 +5,72 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
-## 2026-09-28 — Front : menu latéral, barre du haut, page d'accueil analytique — FINI, NON COMMITÉ
+## 2026-09-28 — Semaine 6 (en avance) : achats bord-champ, lots, stock, remboursements — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, branche `semaine-6`. Le tableau de bord qui lit ces tables
+> est de la session `ly-agricole-fb` (entrée juste en dessous), commité à part.
+
+**Fait.**
+
+- Tables `pisteurs`, `lots`, `achats` 📱, `mouvements_stock` 🔒, `remboursements` 🔒 ;
+  natures de trésorerie `achat_bord_champ`, `remboursement_pret` ; statut de prêt `solde`.
+- `App\Services\Achats` : pesée en grammes (brut − tare), qualité en entiers (humidité ‰,
+  KOR centièmes de lbs, grainage), montant `intdiv(net × prix + 500, 1000)` ; **prix sous
+  le prix officiel de la campagne ⇒ refus** ; lot ouvert de la campagne ouverte ;
+  l'agent paie depuis **sa** caisse. Au-dessus du seuil **ou seuil non défini** :
+  `a_valider`, **rien ne bouge** avant la validation par un autre (stock, remboursement,
+  paiement en une transaction à ce moment).
+- Producteur sous prêt : kilos retenus (par défaut ce qu'il faut pour solder, arrondi au
+  gramme supérieur) → remboursement en nature ; reste payé en espèces.
+- **Question 3 non tranchée par le code** : paramètre « Valorisation des remboursements
+  en kilos » (prix de l'achat du jour / prix de référence du prêt), nouveau type de
+  paramètre « choix » ; **sans choix, un achat ne rembourse pas de prêt** (l'écran
+  l'explique). La règle est figée sur chaque remboursement.
+- `App\Services\Remboursements` : en nature (plafonné au restant dû : **invariant 1**) et
+  en espèces (entrée de trésorerie) ; contre-passation d'un remboursement en espèces
+  (et de son mouvement) ; `solde` ↔ `decaisse` / `valide`. La trésorerie **refuse** de
+  contre-passer seule un paiement d'achat ou un remboursement (corrigés depuis leur
+  origine) ; une contre-passation de remboursement ne rouvre plus le « reste à
+  décaisser » (seuls les versements le font).
+- `App\Services\Stock` : entrée d'achat, transfert (deux jambes liées), perte,
+  **inventaire = poids compté** (l'écart devient un mouvement motivé), contre-passation ;
+  stock ≥ 0 par magasin (**invariant 2**). Table `inventaires` du modèle remplacée.
+- `App\Support\Mesure` : « 500,250 » kg → 500 250 g, « 8,5 » % → 85 ‰, sans float ;
+  plus de décimales que prévu = refus.
+- Écrans : Achats (liste + validation / refus, formulaire avec aperçu en direct : net,
+  valeur, retenu sur le prêt, espèces), Lots (liste, création), fiche de lot
+  (transfert, perte, inventaire, contre-passation, achats du lot avec qualité), Pisteurs
+  (référentiel), section Remboursements de la fiche prêt (encaisser, contre-passer).
+  Menu : « Achats » (Terrain), « Lots » (Stock), « Achat bord-champ » dans « Nouveau ».
+- Droits : `saisir-achats` (+ agent), `valider-achats`, `gerer-stock`,
+  `encaisser-remboursements` (direction, comptable).
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **290 tests** (266 → 290 pour la semaine 6 seule ; 294 avec le
+  tableau de bord de `fb`), Larastan 0, Pint propre ; invariants 1, 2, 5, 6 ; sommes de
+  grammes au-delà de 2³¹ (3,1 × 10⁹ g).
+- **Livrable de la semaine 6, dans Chrome** (MySQL) : direction → règle « prix de l'achat
+  du jour » (**valeur d'essai**, question 3) ; comptable → « Caisse agent de terrain »,
+  avance 1 000 000, lot LOT-00001 ; agent → achat à Coulibaly Awa (prêt LYPR-000001
+  proposé d'office, restant dû 3 000 000), 505 kg brut, 5 kg de tare, 425 FCFA/kg,
+  400 kg retenus : aperçu « 500 kg · 212 500 · retenu 400 kg · 170 000 · espèces
+  42 500 » ; enregistré **à valider** (seuil non défini) — MySQL : stock 0, aucun
+  remboursement, caisse 1 000 000 ; comptable → Valider. Résultat, à l'écran et dans
+  MySQL : **restant dû 3 000 000 → 2 830 000**, **lot 0 → 500 kg**, **caisse de l'agent
+  1 000 000 → 957 500**.
+
+**Surprise.** Le serveur de dev met ~3 s à répondre : une lecture de la page juste après
+un clic peut tomber au milieu du rafraîchissement Livewire (vu sur la création d'un lot,
+vérifié en relisant à 0,5 / 1,5 / 3 s : pas un bug). Un lot de contrôle LOT-00002 reste
+dans la base locale.
+
+**Reste.** Questions 3, 5 et 6 ; photo de la pesée et GPS de l'achat (appli terrain,
+semaines 8-9) ; SMS de confirmation au producteur (semaine 7).
+
+---
+
+## 2026-09-28 — Front : menu latéral, barre du haut, page d'accueil analytique — FINI, COMMITÉ (`3c36505`)
 
 > Session `ly-agricole-fb`. Le front est **terminé et vérifié** ; ne pas le refaire. Il
 > reste à le commiter (voir « Reste »).

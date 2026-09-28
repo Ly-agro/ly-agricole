@@ -50,7 +50,7 @@ flowchart TD
 | `validations_pret` 🔒 | pret_id, user_id, created_at | une ligne par validation ; unique (prêt, personne) ; aucune par l'auteur ; 2 au-dessus du seuil **ou si le seuil n'est pas défini**, 1 sinon |
 | `pret_parcelle` | pret_id, parcelle_id | hectares financés = somme des surfaces relevées ; plafond par hectare vérifié sur elles |
 | `decaissements` 🔒 | pret_id, montant_fcfa, mode, reference_paiement, compte_id, date_decaissement, justificatif, mouvement_id, cree_par | chaque tranche = une sortie de trésorerie (nature `decaissement_pret`) ; Σ tranches non contre-passées ≤ montant ; espèces : caisse + reçu signé ; Mobile Money : compte Mobile Money + référence |
-| `remboursements` 🔒 | pret_id, type (`especes`, `nature`), montant_fcfa, achat_id (si nature), mouvement_tresorerie_id (si espèces), date, annule_id | restant dû = montant − somme des remboursements |
+| `remboursements` 🔒 | pret_id, type (`especes`, `nature`, `contre_passation`), montant_fcfa (**signé** : une contre-passation est négative), grammes, prix_kg_fcfa, regle_valorisation (figée), achat_id (si nature), mouvement_id (si espèces), date_remboursement, motif, annule_id, cree_par | **restant dû = remis (argent + intrants) − Σ montant_fcfa**, jamais négatif (le service plafonne / refuse) ; en kilos : valorisés selon le paramètre `regle_remboursement_nature` (question 3), **sans règle choisie : refus** ; prêt `solde` quand tout est remis et remboursé |
 
 ## Intrants
 
@@ -63,11 +63,11 @@ flowchart TD
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `achats` 📱 | uuid, reference, campagne_id, produit_id, fournisseur_type (`producteur`, `pisteur`, `cooperative`), producteur_id, fournisseur_nom, point_collecte_id, agent_id, date_heure, lat, lng, poids_brut_g, tare_g, poids_net_g, humidite_pour_mille, kor_centieme_lbs, grainage_noix_kg, prix_kg_fcfa, montant_fcfa, mode_paiement, pret_id, lot_id, photo_pesee, statut | un achat lié à un prêt génère un remboursement en nature |
-| `pisteurs` | nom, telephone, taux_commission | |
-| `lots` | code, produit_id, campagne_id, magasin_id, statut, cree_at | statut : `ouvert`, `en_stock`, `vendu`, `transforme` |
-| `mouvements_stock` 🔒 | lot_id, magasin_id, type (`entree_achat`, `transfert_sortie`, `transfert_entree`, `perte`, `ajustement_inventaire`, `sortie_vente`), grammes (signé), date, motif, achat_id, annule_id, cree_par | stock d'un lot = somme des grammes |
-| `inventaires` | magasin_id, date, compte_par, valide_par | lignes : lot_id, grammes_comptes, ecart |
+| `achats` 📱 | id (UUID v7), reference (`ACH-000001`), campagne_id, lot_id, fournisseur_type (`producteur`, `pisteur`, `cooperative`), producteur_id, pisteur_id, fournisseur_nom, point_collecte_id, date_achat, lat, lng, poids_brut_g, tare_g, poids_net_g, humidite_pour_mille, kor_centieme_lbs, grainage_noix_kg, prix_kg_fcfa, montant_fcfa, pret_id, **grammes_rembourses**, **montant_especes_fcfa**, compte_id, mouvement_id, photo_pesee, statut (`a_valider`, `valide`, `refuse`), cree_par, valide_par, valide_at, motif_refus | montant = `intdiv(net × prix + 500, 1000)` ; prix < prix officiel de la campagne ⇒ refus ; au-dessus du seuil **ou seuil non défini** ⇒ validation par un autre, et stock + remboursement + paiement **à la validation** ; `produit_id` retiré (celui de la campagne) ; `agent_id` = `cree_par` |
+| `pisteurs` | nom, telephone, actif | vendeurs seulement ; **commission : question 6** (pas de `taux_commission` pour l'instant) |
+| `lots` | code (`LOT-00001`), produit_id, campagne_id, magasin_id (d'origine), statut (`ouvert`, `ferme` ; `vendu`/`transforme` en phase 2), description, cree_par | stock par magasin = Σ mouvements |
+| `mouvements_stock` 🔒 | lot_id, magasin_id, type (`entree_achat`, `transfert_sortie`, `transfert_entree`, `perte`, `ajustement_inventaire`, `contre_passation` ; `sortie_vente` en phase 2), grammes (signé), date_mouvement, motif, achat_id, lien (transfert), annule_id, cree_par | stock d'un lot = Σ grammes ≥ 0 par magasin ; l'entrée d'un achat ne se contre-passe pas depuis le stock |
+| ~~`inventaires`~~ | — | **remplacée (2026-10-31)** : un inventaire saisit le poids compté ; l'écart devient un mouvement `ajustement_inventaire` motivé (le poids compté est dans le motif) |
 
 ## Trésorerie et dépenses
 

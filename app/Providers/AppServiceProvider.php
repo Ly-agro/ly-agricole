@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\ActionJournal;
 use App\Enums\Role;
+use App\Models\Achat;
 use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
@@ -11,15 +12,19 @@ use App\Models\Decaissement;
 use App\Models\Depense;
 use App\Models\GroupeProducteur;
 use App\Models\Intrant;
+use App\Models\Lot;
 use App\Models\Magasin;
 use App\Models\MouvementIntrant;
+use App\Models\MouvementStock;
 use App\Models\MouvementTresorerie;
 use App\Models\Parametre;
 use App\Models\Parcelle;
+use App\Models\Pisteur;
 use App\Models\PointCollecte;
 use App\Models\Pret;
 use App\Models\Producteur;
 use App\Models\Produit;
+use App\Models\Remboursement;
 use App\Models\User;
 use App\Models\ValidationPret;
 use App\Models\Village;
@@ -81,6 +86,11 @@ class AppServiceProvider extends ServiceProvider
             'decaissement' => Decaissement::class,
             'intrant' => Intrant::class,
             'mouvement_intrant' => MouvementIntrant::class,
+            'pisteur' => Pisteur::class,
+            'lot' => Lot::class,
+            'achat' => Achat::class,
+            'mouvement_stock' => MouvementStock::class,
+            'remboursement' => Remboursement::class,
         ]);
     }
 
@@ -122,6 +132,14 @@ class AppServiceProvider extends ServiceProvider
         // Stock d'intrants : fiches, entrées, pertes, ajustements, contre-passations.
         // Les distributions à crédit suivent le droit de décaisser un prêt.
         Gate::define('gerer-intrants', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Achats bord-champ : l'agent pèse et paie depuis sa caisse ; au-dessus du
+        // seuil, une autre personne valide. Lots et stock : direction et comptable.
+        Gate::define('saisir-achats', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable, Role::Agent));
+        Gate::define('valider-achats', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('gerer-stock', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Remboursement d'un prêt en espèces : encaissé par la comptabilité.
+        Gate::define('encaisser-remboursements', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
     }
 
     private function journaliserLesConnexions(): void

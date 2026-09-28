@@ -39,7 +39,9 @@ class Parametres extends Component
         $this->resetErrorBag();
         $this->statut = '';
         $this->edition = $cleParametre->value;
-        $this->valeur = (string) Parametre::entier($cleParametre);
+        $this->valeur = $cleParametre->estUnChoix()
+            ? (string) Parametre::query()->where('cle', $cleParametre)->value('valeur')
+            : (string) Parametre::entier($cleParametre);
     }
 
     public function annuler(): void
@@ -52,14 +54,17 @@ class Parametres extends Component
     {
         $this->authorize('gerer-parametres');
 
+        $this->validate(['edition' => ['required', Rule::enum(CleParametre::class)]]);
+        $cle = CleParametre::from((string) $this->edition);
+
         $this->validate([
-            'edition' => ['required', Rule::enum(CleParametre::class)],
-            // Montants en FCFA entiers (D4). Vide = non défini.
-            'valeur' => ['nullable', 'integer', 'min:0', 'max:99999999999'],
+            // Montants en FCFA entiers (D4), ou une des valeurs prévues. Vide = non défini.
+            'valeur' => $cle->estUnChoix()
+                ? ['nullable', Rule::in(array_keys($cle->options()))]
+                : ['nullable', 'integer', 'min:0', 'max:99999999999'],
         ], attributes: ['valeur' => 'valeur']);
 
-        $cle = CleParametre::from((string) $this->edition);
-        $valeur = $this->valeur === '' ? null : (string) (int) $this->valeur;
+        $valeur = $this->valeur === '' ? null : ($cle->estUnChoix() ? $this->valeur : (string) (int) $this->valeur);
 
         $parametre = Parametre::query()->firstOrNew(['cle' => $cle]);
         $parametre->valeur = $valeur;

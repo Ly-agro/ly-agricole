@@ -205,6 +205,7 @@ class Prets
     {
         if ($pret->statut === StatutPret::Valide && $pret->resteARemettre() === 0) {
             $pret->update(['statut' => StatutPret::Decaisse]);
+            Remboursements::mettreAJourStatut($pret);
         }
     }
 

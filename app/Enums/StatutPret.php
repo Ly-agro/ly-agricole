@@ -3,15 +3,17 @@
 namespace App\Enums;
 
 /**
- * Viendront avec les remboursements (semaine 6) : en_cours, solde, reporte, perte.
+ * Viendront plus tard : reporte, perte (clôture de campagne, avec validation D6).
  */
 enum StatutPret: string
 {
     case Demande = 'demande';
     case Valide = 'valide';
     case Refuse = 'refuse';
-    /** Tout le montant a été versé. */
+    /** Tout le montant a été remis au producteur. */
     case Decaisse = 'decaisse';
+    /** Tout a été remis et tout a été remboursé. */
+    case Solde = 'solde';
 
     public function libelle(): string
     {
@@ -20,6 +22,7 @@ enum StatutPret: string
             self::Valide => 'Validé',
             self::Refuse => 'Refusé',
             self::Decaisse => 'Décaissé',
+            self::Solde => 'Soldé',
         };
     }
 }

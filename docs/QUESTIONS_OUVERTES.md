@@ -8,10 +8,10 @@ date, et la reporter dans le document concerné (cahier, décisions, modèle).
 | --- | --- | --- | --- |
 | 1 | Combien de producteurs et de prêts pour la première campagne, et dans quelles zones ? | sem. 1 (référentiels) | |
 | 2 | Les prêts sont-ils versés en espèces, Mobile Money, intrants, ou un mélange ? | **sem. 4** | |
-| 3 | Remboursement en kilos : à quel prix — prix officiel du jour de livraison, ou prix fixé au moment du prêt ? | **sem. 4** | |
+| 3 | Remboursement en kilos : à quel prix — prix officiel du jour de livraison, ou prix fixé au moment du prêt ? *En attendant (2026-10-31) : le code offre les deux règles (« prix de l'achat du jour » / « prix de référence fixé dans le prêt ») ; la direction choisit dans Paramètres ; **tant qu'elle n'a pas choisi, aucun achat ne rembourse un prêt**. La base locale de dev a « prix de l'achat du jour » comme valeur d'essai.* | **sem. 4** | |
 | 4 | Y a-t-il un intérêt ou une marge sur les prêts ? Sous quelle forme ? | **sem. 4** | |
 | 5 | Seuils : au-dessus de quel montant une dépense, un achat ou un prêt demande une validation ? | sem. 3 | |
-| 6 | LY achète-t-elle aussi à des producteurs sans prêt ? Passe-t-elle par des pisteurs payés à la commission ? | sem. 6 | |
+| 6 | LY achète-t-elle aussi à des producteurs sans prêt ? Passe-t-elle par des pisteurs payés à la commission ? *En attendant (2026-10-31) : achats possibles avec ou sans prêt, et à un pisteur ou une coopérative comme **vendeurs** ; la **commission** d'un pisteur intermédiaire n'est pas modélisée (combien, par kg ou en %, payée quand ?).* | sem. 6 | |
 | 7 | Combien de magasins de stockage, et où ? | sem. 6 | |
 | 8 | Quels critères de qualité sont mesurés à l'achat (humidité, KOR, grainage) et avec quel matériel ? | sem. 6 | |
 | 9 | Les agents ont-ils des téléphones Android, et lesquels (modèle, version) ? | **sem. 8** | |

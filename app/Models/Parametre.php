@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CleParametre;
+use App\Enums\RegleValorisationNature;
 use App\Models\Concerns\Journalise;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,14 @@ class Parametre extends Model
         $valeur = static::query()->where('cle', $cle)->value('valeur');
 
         return $valeur === null || $valeur === '' ? null : (int) $valeur;
+    }
+
+    /** Règle de valorisation choisie par la direction, ou null si elle n'a pas choisi. */
+    public static function regleRemboursementNature(): ?RegleValorisationNature
+    {
+        $valeur = static::query()->where('cle', CleParametre::RegleRemboursementNature)->value('valeur');
+
+        return RegleValorisationNature::tryFrom((string) $valeur);
     }
 
     protected function casts(): array
