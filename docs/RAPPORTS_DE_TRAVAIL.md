@@ -5,6 +5,62 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-28 — Semaine 8 (en avance) : appli terrain hors ligne — FINI, COMMITÉ (APK non construit)
+
+> Session `ly-agricole-f9`, branche `semaine-8` (depuis 66f10d2). Tout est dans
+> `terrain/` ; aucun fichier Laravel de code modifié cette semaine.
+
+**Fait.**
+
+- `terrain/` : SvelteKit 2 statique (Svelte 5, adapter-static, SPA), Tailwind 4, Dexie 4
+  (IndexedDB), uuid v7, qr-scanner, Capacitor 8 (`ci.lyagricole.terrain`, projet
+  `android/` généré, permission CAMERA, http autorisé pour le pilote). TypeScript 6
+  (svelte-check refuse le 7).
+- `src/lib/mesure.ts` : saisies en entiers par lecture du texte (miroir de
+  `App\Support\Mesure` / `Montant`), montant en BigInt `(net × prix + 500) / 1000`,
+  affichage comme `Format`.
+- `src/lib/db.ts` : référentiels + **file d'envoi** (`operations` : uuid v7, type,
+  cree_at, donnees, statut `en_attente`/`envoye`/`rejete`, motif, résumé lisible).
+- `src/lib/synchro.ts` : connexion (jeton par appareil, `appareil_id` v7 gardé),
+  référentiels complets puis delta (`depuis`), comptes et prêts toujours remplacés ;
+  `envoyer()` par paquets de 100 dans l'ordre de saisie ; échec réseau ⇒ tout reste en
+  attente ; `accepte`/`deja_recu` ⇒ « Au bureau » ; `rejete` ⇒ motif affiché, pas
+  renvoyé tout seul (correction : semaine 9) ; 401 ⇒ reconnexion, la file reste.
+- Écrans : Connexion (adresse du serveur), Accueil (campagne, prix officiel,
+  téléchargement, déconnexion refusée s'il reste des saisies), **Achat** (recherche
+  nom/code/téléphone ou **scan QR** de la carte, lot, caisse, point de collecte, pesée,
+  humidité, prix pré-rempli au prix officiel et refusé en dessous, prêt en cours avec
+  kilos retenus par défaut pour solder, aperçu net / valeur / espèces), **À envoyer**
+  (liste, statuts, motifs, « Envoyer maintenant »). Badge « N à envoyer » partout.
+
+**Vérifié en l'exécutant.**
+
+- `npm test` : 13 tests (saisies, montants au-delà de 2⁵³ en intermédiaire, file :
+  hors réseau ⇒ rien ne part ; réponse perdue puis renvoi ⇒ 5 « deja_recu », le faux
+  serveur n'a chaque achat qu'une fois ; rejet isolé avec motif ; ordre UUID v7 ; 401 ;
+  delta des référentiels). `npm run check` 0 erreur ; `npm run build` OK.
+- **Livrable, dans Chrome** (appli sur `localhost:4173`, API sur `localhost:8000`,
+  MySQL) : connexion `agent@` ⇒ 8 producteurs téléchargés ; **serveur arrêté** ;
+  5 achats saisis (Coulibaly Awa sous prêt : 120 kg tous retenus, espèces 0 ; Soro
+  Yacouba 79 kg × 430 = 33 970 ; Coulibaly Mariam 55 kg ; Ouattara Siaka 198 kg × 440 =
+  87 120 ; Traoré Mariam 35 kg) ; « Envoyer » ⇒ « Serveur injoignable : rien n'est
+  perdu », 5 en attente ; **page rechargée : toujours 5** ; serveur relancé ⇒
+  « Envoyé : 5 nouveau(x), 0 déjà reçu(s), 0 rejeté(s) » ; MySQL : ACH-000003 à
+  ACH-000007, montants identiques à l'aperçu du téléphone, `a_valider` (seuil non
+  défini) ; synchronisation n° 3 : 5/5 acceptées ; **écran Achats du bureau** : les 5,
+  « À valider », avec Bon PDF.
+- **Pas vérifié** : APK et vrai téléphone en mode avion (veille, redémarrage) — Android
+  Studio absent du poste (question 26) ; scan QR réel (caméra) ; « mode avion » simulé
+  en arrêtant le serveur, pas en coupant le réseau du navigateur.
+
+**Données de dev ajoutées** : achats ACH-000003 à 007 (à valider), synchronisation 3.
+
+**Reste.** Semaine 9 (relevé GPS, photos, dépense terrain, correction des rejets) ;
+fiche producteur créée sur le téléphone (l'API l'accepte déjà, pas encore d'écran) ;
+producteurs limités à la zone de l'agent (question 22) ; questions 26, 27.
+
+---
+
 ## 2026-09-28 — Semaine 7 (en avance) : API terrain, `/api/sync` idempotent, SMS, bon d'achat — FINI, COMMITÉ
 
 > Session `ly-agricole-f9`, branche `semaine-7` (depuis `semaine-6`, c66136a). La

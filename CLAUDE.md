@@ -64,6 +64,21 @@ php artisan serve                      # http://127.0.0.1:8000
 php artisan queue:work                 # envoie les SMS en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
 ```
 
+Appli terrain (`terrain/`, semaine 8) — Node 26, npm :
+
+```bash
+cd terrain
+npm install                            # lent ici : en tâche de fond
+npm test                               # vitest (mesures en entiers, file d'envoi avec fake-indexeddb)
+npm run check                          # svelte-check (TypeScript 6 : svelte-check refuse le 7)
+npm run build                          # statique dans build/
+npx vite preview --port 4173           # http://localhost:4173 (l'API reste sur localhost:8000)
+npx cap sync android                   # copie build/ dans le projet Android
+```
+
+Construire l'APK demande Android Studio (JDK + SDK), **absents de ce poste** au
+2026-09-28 : ouvrir `terrain/android` dans Android Studio sur un poste équipé.
+
 API de l'appli terrain (semaine 7) : `POST /api/connexion` (jeton Sanctum par appareil),
 `GET /api/referentiels?depuis=…`, `POST /api/sync` (idempotent par UUID) — contrat
 dans le skill `ly-agricole-terrain-hors-ligne`.
