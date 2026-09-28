@@ -79,7 +79,7 @@ class PretsTest extends TestCase
         return Prets::decaisser($pret, [
             'compte_id' => $this->caisse->id,
             'mode' => ModeDecaissement::Especes,
-            'montant_fcfa' => $pret->resteADecaisser(),
+            'montant_fcfa' => $pret->resteARemettre(),
             'date' => Carbon::today(),
         ], $this->comptable, 'prets/recus/recu.jpg');
     }
@@ -111,7 +111,7 @@ class PretsTest extends TestCase
             $this->decaisserTout($pret);
             $pret->refresh();
             $this->assertSame(StatutPret::Decaisse, $pret->statut);
-            $this->assertSame(0, $pret->resteADecaisser());
+            $this->assertSame(0, $pret->resteARemettre());
             // 3 000 000 ÷ 400 FCFA/kg = 7 500 kg attendus.
             $this->assertSame(7_500_000, $pret->grammes_attendus);
         }
@@ -196,10 +196,10 @@ class PretsTest extends TestCase
         ], $this->comptable, 'prets/recus/r.jpg');
 
         $tranche(1_000_000);
-        $this->assertSame(2_000_000, $pret->refresh()->resteADecaisser());
+        $this->assertSame(2_000_000, $pret->refresh()->resteARemettre());
         $this->assertSame(StatutPret::Valide, $pret->statut);
 
-        $this->refusAttendu(fn () => $tranche(2_000_001), 'reste à décaisser');
+        $this->refusAttendu(fn () => $tranche(2_000_001), 'reste à remettre');
 
         $tranche(2_000_000);
         $this->assertSame(StatutPret::Decaisse, $pret->refresh()->statut);
@@ -253,7 +253,7 @@ class PretsTest extends TestCase
 
         $pret->refresh();
         $this->assertSame(StatutPret::Valide, $pret->statut);
-        $this->assertSame(3_000_000, $pret->resteADecaisser());
+        $this->assertSame(3_000_000, $pret->resteARemettre());
         $this->assertSame(30_000_000, $this->caisse->solde());
         // Le décaissement reste inscrit : on ne réécrit pas l'histoire.
         $this->assertSame(1, Decaissement::count());
@@ -333,7 +333,6 @@ class PretsTest extends TestCase
     {
         $cloturee = Campagne::factory()->statut(StatutCampagne::Cloturee)->create();
 
-        $this->refusAttendu(fn () => $this->demander(100_000, ['forme' => FormePret::Intrants]), 'semaine 5');
         $this->refusAttendu(fn () => $this->demander(100_000, ['campagne_id' => $cloturee->id]), 'clôturée');
         $this->refusAttendu(fn () => $this->demander(0), 'supérieur à zéro');
         $this->refusAttendu(fn () => $this->demander(100_000, ['echeance' => Carbon::yesterday()]), 'échéance');

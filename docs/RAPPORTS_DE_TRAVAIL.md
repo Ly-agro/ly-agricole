@@ -5,6 +5,76 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-28 — Semaine 5 (en avance) : intrants et prêts en nature — FINI, COMMITÉ
+
+> **Note pour une autre session de travail sur ce dossier.** La semaine 5 a été écrite,
+> testée, vérifiée dans Chrome et commitée par la session `ly-agricole-f9` (branche
+> `semaine-5`) ; **ne pas la refaire**. Travail fait en parallèle de la session
+> `ly-agricole-fb` (front) : deux commits séparés, voir plus bas.
+
+**Fichiers de la semaine 5 (à ne pas retoucher sans se coordonner).**
+
+- Nouveaux : `database/migrations/2026_10_24_000001_create_intrants_tables.php`,
+  `app/Enums/UniteIntrant.php`, `app/Enums/TypeMouvementIntrant.php`,
+  `app/Models/Intrant.php`, `app/Models/MouvementIntrant.php`,
+  `app/Services/StockIntrants.php`, `app/Services/RecuRemise.php`,
+  `app/Livewire/Intrants/StockIntrant.php`, `app/Livewire/Referentiels/Intrants.php`,
+  `resources/views/livewire/intrants/stock-intrant.blade.php`,
+  `resources/views/prets/recu-remise.blade.php`, `tests/Feature/Intrants/*`.
+- Modifiés : `app/Models/Pret.php` (`valeurIntrantsRemis`, `montantRemis`,
+  `resteARemettre`, `restantDu` ; `resteADecaisser` **supprimée**),
+  `app/Enums/FormePret.php` (`accepteArgent`, `accepteIntrants` ; `disponible()`
+  supprimée), `app/Services/Prets.php` (`marquerSiToutRemis`), `FichePret` + sa vue
+  (remise d'intrants, mode de versement pour un prêt mixte, reçus PDF), `ListePrets` +
+  vue (« Remis (argent + intrants) »), `PretController::recuPdf`, onglet Intrants dans
+  `EcranReferentiel::onglets()`, droit `gerer-intrants` et morph map dans
+  `AppServiceProvider`, tests de prêts et `AccesReferentielsTest` mis à jour,
+  `CLAUDE.md` (piège apostrophe + `assertDontSee`).
+- **Partagés avec la session tableau de bord** : `routes/web.php` (mes routes :
+  `/intrants`, `referentiels.intrants`, `prets.recu-pdf`) et
+  `resources/views/components/layouts/app.blade.php` (mon lien « Intrants », repris
+  dans le nouveau menu latéral : ne pas le retirer).
+
+**Fait.** Stock d'intrants en unités de conditionnement (sac, bidon, pièce, rouleau ;
+pas de kg en vrac, D4), registre `mouvements_intrants` 🔒 ; stock = Σ ≥ 0 par magasin ;
+entrée, perte, ajustement, contre-passation motivée. Prêts `intrants` et `mixte`
+activés (question 2 toujours ouverte) : distribution à crédit depuis la fiche du prêt,
+valeur **figée au prix du jour** ; remis = argent + intrants ≤ montant ; **restant dû =
+remis** (pas d'intérêt, question 4 ; remboursements en semaine 6). Reçu PDF A5 de chaque
+remise (argent ou intrants) à faire signer.
+
+**Vérifié.** 246 tests verts (223 → 246) **avant** les changements de menu de l'autre
+session ; livrable en test (prêt mixte 1 000 000 = 20 sacs NPK à 18 500 + 630 000 en
+espèces → restant dû 1 000 000, stock 100 → 80). Larastan : 0 erreur dans mes
+fichiers ; les 12 erreurs actuelles sont dans `app/Services/Indicateurs.php` (session
+tableau de bord). Migration appliquée sur MySQL.
+
+**Vérifié ensuite sur le code combiné avec le front de `ly-agricole-fb`.** 251 tests
+verts, Pint propre, Larastan 0. **Livrable de la semaine 5, dans Chrome** (MySQL,
+nouveau menu latéral) : comptable → fiche « NPK 15-15-15 — sac de 50 kg » à 18 500 FCFA,
+entrée de 100 sacs au Magasin Chrome ; agent → prêt **mixte** LYPR-000008 de
+1 000 000 ; direction → validé ; comptable → remise de 20 sacs (aperçu « 370 000 FCFA »,
+restant dû 370 000, reste à remettre 630 000), puis 630 000 en espèces avec reçu →
+**Décaissé, remis 1 000 000 (argent 630 000 · intrants 370 000), restant dû
+1 000 000**. MySQL : stock NPK 80, argent 630 000 + intrants 370 000. Reçu PDF de la
+remise dessiné avec pdf.js **dans la page** (sans fichier temporaire) et regardé.
+
+**Corrigé en vérifiant.** Reçu PDF : la date de l'en-tête passait sous le filet (bloc
+flottant que dompdf faisait déborder → tableau) ; parenthèses doublées « (Mixte (argent
++ intrants)) ».
+
+**À savoir pour les scripts de vérification.** Avec le nouveau menu, « Se déconnecter »
+est dans un `<details>` fermé : son `innerText` est vide. Soumettre directement
+`form[action$="/deconnexion"]`.
+
+**Commits.** Semaine 5 seule sur `semaine-5` ; le front de `ly-agricole-fb` dans un
+commit séparé juste après (dans `routes/web.php`, le layout et ce fichier, chaque
+commit ne contient que les lignes de sa session). La modification de
+`.claude/skills/ly-agricole-metier/SKILL.md` (faite par l'utilisateur) n'est dans aucun
+des deux.
+
+---
+
 ## 2026-09-28 — Semaine 4 (en avance) : prêts de campagne
 
 **Fait.**

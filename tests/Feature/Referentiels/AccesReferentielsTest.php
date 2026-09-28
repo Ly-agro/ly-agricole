@@ -26,8 +26,8 @@ class AccesReferentielsTest extends TestCase
     {
         return [
             'admin' => [Role::Admin, self::SIMPLES],
-            'direction' => [Role::Direction, [...self::SIMPLES, 'campagnes', 'parametres', 'categories-depense']],
-            'comptable' => [Role::Comptable, ['categories-depense']],
+            'direction' => [Role::Direction, [...self::SIMPLES, 'campagnes', 'parametres', 'categories-depense', 'intrants']],
+            'comptable' => [Role::Comptable, ['categories-depense', 'intrants']],
             'agent' => [Role::Agent, []],
             'agronome' => [Role::Agronome, []],
             'investisseur' => [Role::Investisseur, []],
@@ -43,7 +43,7 @@ class AccesReferentielsTest extends TestCase
     {
         $user = User::factory()->role($role)->create();
 
-        foreach ([...self::SIMPLES, 'campagnes', 'parametres', 'categories-depense'] as $ecran) {
+        foreach ([...self::SIMPLES, 'campagnes', 'parametres', 'categories-depense', 'intrants'] as $ecran) {
             $this->actingAs($user)
                 ->get("/referentiels/$ecran")
                 ->assertStatus(in_array($ecran, $autorises, true) ? 200 : 403);

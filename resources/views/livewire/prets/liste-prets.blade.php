@@ -36,9 +36,9 @@
             <dd class="mt-1 text-lg font-semibold tabular-nums" id="total-accordes">{{ $totaux['accordes'] }} · {{ \App\Support\Format::fcfa($totaux['montantAccorde']) }}</dd>
         </div>
         <div class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-            <dt class="text-sm text-stone-500">Décaissé</dt>
+            <dt class="text-sm text-stone-500">Remis (argent + intrants)</dt>
             <dd class="mt-1 text-lg font-semibold tabular-nums" id="total-decaisse">{{ \App\Support\Format::fcfa($totaux['decaisse']) }}</dd>
-            <dd class="text-xs text-stone-500">reste à décaisser {{ \App\Support\Format::fcfa($totaux['montantAccorde'] - $totaux['decaisse']) }}</dd>
+            <dd class="text-xs text-stone-500">reste à remettre {{ \App\Support\Format::fcfa($totaux['montantAccorde'] - $totaux['decaisse']) }}</dd>
         </div>
         <div class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
             <dt class="text-sm text-stone-500">Kilos attendus (estimation)</dt>

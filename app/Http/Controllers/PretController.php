@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Decaissement;
+use App\Models\MouvementIntrant;
 use App\Models\Pret;
+use App\Services\RecuRemise;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -19,6 +22,17 @@ class PretController extends Controller
     public function recu(Decaissement $decaissement): StreamedResponse
     {
         return $this->servir($decaissement->justificatif);
+    }
+
+    public function recuPdf(Pret $pret, string $type, int $id): Response
+    {
+        Gate::authorize('voir-prets');
+
+        return match ($type) {
+            'argent' => RecuRemise::argent($pret, Decaissement::query()->findOrFail($id)),
+            'intrants' => RecuRemise::intrants($pret, MouvementIntrant::query()->findOrFail($id)),
+            default => abort(404),
+        };
     }
 
     private function servir(?string $chemin): StreamedResponse

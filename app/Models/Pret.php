@@ -56,7 +56,7 @@ class Pret extends Model
         });
     }
 
-    /** Somme des décaissements dont le paiement n'a pas été contre-passé. */
+    /** Argent versé : décaissements dont le paiement n'a pas été contre-passé. */
     public function montantDecaisse(): int
     {
         return (int) $this->decaissements()
@@ -64,9 +64,33 @@ class Pret extends Model
             ->sum('montant_fcfa');
     }
 
-    public function resteADecaisser(): int
+    /**
+     * Valeur des intrants remis à crédit : les distributions sont en négatif, leurs
+     * contre-passations en positif ; la somme les compense d'elle-même.
+     */
+    public function valeurIntrantsRemis(): int
     {
-        return $this->montant_fcfa - $this->montantDecaisse();
+        return -(int) $this->mouvementsIntrants()->sum('valeur_fcfa');
+    }
+
+    /** Tout ce que le producteur a reçu au titre de ce prêt : argent + intrants. */
+    public function montantRemis(): int
+    {
+        return $this->montantDecaisse() + $this->valeurIntrantsRemis();
+    }
+
+    public function resteARemettre(): int
+    {
+        return $this->montant_fcfa - $this->montantRemis();
+    }
+
+    /**
+     * Restant dû = ce qui a été remis − remboursements (semaine 6). Pas d'intérêt
+     * (question 4) : on ne doit que ce qu'on a reçu.
+     */
+    public function restantDu(): int
+    {
+        return $this->montantRemis();
     }
 
     /** Surface relevée des parcelles financées (m²) ; null si aucune n'est relevée. */
@@ -105,6 +129,12 @@ class Pret extends Model
     public function decaissements(): HasMany
     {
         return $this->hasMany(Decaissement::class);
+    }
+
+    /** @return HasMany<MouvementIntrant, $this> */
+    public function mouvementsIntrants(): HasMany
+    {
+        return $this->hasMany(MouvementIntrant::class);
     }
 
     /** @return BelongsToMany<Parcelle, $this> */

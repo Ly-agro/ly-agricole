@@ -10,7 +10,9 @@ use App\Models\CompteTresorerie;
 use App\Models\Decaissement;
 use App\Models\Depense;
 use App\Models\GroupeProducteur;
+use App\Models\Intrant;
 use App\Models\Magasin;
+use App\Models\MouvementIntrant;
 use App\Models\MouvementTresorerie;
 use App\Models\Parametre;
 use App\Models\Parcelle;
@@ -77,6 +79,8 @@ class AppServiceProvider extends ServiceProvider
             'pret' => Pret::class,
             'validation_pret' => ValidationPret::class,
             'decaissement' => Decaissement::class,
+            'intrant' => Intrant::class,
+            'mouvement_intrant' => MouvementIntrant::class,
         ]);
     }
 
@@ -114,6 +118,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('saisir-prets', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable, Role::Agent));
         Gate::define('valider-prets', fn (User $user) => $user->aLeRole(Role::Direction));
         Gate::define('decaisser-prets', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Stock d'intrants : fiches, entrées, pertes, ajustements, contre-passations.
+        // Les distributions à crédit suivent le droit de décaisser un prêt.
+        Gate::define('gerer-intrants', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
     }
 
     private function journaliserLesConnexions(): void

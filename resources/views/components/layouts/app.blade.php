@@ -63,6 +63,17 @@
                             </a>
                         @endcan
 
+                        @can('gerer-intrants')
+                            <a href="{{ route('intrants') }}"
+                                @class([
+                                    'rounded-md px-3 py-1.5',
+                                    'bg-emerald-50 text-emerald-900' => request()->routeIs('intrants*'),
+                                    'text-stone-700 hover:bg-stone-100' => ! request()->routeIs('intrants*'),
+                                ])>
+                                Intrants
+                            </a>
+                        @endcan
+
                         @canany(['saisir-depenses', 'valider-depenses'])
                             <a href="{{ route('depenses') }}"
                                 @class([
@@ -74,7 +85,7 @@
                             </a>
                         @endcanany
 
-                        @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie'])
+                        @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie', 'gerer-intrants'])
                             <a href="{{ route('referentiels') }}"
                                 @class([
                                     'rounded-md px-3 py-1.5',

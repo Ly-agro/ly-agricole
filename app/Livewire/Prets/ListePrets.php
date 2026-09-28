@@ -5,6 +5,7 @@ namespace App\Livewire\Prets;
 use App\Enums\StatutPret;
 use App\Models\Campagne;
 use App\Models\Decaissement;
+use App\Models\MouvementIntrant;
 use App\Models\Pret;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,10 +54,13 @@ class ListePrets extends Component
         $this->authorize('voir-prets');
 
         $accordes = $this->requete()->whereIn('statut', [StatutPret::Valide, StatutPret::Decaisse]);
+        // Remis = argent versé (non contre-passé) + valeur des intrants remis (distributions
+        // négatives, contre-passations positives : la somme se compense).
         $decaisse = (int) Decaissement::query()
             ->whereIn('pret_id', (clone $accordes)->select('id'))
             ->whereDoesntHave('mouvement.contrePassation')
-            ->sum('montant_fcfa');
+            ->sum('montant_fcfa')
+            - (int) MouvementIntrant::query()->whereIn('pret_id', (clone $accordes)->select('id'))->sum('valeur_fcfa');
 
         return view('livewire.prets.liste-prets', [
             'prets' => $this->requete()->with('producteur.village', 'campagne.produit', 'validations')

@@ -39,7 +39,7 @@
                     <select wire:model="forme" id="forme" class="{{ $champ }}">
                         <option value="">— Choisir —</option>
                         @foreach ($formes as $f)
-                            <option value="{{ $f->value }}" @disabled(! $f->disponible())>{{ $f->libelle() }}</option>
+                            <option value="{{ $f->value }}">{{ $f->libelle() }}</option>
                         @endforeach
                     </select>
                     @error('forme') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror

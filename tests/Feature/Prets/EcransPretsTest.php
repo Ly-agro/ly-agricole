@@ -128,7 +128,7 @@ class EcransPretsTest extends TestCase
     }
 
     #[Test]
-    public function une_forme_non_disponible_ou_un_proche_sans_accord_est_refuse_a_l_ecran(): void
+    public function un_proche_de_la_direction_sans_accord_est_refuse_a_l_ecran(): void
     {
         $this->actingAs($this->agent);
         $producteur = Producteur::factory()->create();
@@ -136,14 +136,10 @@ class EcransPretsTest extends TestCase
         $ecran = Livewire::test(FormulairePret::class)
             ->set('producteurId', $producteur->id)
             ->set('montant', '500000')
-            ->set('forme', 'intrants')
-            ->set('echeance', Carbon::today()->addMonth()->toDateString())
-            ->call('enregistrer')
-            ->assertHasErrors('montant')
-            ->assertSee('semaine 5');
+            ->set('forme', 'mixte')
+            ->set('echeance', Carbon::today()->addMonth()->toDateString());
 
-        $ecran->set('forme', 'especes')
-            ->set('partieLiee', true)
+        $ecran->set('partieLiee', true)
             ->call('enregistrer')
             ->assertHasErrors(['accordEcrit' => 'required']);
 
@@ -229,7 +225,7 @@ class EcransPretsTest extends TestCase
             ->assertSeeHtml('<dd class="mt-1 text-lg font-semibold tabular-nums" id="total-demandes">1 · 2'.self::FINE.'000'.self::FINE.'000 FCFA</dd>')
             ->assertSeeHtml('id="total-accordes">3 · 9'.self::FINE.'000'.self::FINE.'000 FCFA</dd>')
             ->assertSeeHtml('id="total-decaisse">3'.self::FINE.'000'.self::FINE.'000 FCFA</dd>')
-            ->assertSee('reste à décaisser 6'.self::FINE.'000'.self::FINE.'000 FCFA')
+            ->assertSee('reste à remettre 6'.self::FINE.'000'.self::FINE.'000 FCFA')
             ->assertSeeHtml('id="total-kilos">22'.self::FINE.'500 kg</dd>');
     }
 }

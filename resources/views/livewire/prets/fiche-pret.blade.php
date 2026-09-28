@@ -22,9 +22,18 @@
     @enderror
 
     <dl class="grid gap-4 rounded-xl border border-stone-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-4">
-        <div><dt class="text-stone-500">Montant</dt><dd class="text-base font-semibold tabular-nums">{{ \App\Support\Format::fcfa($pret->montant_fcfa) }}</dd></div>
-        <div><dt class="text-stone-500">Décaissé</dt><dd class="text-base font-semibold tabular-nums" id="decaisse">{{ \App\Support\Format::fcfa($decaisse) }}</dd></div>
-        <div><dt class="text-stone-500">Reste à décaisser</dt><dd class="text-base font-semibold tabular-nums">{{ \App\Support\Format::fcfa($pret->montant_fcfa - $decaisse) }}</dd></div>
+        <div><dt class="text-stone-500">Montant du prêt</dt><dd class="text-base font-semibold tabular-nums">{{ \App\Support\Format::fcfa($pret->montant_fcfa) }}</dd></div>
+        <div>
+            <dt class="text-stone-500">Remis au producteur</dt>
+            <dd class="text-base font-semibold tabular-nums" id="remis">{{ \App\Support\Format::fcfa($decaisse + $intrantsRemis) }}</dd>
+            <dd class="text-xs text-stone-500" id="detail-remis">argent {{ \App\Support\Format::fcfa($decaisse) }} · intrants {{ \App\Support\Format::fcfa($intrantsRemis) }}</dd>
+        </div>
+        <div><dt class="text-stone-500">Reste à remettre</dt><dd class="text-base font-semibold tabular-nums" id="reste">{{ \App\Support\Format::fcfa($pret->montant_fcfa - $decaisse - $intrantsRemis) }}</dd></div>
+        <div>
+            <dt class="text-stone-500">Restant dû</dt>
+            <dd class="text-base font-semibold tabular-nums text-emerald-900" id="restant-du">{{ \App\Support\Format::fcfa($pret->restantDu()) }}</dd>
+            <dd class="text-xs text-stone-500">ce qui a été remis, moins les remboursements (sans intérêt)</dd>
+        </div>
         <div><dt class="text-stone-500">Forme</dt><dd>{{ $pret->forme->libelle() }}</dd></div>
         <div><dt class="text-stone-500">Échéance</dt><dd>{{ $pret->echeance->format('d/m/Y') }}</dd></div>
         <div>
@@ -36,9 +45,9 @@
             </dd>
         </div>
         <div><dt class="text-stone-500">Surface financée</dt><dd>{{ $surface === null ? 'non relevée' : \App\Support\Format::hectares($surface) }}</dd></div>
-        <div><dt class="text-stone-500">Demande saisie par</dt><dd>{{ $pret->auteur->nom }}, le {{ $pret->created_at->format('d/m/Y') }}</dd></div>
+        <div class="sm:col-span-2"><dt class="text-stone-500">Demande saisie par</dt><dd>{{ $pret->auteur->nom }}, le {{ $pret->created_at->format('d/m/Y') }}</dd></div>
         @if ($pret->parcelles->isNotEmpty())
-            <div class="sm:col-span-2 lg:col-span-4"><dt class="text-stone-500">Parcelles</dt><dd>{{ $pret->parcelles->pluck('nom')->join(', ') }}</dd></div>
+            <div class="sm:col-span-2"><dt class="text-stone-500">Parcelles</dt><dd>{{ $pret->parcelles->pluck('nom')->join(', ') }}</dd></div>
         @endif
         @if ($pret->partie_liee)
             <div class="sm:col-span-2 lg:col-span-4 text-amber-800">
@@ -83,18 +92,32 @@
 
     <section class="mt-6 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 class="font-semibold">Décaissements</h2>
-            @if ($peutDecaisser)
-                <button type="button" wire:click="ouvrirDecaissement" class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">Verser une tranche</button>
-            @endif
+            <h2 class="font-semibold">Remises au producteur</h2>
+            <div class="flex gap-2">
+                @if ($peutVerserArgent)
+                    <button type="button" wire:click="ouvrirDecaissement" class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">Verser de l'argent</button>
+                @endif
+                @if ($peutRemettreIntrants)
+                    <button type="button" wire:click="ouvrirRemise" class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">Remettre des intrants</button>
+                @endif
+            </div>
         </div>
 
         @if ($decaissementOuvert)
             <form wire:submit="decaisser" class="mt-4 rounded-md border border-stone-200 bg-stone-50 p-4">
-                <p class="mb-3 text-sm text-stone-600">Versement en {{ $mode->libelle() }}.</p>
                 <div class="grid gap-4 sm:grid-cols-2">
+                    @if (count($modes) > 1)
+                        <div>
+                            <label for="modeVersement" class="mb-1 block text-sm font-medium text-stone-700">Mode</label>
+                            <select wire:model.live="modeVersement" id="modeVersement" class="{{ $champ }}">
+                                @foreach ($modes as $m)
+                                    <option value="{{ $m->value }}">{{ $m->libelle() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
                     <div>
-                        <label for="compteId" class="mb-1 block text-sm font-medium text-stone-700">Depuis le compte</label>
+                        <label for="compteId" class="mb-1 block text-sm font-medium text-stone-700">Depuis le compte ({{ $mode->libelle() }})</label>
                         <select wire:model="compteId" id="compteId" class="{{ $champ }}">
                             <option value="">— Choisir —</option>
                             @foreach ($comptes as $c)
@@ -123,6 +146,7 @@
                         <div>
                             <label for="recu" class="mb-1 block text-sm font-medium text-stone-700">Reçu signé par le producteur</label>
                             <input wire:model="recu" id="recu" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" class="block text-sm">
+                            <div wire:loading wire:target="recu" class="mt-1 text-sm text-stone-500">Envoi du reçu…</div>
                             @error('recu') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
                         </div>
                     @endif
@@ -131,33 +155,95 @@
             </form>
         @endif
 
+        @if ($remiseOuverte)
+            <form wire:submit="remettreIntrants" class="mt-4 rounded-md border border-stone-200 bg-stone-50 p-4">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="intrantId" class="mb-1 block text-sm font-medium text-stone-700">Intrant</label>
+                        <select wire:model.live="intrantId" id="intrantId" class="{{ $champ }}">
+                            <option value="">— Choisir —</option>
+                            @foreach ($intrants as $i)
+                                <option value="{{ $i->id }}">{{ $i->nom }} ({{ \App\Support\Format::fcfa($i->prix_unitaire_fcfa) }})</option>
+                            @endforeach
+                        </select>
+                        @error('intrantId') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="magasinId" class="mb-1 block text-sm font-medium text-stone-700">Depuis le magasin</label>
+                        <select wire:model="magasinId" id="magasinId" class="{{ $champ }}">
+                            <option value="">— Choisir —</option>
+                            @foreach ($magasins as $m)
+                                <option value="{{ $m->id }}">{{ $m->nom }}</option>
+                            @endforeach
+                        </select>
+                        @error('magasinId') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="quantiteIntrant" class="mb-1 block text-sm font-medium text-stone-700">Quantité</label>
+                        <input wire:model.live.debounce.400ms="quantiteIntrant" id="quantiteIntrant" type="number" step="1" min="1" class="{{ $champ }} text-right">
+                        @if ($valeurApercu !== null)
+                            <p class="mt-1 text-sm text-stone-600" id="valeur-apercu">Valeur au prix du jour : <strong>{{ \App\Support\Format::fcfa($valeurApercu) }}</strong></p>
+                        @endif
+                        @error('quantiteIntrant') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="dateRemise" class="mb-1 block text-sm font-medium text-stone-700">Date</label>
+                        <input wire:model="dateRemise" id="dateRemise" type="date" class="{{ $champ }}">
+                        @error('dateRemise') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+                <button type="submit" wire:loading.attr="disabled" class="mt-4 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-60">Enregistrer la remise</button>
+            </form>
+        @endif
+
         <table class="mt-4 min-w-full text-sm">
             <thead class="text-left text-stone-600">
                 <tr>
                     <th class="py-2 pr-4 font-medium">Date</th>
-                    <th class="py-2 pr-4 text-right font-medium">Montant</th>
-                    <th class="py-2 pr-4 font-medium">Mode</th>
-                    <th class="py-2 pr-4 font-medium">Compte</th>
-                    <th class="py-2 pr-4 font-medium">Preuve</th>
+                    <th class="py-2 pr-4 font-medium">Remise</th>
+                    <th class="py-2 pr-4 text-right font-medium">Valeur</th>
+                    <th class="py-2 pr-4 font-medium">Depuis</th>
                     <th class="py-2 pr-4 font-medium">Par</th>
+                    <th class="py-2 pr-4 font-medium">Pièces</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-stone-100">
-                @forelse ($pret->decaissements as $d)
+                @foreach ($pret->decaissements as $d)
                     <tr @class(['text-stone-400 line-through' => $d->mouvement->contrePassation !== null])>
                         <td class="py-2 pr-4">{{ $d->date_decaissement->format('d/m/Y') }}</td>
+                        <td class="py-2 pr-4">Argent ({{ $d->mode->libelle() }})@if ($d->reference_paiement), réf. {{ $d->reference_paiement }}@endif</td>
                         <td class="py-2 pr-4 text-right tabular-nums">{{ \App\Support\Format::fcfa($d->montant_fcfa) }}</td>
-                        <td class="py-2 pr-4">{{ $d->mode->libelle() }}</td>
                         <td class="py-2 pr-4">{{ $d->compte->nom }}</td>
-                        <td class="py-2 pr-4">
-                            @if ($d->reference_paiement) réf. {{ $d->reference_paiement }} @endif
-                            @if ($d->justificatif) <a href="{{ route('prets.recu', $d) }}" target="_blank" class="text-emerald-800 underline">reçu</a> @endif
-                        </td>
                         <td class="py-2 pr-4">{{ $d->auteur->nom }}</td>
+                        <td class="py-2 pr-4">
+                            <a href="{{ route('prets.recu-pdf', [$pret, 'argent', $d->id]) }}" target="_blank" class="text-emerald-800 underline">reçu PDF</a>
+                            @if ($d->justificatif) · <a href="{{ route('prets.recu', $d) }}" target="_blank" class="text-emerald-800 underline">reçu signé</a> @endif
+                        </td>
                     </tr>
-                @empty
-                    <tr><td colspan="6" class="py-4 text-stone-500">Aucun versement.</td></tr>
-                @endforelse
+                @endforeach
+                @foreach ($pret->mouvementsIntrants as $m)
+                    <tr @class(['text-stone-400 line-through' => $m->contrePassation !== null, 'text-amber-800' => $m->type->value === 'contre_passation'])>
+                        <td class="py-2 pr-4">{{ $m->date_mouvement->format('d/m/Y') }}</td>
+                        <td class="py-2 pr-4">
+                            @if ($m->type->value === 'contre_passation')
+                                Retour en stock (contre-passation) : {{ $m->quantite }} {{ $m->intrant->unite->libelle($m->quantite) }} {{ $m->intrant->nom }}
+                            @else
+                                {{ -$m->quantite }} {{ $m->intrant->unite->libelle(-$m->quantite) }} {{ $m->intrant->nom }} à {{ \App\Support\Format::fcfa((int) $m->prix_unitaire_fcfa) }}
+                            @endif
+                        </td>
+                        <td class="py-2 pr-4 text-right tabular-nums">{{ \App\Support\Format::fcfa(-(int) $m->valeur_fcfa) }}</td>
+                        <td class="py-2 pr-4">{{ $m->magasin->nom }}</td>
+                        <td class="py-2 pr-4">{{ $m->auteur->nom }}</td>
+                        <td class="py-2 pr-4">
+                            @if ($m->type->value === 'distribution')
+                                <a href="{{ route('prets.recu-pdf', [$pret, 'intrants', $m->id]) }}" target="_blank" class="text-emerald-800 underline">reçu PDF</a>
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+                @if ($pret->decaissements->isEmpty() && $pret->mouvementsIntrants->isEmpty())
+                    <tr><td colspan="6" class="py-4 text-stone-500">Rien n'a encore été remis.</td></tr>
+                @endif
             </tbody>
         </table>
     </section>

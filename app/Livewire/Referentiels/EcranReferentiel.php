@@ -43,6 +43,7 @@ abstract class EcranReferentiel extends Component
             'referentiels.campagnes' => ['titre' => 'Campagnes', 'droit' => 'gerer-campagnes'],
             'referentiels.magasins' => ['titre' => 'Magasins', 'droit' => 'gerer-referentiels'],
             'referentiels.points-collecte' => ['titre' => 'Points de collecte', 'droit' => 'gerer-referentiels'],
+            'referentiels.intrants' => ['titre' => 'Intrants', 'droit' => 'gerer-intrants'],
             'referentiels.categories-depense' => ['titre' => 'Catégories de dépense', 'droit' => 'gerer-tresorerie'],
             'referentiels.parametres' => ['titre' => 'Paramètres', 'droit' => 'gerer-parametres'],
         ];

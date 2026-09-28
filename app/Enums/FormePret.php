@@ -3,8 +3,8 @@
 namespace App\Enums;
 
 /**
- * Forme du prêt (question ouverte n° 2). Intrants et mixte arrivent avec le stock
- * d'intrants (semaine 5) : refusés d'ici là.
+ * Forme du prêt (question ouverte n° 2). Un prêt mixte n'enregistre que son total :
+ * la répartition argent / intrants n'est pas fixée d'avance.
  */
 enum FormePret: string
 {
@@ -18,19 +18,24 @@ enum FormePret: string
         return match ($this) {
             self::Especes => 'Espèces',
             self::MobileMoney => 'Mobile Money',
-            self::Intrants => 'Intrants (semaine 5)',
-            self::Mixte => 'Mixte (semaine 5)',
+            self::Intrants => 'Intrants',
+            self::Mixte => 'Mixte (argent + intrants)',
         };
     }
 
-    public function disponible(): bool
+    /** Le prêt peut-il être versé (en partie) avec ce mode d'argent ? */
+    public function accepteArgent(ModeDecaissement $mode): bool
     {
-        return in_array($this, [self::Especes, self::MobileMoney], true);
+        return match ($this) {
+            self::Especes => $mode === ModeDecaissement::Especes,
+            self::MobileMoney => $mode === ModeDecaissement::MobileMoney,
+            self::Intrants => false,
+            self::Mixte => true,
+        };
     }
 
-    /** @return list<self> */
-    public static function disponibles(): array
+    public function accepteIntrants(): bool
     {
-        return array_values(array_filter(self::cases(), fn (self $f) => $f->disponible()));
+        return in_array($this, [self::Intrants, self::Mixte], true);
     }
 }

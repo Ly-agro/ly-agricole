@@ -53,9 +53,6 @@ class Prets
             if ($campagne->statut === StatutCampagne::Cloturee) {
                 throw new OperationRefusee("La campagne {$campagne->code} est clôturée.");
             }
-            if (! $donnees['forme']->disponible()) {
-                throw new OperationRefusee('Les prêts en intrants arrivent avec le stock d\'intrants (semaine 5).');
-            }
             if ($montant <= 0 || $montant > Tresorerie::MONTANT_MAX) {
                 throw new OperationRefusee('Le montant doit être un nombre entier de FCFA supérieur à zéro.');
             }
@@ -160,9 +157,10 @@ class Prets
             if ($pret->statut !== StatutPret::Valide) {
                 throw new OperationRefusee('Seul un prêt validé et pas encore entièrement versé peut être décaissé (statut : '.$pret->statut->libelle().').');
             }
-            $formeAttendue = $mode === ModeDecaissement::Especes ? FormePret::Especes : FormePret::MobileMoney;
-            if ($pret->forme !== $formeAttendue) {
-                throw new OperationRefusee('Ce prêt est en '.$pret->forme->libelle().' : le versement doit se faire de la même façon.');
+            if (! $pret->forme->accepteArgent($mode)) {
+                throw new OperationRefusee($pret->forme === FormePret::Intrants
+                    ? 'Ce prêt est en intrants : remettre des intrants, pas de l\'argent.'
+                    : 'Ce prêt est en '.$pret->forme->libelle().' : le versement doit se faire de la même façon.');
             }
             if (! in_array($compte->type, $mode->typesDeCompte(), true)) {
                 throw new OperationRefusee("Un versement en {$mode->libelle()} ne part pas du compte « {$compte->nom} » ({$compte->type->libelle()}).");
@@ -173,9 +171,9 @@ class Prets
             if ($mode === ModeDecaissement::MobileMoney && $reference === null) {
                 throw new OperationRefusee('Versement Mobile Money : la référence de la transaction est obligatoire.');
             }
-            $reste = $pret->resteADecaisser();
+            $reste = $pret->resteARemettre();
             if ($montant <= 0 || $montant > $reste) {
-                throw new OperationRefusee('Le montant versé doit être compris entre 1 et '.Format::fcfa($reste).' (reste à décaisser).');
+                throw new OperationRefusee('Le montant versé doit être compris entre 1 et '.Format::fcfa($reste).' (reste à remettre).');
             }
 
             $pret->loadMissing('producteur');
@@ -196,12 +194,18 @@ class Prets
                 'cree_par' => $auteur->id,
             ]);
 
-            if ($pret->resteADecaisser() === 0) {
-                $pret->update(['statut' => StatutPret::Decaisse]);
-            }
+            self::marquerSiToutRemis($pret);
 
             return $decaissement;
         });
+    }
+
+    /** « Décaissé » quand l'argent et les intrants remis atteignent le montant du prêt. */
+    public static function marquerSiToutRemis(Pret $pret): void
+    {
+        if ($pret->statut === StatutPret::Valide && $pret->resteARemettre() === 0) {
+            $pret->update(['statut' => StatutPret::Decaisse]);
+        }
     }
 
     /**

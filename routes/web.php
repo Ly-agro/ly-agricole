@@ -7,6 +7,7 @@ use App\Http\Controllers\ProducteurController;
 use App\Livewire\Auth\Connexion;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
+use App\Livewire\Intrants\StockIntrant;
 use App\Livewire\Journal\ConsultationJournal;
 use App\Livewire\Prets\FichePret;
 use App\Livewire\Prets\FormulairePret;
@@ -18,6 +19,7 @@ use App\Livewire\Producteurs\ListeProducteurs;
 use App\Livewire\Referentiels\Campagnes;
 use App\Livewire\Referentiels\CategoriesDepense;
 use App\Livewire\Referentiels\EcranReferentiel;
+use App\Livewire\Referentiels\Intrants as IntrantsReferentiel;
 use App\Livewire\Referentiels\Magasins;
 use App\Livewire\Referentiels\Parametres;
 use App\Livewire\Referentiels\PointsCollecte;
@@ -75,6 +77,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/points-collecte', PointsCollecte::class)->middleware('can:gerer-referentiels')->name('points-collecte');
         Route::get('/parametres', Parametres::class)->middleware('can:gerer-parametres')->name('parametres');
         Route::get('/categories-depense', CategoriesDepense::class)->middleware('can:gerer-tresorerie')->name('categories-depense');
+        Route::get('/intrants', IntrantsReferentiel::class)->middleware('can:gerer-intrants')->name('intrants');
     });
 
     Route::prefix('tresorerie')->name('tresorerie')->middleware('can:gerer-tresorerie')->group(function () {
@@ -88,7 +91,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/{pret}', FichePret::class)->middleware('can:voir-prets')->name('.fiche');
         Route::get('/{pret}/accord', [PretController::class, 'accord'])->middleware('can:voir-prets')->name('.accord');
         Route::get('/recus/{decaissement}', [PretController::class, 'recu'])->middleware('can:voir-prets')->name('.recu');
+        Route::get('/{pret}/recu/{type}/{id}', [PretController::class, 'recuPdf'])
+            ->middleware('can:voir-prets')->whereIn('type', ['argent', 'intrants'])->whereNumber('id')->name('.recu-pdf');
     });
+
+    Route::get('/intrants', StockIntrant::class)->middleware('can:gerer-intrants')->name('intrants');
 
     Route::prefix('depenses')->name('depenses')->group(function () {
         Route::get('/', ListeDepenses::class)->name('');

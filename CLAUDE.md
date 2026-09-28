@@ -146,5 +146,10 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
   `{{-- … --}}` la protège.
 - **Ne jamais construire un nom de classe Tailwind par concaténation** : il ne serait
   pas généré.
+- **Apostrophe et `assertSee` / `assertDontSee`** : ces assertions échappent la chaîne
+  cherchée (`'` → `&#039;`). Un texte écrit en dur dans le gabarit (« Verser de
+  l'argent ») n'est pas échappé : `assertSee` échoue et, pire, **`assertDontSee` passe
+  toujours**. Pour un texte du gabarit avec apostrophe : `assertSeeHtml` /
+  `assertDontSeeHtml`.
 - **`assertSessionHas` ne voit pas un message flash Livewire** : vérifier ce que la vue
   affiche (`assertSee`).
