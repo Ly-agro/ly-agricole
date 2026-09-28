@@ -1,14 +1,18 @@
 <?php
 
 use App\Http\Controllers\Auth\DeconnexionController;
+use App\Http\Controllers\DepenseController;
 use App\Http\Controllers\ProducteurController;
 use App\Livewire\Auth\Connexion;
+use App\Livewire\Depenses\FormulaireDepense;
+use App\Livewire\Depenses\ListeDepenses;
 use App\Livewire\Journal\ConsultationJournal;
 use App\Livewire\Producteurs\FormulaireParcelle;
 use App\Livewire\Producteurs\FormulaireProducteur;
 use App\Livewire\Producteurs\Groupes;
 use App\Livewire\Producteurs\ListeProducteurs;
 use App\Livewire\Referentiels\Campagnes;
+use App\Livewire\Referentiels\CategoriesDepense;
 use App\Livewire\Referentiels\EcranReferentiel;
 use App\Livewire\Referentiels\Magasins;
 use App\Livewire\Referentiels\Parametres;
@@ -16,6 +20,8 @@ use App\Livewire\Referentiels\PointsCollecte;
 use App\Livewire\Referentiels\Produits;
 use App\Livewire\Referentiels\Villages;
 use App\Livewire\Referentiels\Zones;
+use App\Livewire\Tresorerie\Comptes;
+use App\Livewire\Tresorerie\ReleveCompte;
 use App\Livewire\Utilisateurs\GestionUtilisateurs;
 use Illuminate\Support\Facades\Route;
 
@@ -64,6 +70,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/magasins', Magasins::class)->middleware('can:gerer-referentiels')->name('magasins');
         Route::get('/points-collecte', PointsCollecte::class)->middleware('can:gerer-referentiels')->name('points-collecte');
         Route::get('/parametres', Parametres::class)->middleware('can:gerer-parametres')->name('parametres');
+        Route::get('/categories-depense', CategoriesDepense::class)->middleware('can:gerer-tresorerie')->name('categories-depense');
+    });
+
+    Route::prefix('tresorerie')->name('tresorerie')->middleware('can:gerer-tresorerie')->group(function () {
+        Route::get('/', Comptes::class)->name('');
+        Route::get('/comptes/{compte}', ReleveCompte::class)->name('.releve');
+    });
+
+    Route::prefix('depenses')->name('depenses')->group(function () {
+        Route::get('/', ListeDepenses::class)->name('');
+        Route::get('/nouvelle', FormulaireDepense::class)->middleware('can:saisir-depenses')->name('.nouvelle');
+        Route::get('/{depense}/justificatif', [DepenseController::class, 'justificatif'])->name('.justificatif');
     });
 
     Route::post('/deconnexion', DeconnexionController::class)->name('logout');

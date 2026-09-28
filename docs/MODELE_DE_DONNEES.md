@@ -72,11 +72,11 @@ flowchart TD
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `comptes_tresorerie` | nom, type (`caisse`, `banque`, `wave`, `orange_money`, `mtn_momo`), titulaire_id (caisse d'agent), actif | |
-| `mouvements_tresorerie` 🔒 | compte_id, sens (`entree`, `sortie`), montant_fcfa, date, libelle, source_type, source_id, reference_externe, annule_id, cree_par | solde = somme ; virement interne = deux mouvements liés |
-| `categories_depense` | nom, code_syscohada, exclue_fonds_campagne | art. 10.3 du contrat |
-| `depenses` 📱 | uuid, categorie_id, montant_fcfa, date, beneficiaire, justificatif, campagne_id, lot_id, pret_id, parcelle_id, statut, cree_par, valide_par, valide_at | au-dessus du seuil : validation obligatoire par une autre personne |
-| `avances_agents` | agent_id, montant_fcfa, date, justifie_fcfa (calculé) | reste à justifier = avance − achats − dépenses justifiées |
+| `comptes_tresorerie` | nom, type (`caisse`, `banque`, `wave`, `orange_money`, `mtn_momo`, `moov_money`), titulaire_id (caisse d'agent), campagne_id (compte dédié, art. 5), actif | **pas de colonne solde** |
+| `mouvements_tresorerie` 🔒 | compte_id, sens (`entree`, `sortie`), montant_fcfa, nature, date_operation, libelle, reference_externe, lien, source_type, source_id, annule_id (unique), motif, cree_par | solde = somme ; virement = deux mouvements de même `lien` ; écrits **seulement** par `App\Services\Tresorerie` (verrou du compte, jamais de solde négatif) ; contre-passation d'un virement = ses deux jambes |
+| `categories_depense` | nom, code_syscohada, exclue_fonds_campagne, actif | art. 10.3 du contrat : refusée sur un compte de campagne et sur une dépense rattachée à une campagne |
+| `depenses` 📱 | id (UUID v7), categorie_id, compte_id, montant_fcfa, date_depense, beneficiaire, description, justificatif (disque privé, obligatoire), campagne_id, parcelle_id, statut (`a_valider`, `payee`, `refusee`, `annulee`), cree_par, valide_par, valide_at, motif_refus, mouvement_id | au-dessus du seuil — **ou seuil non défini** — validation par une autre personne, l'argent sort à la validation ; `lot_id`, `pret_id` viendront avec leurs tables |
+| ~~`avances_agents`~~ | — | **remplacée (2026-10-10)** : une avance est un virement de nature `avance_agent` vers la caisse de l'agent (compte avec titulaire) ; le **reste à justifier est le solde de sa caisse**, sans table à tenir d'accord |
 
 ## Transverse
 

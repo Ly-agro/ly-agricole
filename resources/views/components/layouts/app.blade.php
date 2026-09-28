@@ -41,7 +41,29 @@
                             </a>
                         @endcan
 
-                        @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres'])
+                        @can('gerer-tresorerie')
+                            <a href="{{ route('tresorerie') }}"
+                                @class([
+                                    'rounded-md px-3 py-1.5',
+                                    'bg-emerald-50 text-emerald-900' => request()->routeIs('tresorerie*'),
+                                    'text-stone-700 hover:bg-stone-100' => ! request()->routeIs('tresorerie*'),
+                                ])>
+                                Trésorerie
+                            </a>
+                        @endcan
+
+                        @canany(['saisir-depenses', 'valider-depenses'])
+                            <a href="{{ route('depenses') }}"
+                                @class([
+                                    'rounded-md px-3 py-1.5',
+                                    'bg-emerald-50 text-emerald-900' => request()->routeIs('depenses*'),
+                                    'text-stone-700 hover:bg-stone-100' => ! request()->routeIs('depenses*'),
+                                ])>
+                                Dépenses
+                            </a>
+                        @endcanany
+
+                        @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie'])
                             <a href="{{ route('referentiels') }}"
                                 @class([
                                     'rounded-md px-3 py-1.5',

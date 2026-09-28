@@ -5,6 +5,65 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-28 — Semaine 3 (en avance) : trésorerie et dépenses
+
+**Fait.**
+
+- `comptes_tresorerie` (caisse, banque, Wave, Orange Money, MTN, Moov ; caisse
+  d'agent ; compte dédié à une campagne), `mouvements_tresorerie` 🔒 (trait
+  `Immuable`), `categories_depense`, `depenses` 📱 (UUID v7).
+- `App\Services\Tresorerie`, seule porte des mouvements : entrée, virement (deux jambes
+  liées, tout ou rien), avance agent, paiement de dépense, **contre-passation**
+  motivée (un virement : ses deux jambes ; une dépense payée passe « annulée »). Comptes
+  verrouillés dans l'ordre des id ; **aucun solde négatif** ; date future, montant nul,
+  compte désactivé refusés. Solde = somme SQL, pas de colonne.
+- `App\Services\Depenses` : **seuil non défini ⇒ validation toujours exigée** ; sous
+  le seuil, payée tout de suite ; au-dessus, l'argent sort **à la validation** ;
+  `valide_par ≠ cree_par` vérifié dans le service (invariant 5) ; validation sous
+  verrou (pas de double paiement) ; refus motivé ; art. 10.3 bloqué sur compte de
+  campagne et dépense rattachée à une campagne ; un agent ne paie que depuis sa caisse.
+- **Avances aux agents = virement vers leur caisse**, le reste à justifier est le
+  solde de cette caisse (table `avances_agents` du modèle supprimée, documenté).
+- Écrans : Trésorerie (comptes et soldes, entrée, virement, avance, nouveau compte),
+  relevé avec solde courant et contre-passation, Dépenses (saisie avec justificatif
+  obligatoire, liste, valider / refuser), catégories dans les Référentiels.
+  `App\Support\Montant` : « 1 500 000 » accepté, « 1.500 » et « 1500,5 » **refusés**
+  (ambigus).
+- Droits : `gerer-tresorerie`, `valider-depenses` (direction, comptable) ;
+  `saisir-depenses` (+ agent).
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **194 tests** (150 → 194), 872 assertions ; invariants 3
+  (solde = somme, ≥ 0, y compris au-delà de 2³¹ FCFA), 5 et 6 sur les mouvements.
+  Larastan 0 (3 corrigées), Pint propre.
+- **Livrable de la semaine 3, dans Chrome** (MySQL) : comptable → compte « Caisse
+  centrale », apport de 5 000 000 ; catégorie Carburant ; dépense de 600 000 (seuil à
+  500 000) avec justificatif → « à valider par un autre », pas de bouton ; **appel
+  forcé de `valider` depuis la console du navigateur → refusé par le serveur** (« Vous
+  ne pouvez pas valider votre propre dépense ») ; direction → Valider → payée,
+  relevé à 4 400 000 ; contre-passation motivée depuis le relevé → 5 000 000, dépense
+  « annulée ». **Somme recalculée dans MySQL : 5 000 000**, `cree_par` 3 ≠
+  `valide_par` 2.
+
+**Bugs trouvés et corrigés en route.**
+
+- Après un essai refusé (motif trop court), le message d'erreur **restait affiché**
+  après l'essai réussi : `resetErrorBag()` en tête des actions.
+- « Annulée par Direction » laissait croire que le validateur avait annulé :
+  « validée par » / « refusée par ».
+
+**Session interrompue** pendant la dernière série de vérifications. À la reprise,
+6 tests échouaient (`RootTagMissingFromViewException` sur la liste des dépenses) :
+vue Blade **compilée** tronquée par l'interruption, pas le code. `php artisan
+view:clear` → 194/194, Larastan 0, Pint propre. Piège ajouté à `CLAUDE.md`.
+
+**Reste en semaine 3.** Catégories réelles et charges exclues (question 23), seuil de
+dépense à confirmer (question 5 ; 500 000 FCFA n'est qu'une valeur d'essai dans la base
+locale).
+
+---
+
 ## 2026-09-28 — Semaine 2 (en avance) : producteurs, groupes, parcelles, carte QR
 
 **Fait.**

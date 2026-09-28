@@ -5,8 +5,12 @@ namespace App\Providers;
 use App\Enums\ActionJournal;
 use App\Enums\Role;
 use App\Models\Campagne;
+use App\Models\CategorieDepense;
+use App\Models\CompteTresorerie;
+use App\Models\Depense;
 use App\Models\GroupeProducteur;
 use App\Models\Magasin;
+use App\Models\MouvementTresorerie;
 use App\Models\Parametre;
 use App\Models\Parcelle;
 use App\Models\PointCollecte;
@@ -63,6 +67,10 @@ class AppServiceProvider extends ServiceProvider
             'producteur' => Producteur::class,
             'groupe_producteurs' => GroupeProducteur::class,
             'parcelle' => Parcelle::class,
+            'compte_tresorerie' => CompteTresorerie::class,
+            'mouvement_tresorerie' => MouvementTresorerie::class,
+            'categorie_depense' => CategorieDepense::class,
+            'depense' => Depense::class,
         ]);
     }
 
@@ -87,6 +95,12 @@ class AppServiceProvider extends ServiceProvider
         // loi 2013-450). Ni l'admin (il gère des comptes) ni l'investisseur.
         Gate::define('voir-producteurs', fn (User $user) => $user->aLeRole(Role::Direction, Role::Agent, Role::Comptable, Role::Agronome));
         Gate::define('gerer-producteurs', fn (User $user) => $user->aLeRole(Role::Direction, Role::Agent));
+
+        // Trésorerie : comptes, entrées, virements, avances, contre-passations, catégories.
+        Gate::define('gerer-tresorerie', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Un agent saisit ses dépenses de terrain (depuis sa caisse) ; il ne valide pas.
+        Gate::define('saisir-depenses', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable, Role::Agent));
+        Gate::define('valider-depenses', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
     }
 
     private function journaliserLesConnexions(): void

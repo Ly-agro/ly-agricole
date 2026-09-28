@@ -3,6 +3,7 @@
 namespace Tests\Feature\Referentiels;
 
 use App\Enums\Role;
+use App\Livewire\Referentiels\EcranReferentiel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -25,8 +26,8 @@ class AccesReferentielsTest extends TestCase
     {
         return [
             'admin' => [Role::Admin, self::SIMPLES],
-            'direction' => [Role::Direction, [...self::SIMPLES, 'campagnes', 'parametres']],
-            'comptable' => [Role::Comptable, []],
+            'direction' => [Role::Direction, [...self::SIMPLES, 'campagnes', 'parametres', 'categories-depense']],
+            'comptable' => [Role::Comptable, ['categories-depense']],
             'agent' => [Role::Agent, []],
             'agronome' => [Role::Agronome, []],
             'investisseur' => [Role::Investisseur, []],
@@ -42,7 +43,7 @@ class AccesReferentielsTest extends TestCase
     {
         $user = User::factory()->role($role)->create();
 
-        foreach ([...self::SIMPLES, 'campagnes', 'parametres'] as $ecran) {
+        foreach ([...self::SIMPLES, 'campagnes', 'parametres', 'categories-depense'] as $ecran) {
             $this->actingAs($user)
                 ->get("/referentiels/$ecran")
                 ->assertStatus(in_array($ecran, $autorises, true) ? 200 : 403);
@@ -53,7 +54,10 @@ class AccesReferentielsTest extends TestCase
         $autorises === [] ? $tableau->assertDontSee($lien, false) : $tableau->assertSee($lien, false);
 
         $entree = $this->actingAs($user)->get('/referentiels');
-        $autorises === [] ? $entree->assertForbidden() : $entree->assertRedirect(route('referentiels.zones'));
+        // L'entrée mène au premier onglet autorisé, dans l'ordre des onglets.
+        $premier = collect(array_keys(EcranReferentiel::onglets()))
+            ->first(fn (string $route) => in_array(str_replace('referentiels.', '', $route), $autorises, true));
+        $autorises === [] ? $entree->assertForbidden() : $entree->assertRedirect(route((string) $premier));
     }
 
     #[Test]

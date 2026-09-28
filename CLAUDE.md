@@ -129,6 +129,9 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
   puis la supprimer.
 - **Un aperçu Livewire `temporaryUrl()` plante sur un fichier non image** : valider le
   fichier dès son choix (`updated`) et tester `isPreviewable()`.
+- **Session interrompue ⇒ vue Blade compilée tronquée** : Livewire lève alors
+  `RootTagMissingFromViewException` sur une vue pourtant correcte (vu le 2026-09-28).
+  `php artisan view:clear` avant de chercher un bug.
 - **`sed` et les antislashs PHP** : `use App\\Models\\X` passé à `sed` perd ses
   antislashs (ou la ligne entière). Pour du code PHP, utiliser l'outil d'édition.
 - **Git Bash réécrit les chemins d'URL** : `/entreprise` devient
