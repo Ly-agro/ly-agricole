@@ -5,6 +5,54 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-28 — Semaine 4 (en avance) : prêts de campagne
+
+**Fait.**
+
+- Tables `prets`, `validations_pret` 🔒, `pret_parcelle`, `decaissements` 🔒 ;
+  nature de mouvement `decaissement_pret` ; paramètres `plafond_pret_producteur_fcfa`,
+  `plafond_pret_hectare_fcfa`.
+- `App\Services\Prets` : demande (producteur actif, campagne non clôturée, échéance
+  future, parcelles du producteur, plafonds s'ils sont définis, art. 17.3 avec accord
+  écrit) ; validation par la **direction**, jamais l'auteur, **deux validateurs
+  distincts au-dessus du seuil ou seuil non défini** ; refus motivé ; décaissement par
+  tranches (≤ reste, même forme que le prêt, bon type de compte, reçu signé en espèces,
+  référence en Mobile Money), sous verrou ; `decaisse` quand tout est versé ; une
+  contre-passation du versement rouvre le reste (`valide`).
+- Écrans : portefeuille (demandes, accordé, décaissé, reste, kilos attendus) et liste ;
+  demande (parcelles cochées, partie liée) ; fiche (validations, refus, versements,
+  pièces sur disque privé).
+- Droits : `voir-prets`, `saisir-prets` (direction, comptable, agent), `valider-prets`
+  (direction), `decaisser-prets` (direction, comptable).
+
+**Décisions prudentes en attendant les questions 2, 3, 4, 5** : seulement espèces et
+Mobile Money ; prix de référence = **estimation** des kilos, pas la règle de
+valorisation ; **aucun intérêt** ; seuil non défini = double validation ; plafond non
+défini = pas de plafond automatique (la validation reste).
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **223 tests** (194 → 223), 1 024 assertions, dont le livrable en
+  test (7 × 3 M → caisse − 21 M). Larastan 0, Pint propre.
+- **Livrable de la semaine 4, dans Chrome, de bout en bout** (MySQL) : agent → 5
+  producteurs de plus (7) ; direction → seuil de prêt 5 000 000 (**valeur d'essai**,
+  question 5) ; comptable → apport de 20 000 000 (caisse 25 000 000) ; agent → 7
+  demandes de 3 000 000 à 400 FCFA/kg ; direction → 7 validations (bouton) ; comptable
+  → versement sans reçu refusé (« joindre le reçu signé »), puis 7 versements avec reçu.
+  Portefeuille : 7 accordés · 21 000 000, décaissé 21 000 000, reste 0, 52 500 kg
+  attendus. **MySQL : caisse 4 000 000, 21 000 000 décaissés en 7 versements**, auteur
+  (agent) ≠ validateur (direction) sur les 7.
+
+**Surprise.** Un versement (LYPR-000006) n'était pas parti : clic pendant l'envoi du
+reçu ; vu dans MySQL, pas à l'écran, et refait. Même comportement qu'en semaine 2
+(bouton désactivé le temps d'une requête) : un utilisateur doit attendre la fin de
+l'envoi du fichier.
+
+**Reste.** Réponses aux questions 2, 3, 4, 5 ; prêts en intrants (semaine 5) ;
+remboursements et statuts `en_cours` / `solde` / `perte` (semaine 6).
+
+---
+
 ## 2026-09-28 — Semaine 3 (en avance) : trésorerie et dépenses
 
 **Fait.**

@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
+use App\Models\Decaissement;
 use App\Models\Depense;
 use App\Models\GroupeProducteur;
 use App\Models\Magasin;
@@ -14,9 +15,11 @@ use App\Models\MouvementTresorerie;
 use App\Models\Parametre;
 use App\Models\Parcelle;
 use App\Models\PointCollecte;
+use App\Models\Pret;
 use App\Models\Producteur;
 use App\Models\Produit;
 use App\Models\User;
+use App\Models\ValidationPret;
 use App\Models\Village;
 use App\Models\Zone;
 use App\Services\Journal;
@@ -71,6 +74,9 @@ class AppServiceProvider extends ServiceProvider
             'mouvement_tresorerie' => MouvementTresorerie::class,
             'categorie_depense' => CategorieDepense::class,
             'depense' => Depense::class,
+            'pret' => Pret::class,
+            'validation_pret' => ValidationPret::class,
+            'decaissement' => Decaissement::class,
         ]);
     }
 
@@ -101,6 +107,13 @@ class AppServiceProvider extends ServiceProvider
         // Un agent saisit ses dépenses de terrain (depuis sa caisse) ; il ne valide pas.
         Gate::define('saisir-depenses', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable, Role::Agent));
         Gate::define('valider-depenses', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Prêts (cahier §2) : l'agent monte la demande après la visite, la direction
+        // valide, la comptabilité décaisse.
+        Gate::define('voir-prets', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable, Role::Agent));
+        Gate::define('saisir-prets', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable, Role::Agent));
+        Gate::define('valider-prets', fn (User $user) => $user->aLeRole(Role::Direction));
+        Gate::define('decaisser-prets', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
     }
 
     private function journaliserLesConnexions(): void

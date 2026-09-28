@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Enums\NatureMouvement;
 use App\Enums\SensMouvement;
 use App\Enums\StatutDepense;
+use App\Enums\StatutPret;
 use App\Exceptions\OperationRefusee;
 use App\Models\CompteTresorerie;
 use App\Models\Depense;
 use App\Models\MouvementTresorerie;
+use App\Models\Pret;
 use App\Models\User;
 use App\Support\Format;
 use Illuminate\Database\Eloquent\Collection;
@@ -106,6 +108,19 @@ class Tresorerie
         });
     }
 
+    /** Versement d'une tranche de prêt : appelé par App\Services\Prets, dans sa transaction. */
+    public static function decaisserPret(Pret $pret, CompteTresorerie $compte, int $montant, Carbon $date, string $libelle, User $auteur, ?string $reference): MouvementTresorerie
+    {
+        return DB::transaction(function () use ($pret, $compte, $montant, $date, $libelle, $auteur, $reference) {
+            $comptes = self::verrouiller([$compte->id]);
+
+            return self::ecrire(
+                $comptes[$compte->id], SensMouvement::Sortie, $montant, NatureMouvement::DecaissementPret,
+                $date, $libelle, $auteur, reference: $reference, source: $pret,
+            );
+        });
+    }
+
     /**
      * Annule un mouvement par un mouvement inverse (motif obligatoire). Un virement est
      * annulé sur ses deux jambes ; une dépense payée passe « annulée ».
@@ -150,6 +165,11 @@ class Tresorerie
 
             $depenseIds = $originaux->where('source_type', 'depense')->pluck('source_id')->filter();
             Depense::query()->whereIn('id', $depenseIds)->get()->each->update(['statut' => StatutDepense::Annulee]);
+
+            // Un versement de prêt annulé rouvre le reste à décaisser.
+            $pretIds = $originaux->where('source_type', 'pret')->pluck('source_id')->filter();
+            Pret::query()->whereIn('id', $pretIds)->where('statut', StatutPret::Decaisse)->get()
+                ->each->update(['statut' => StatutPret::Valide]);
 
             return $crees;
         });

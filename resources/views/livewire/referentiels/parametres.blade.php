@@ -3,7 +3,8 @@
 
     <h1 class="mb-2 text-xl font-semibold">Paramètres</h1>
     <p class="mb-6 text-sm text-stone-500">
-        Un seuil « non défini » n'est pas zéro : tant qu'il n'est pas fixé, chaque opération concernée devra être validée.
+        « Non défini » n'est pas zéro : tant qu'un seuil n'est pas fixé, chaque opération concernée est validée (deux fois pour un prêt).
+        Un plafond non défini ne bloque rien, la validation restant obligatoire.
     </p>
 
     @if ($statut !== '')
@@ -35,7 +36,7 @@
                 @else
                     <div class="flex items-center gap-4">
                         <span @class(['font-medium', 'text-amber-700' => $actuelle === null])>
-                            {{ $actuelle === null ? 'Non défini' : \App\Support\Format::fcfa((int) $actuelle) }}
+                            {{ $actuelle === null ? 'Non défini' : str_replace(' FCFA', ' '.$cle->unite(), \App\Support\Format::fcfa((int) $actuelle)) }}
                         </span>
                         <button type="button" wire:click="modifier('{{ $cle->value }}')"
                             class="rounded-md px-3 py-1 text-sm text-emerald-800 hover:bg-emerald-50">Modifier</button>

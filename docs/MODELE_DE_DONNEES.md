@@ -46,9 +46,10 @@ flowchart TD
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `prets` | uuid, reference, producteur_id, campagne_id, montant_fcfa, forme (`especes`, `mobile_money`, `intrants`, `mixte`), prix_reference_kg_fcfa, grammes_attendus, echeance, statut, cree_par, valide_par, valide_at, motif_cloture | statut : `demande`, `valide`, `refuse`, `decaisse`, `en_cours`, `solde`, `reporte`, `perte` ; `valide_par ≠ cree_par` |
-| `pret_parcelle` | pret_id, parcelle_id | hectares financés = somme des surfaces |
-| `decaissements` 🔒 | pret_id, montant_fcfa, mode, reference_paiement, compte_tresorerie_id, date, justificatif, cree_par | produit un mouvement de trésorerie sortant |
+| `prets` | id (UUID v7), reference (`LYPR-000001`), producteur_id, campagne_id, montant_fcfa, forme (`especes`, `mobile_money` ; `intrants`, `mixte` en semaine 5), prix_reference_kg_fcfa, grammes_attendus, echeance, statut, **validations_requises**, **partie_liee**, **accord_ecrit**, motif_refus, cree_par, valide_at, motif_cloture | statut aujourd'hui : `demande`, `valide`, `refuse`, `decaisse` (les autres avec les remboursements) ; `valide_par` remplacé par la table `validations_pret` (2026-10-17) ; pas d'intérêt (question 4) ; kilos attendus = **estimation** au prix de référence (question 3) |
+| `validations_pret` 🔒 | pret_id, user_id, created_at | une ligne par validation ; unique (prêt, personne) ; aucune par l'auteur ; 2 au-dessus du seuil **ou si le seuil n'est pas défini**, 1 sinon |
+| `pret_parcelle` | pret_id, parcelle_id | hectares financés = somme des surfaces relevées ; plafond par hectare vérifié sur elles |
+| `decaissements` 🔒 | pret_id, montant_fcfa, mode, reference_paiement, compte_id, date_decaissement, justificatif, mouvement_id, cree_par | chaque tranche = une sortie de trésorerie (nature `decaissement_pret`) ; Σ tranches non contre-passées ≤ montant ; espèces : caisse + reçu signé ; Mobile Money : compte Mobile Money + référence |
 | `remboursements` 🔒 | pret_id, type (`especes`, `nature`), montant_fcfa, achat_id (si nature), mouvement_tresorerie_id (si espèces), date, annule_id | restant dû = montant − somme des remboursements |
 
 ## Intrants

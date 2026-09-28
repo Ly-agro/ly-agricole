@@ -60,4 +60,4 @@ Si le code doit trancher l'une d'elles, **poser la question** au lieu de choisir
 Le compte du responsable projet contient aussi un projet d'installation agricole **en
 France** (maraîchage 2 ha, 249 poules pondeuses, jus d'hibiscus et de gingembre, près
 d'Arles, BPREA). Il est distinct de LY AGRICOLE en Côte d'Ivoire et n'entre pas dans
-cette plateforme sauf demande explicite.
+cette plateforme sauf demande explicite.(tous est pareil ly Agr)

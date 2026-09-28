@@ -2,11 +2,15 @@
 
 use App\Http\Controllers\Auth\DeconnexionController;
 use App\Http\Controllers\DepenseController;
+use App\Http\Controllers\PretController;
 use App\Http\Controllers\ProducteurController;
 use App\Livewire\Auth\Connexion;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
 use App\Livewire\Journal\ConsultationJournal;
+use App\Livewire\Prets\FichePret;
+use App\Livewire\Prets\FormulairePret;
+use App\Livewire\Prets\ListePrets;
 use App\Livewire\Producteurs\FormulaireParcelle;
 use App\Livewire\Producteurs\FormulaireProducteur;
 use App\Livewire\Producteurs\Groupes;
@@ -76,6 +80,14 @@ Route::middleware('auth')->group(function () {
     Route::prefix('tresorerie')->name('tresorerie')->middleware('can:gerer-tresorerie')->group(function () {
         Route::get('/', Comptes::class)->name('');
         Route::get('/comptes/{compte}', ReleveCompte::class)->name('.releve');
+    });
+
+    Route::prefix('prets')->name('prets')->group(function () {
+        Route::get('/', ListePrets::class)->middleware('can:voir-prets')->name('');
+        Route::get('/nouveau', FormulairePret::class)->middleware('can:saisir-prets')->name('.nouveau');
+        Route::get('/{pret}', FichePret::class)->middleware('can:voir-prets')->name('.fiche');
+        Route::get('/{pret}/accord', [PretController::class, 'accord'])->middleware('can:voir-prets')->name('.accord');
+        Route::get('/recus/{decaissement}', [PretController::class, 'recu'])->middleware('can:voir-prets')->name('.recu');
     });
 
     Route::prefix('depenses')->name('depenses')->group(function () {

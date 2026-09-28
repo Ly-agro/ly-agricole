@@ -41,6 +41,17 @@
                             </a>
                         @endcan
 
+                        @can('voir-prets')
+                            <a href="{{ route('prets') }}"
+                                @class([
+                                    'rounded-md px-3 py-1.5',
+                                    'bg-emerald-50 text-emerald-900' => request()->routeIs('prets*'),
+                                    'text-stone-700 hover:bg-stone-100' => ! request()->routeIs('prets*'),
+                                ])>
+                                Prêts
+                            </a>
+                        @endcan
+
                         @can('gerer-tresorerie')
                             <a href="{{ route('tresorerie') }}"
                                 @class([
