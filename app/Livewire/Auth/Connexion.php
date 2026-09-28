@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Auth;
 
+use App\Enums\ActionJournal;
+use App\Services\Journal;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -34,6 +36,7 @@ class Connexion extends Component
 
         if (RateLimiter::tooManyAttempts($cle, self::TENTATIVES_MAX)) {
             event(new Lockout(request()));
+            Journal::enregistrer(ActionJournal::BlocageConnexion, apres: ['email' => $this->email]);
 
             throw ValidationException::withMessages([
                 'email' => __('auth.throttle', ['seconds' => RateLimiter::availableIn($cle)]),

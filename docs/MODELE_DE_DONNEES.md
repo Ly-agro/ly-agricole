@@ -25,29 +25,31 @@ flowchart TD
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `users` | nom, telephone, email, role, actif | rôles : `direction`, `agent`, `agronome`, `comptable`, `investisseur`, `admin` |
-| `zones` | nom | région / département de collecte |
-| `villages` | zone_id, nom, lat, lng | |
-| `produits` | code (`anacarde`, `karite`, `tomate`…), nom, unite | |
-| `campagnes` | code (`2026-2027`), produit_id, debut, fin, statut, prix_officiel_kg_fcfa | statut : `preparation`, `ouverte`, `cloturee` |
-| `magasins` | nom, village_id, capacite_kg | |
-| `points_collecte` | nom, village_id | |
+| `users` | nom, telephone, email, role, actif | rôles : `direction`, `agent`, `agronome`, `comptable`, `investisseur`, `admin` ; `role` vide = aucun droit ; pas de suppression, on désactive |
+| `zones` | nom, actif | région / département de collecte |
+| `villages` | zone_id, nom, lat, lng, actif | nom unique par zone ; lat/lng en `DECIMAL(10,7)` |
+| `produits` | code (`anacarde`, `karite`, `tomate`…), nom, actif | pas de colonne `unite` : tout se pèse, en grammes (D4) — modifié le 2026-09-28 |
+| `campagnes` | code (`2026-2027`), produit_id, debut, fin, statut, prix_officiel_kg_fcfa | statut : `preparation`, `ouverte`, `cloturee` ; code unique par produit ; **une seule ouverte par produit** ; prix vide tant que non annoncé |
+| `magasins` | nom, village_id, capacite_g, actif | capacité en **grammes** (D4), saisie en kg — remplace `capacite_kg` le 2026-09-28 |
+| `points_collecte` | nom, village_id, actif | nom unique par village |
 
 ## Producteurs et parcelles
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `producteurs` 📱 | uuid, code (carte QR), nom, prenoms, sexe, annee_naissance, telephone, numero_mobile_money, operateur_mm, piece_type, piece_numero, photo, village_id, groupe_id, consentement_at, consentement_par, cree_par | doublons détectés sur téléphone + pièce |
-| `groupes_producteurs` | nom, village_id, responsable_id | caution solidaire en phase 2 |
-| `parcelles` 📱 | uuid, producteur_id, nom, contour_geojson, surface_m2 (calculée), culture, annee_plantation, nb_arbres, sol, acces_eau | surface calculée à partir du contour, jamais saisie |
+| `producteurs` 📱 | id (UUID v7), code (carte QR), nom, prenoms, sexe, annee_naissance, telephone, numero_mobile_money, operateur_mm, piece_type, piece_numero, photo, village_id, groupe_id, consentement_at, consentement_par, cree_par, actif | `code` = `LYP-000001`, attribué par le **serveur** (table `compteurs`), jamais par le téléphone ; le QR ne contient que lui. Téléphones stockés en 10 chiffres. Pièce identique = **refus** (index unique) ; téléphone / Mobile Money identique = **alerte à confirmer**, confirmation journalisée (`doublon_confirme`). Pas de fiche sans consentement. Photo sur le disque **privé**. |
+| `compteurs` | nom, valeur | numéros lisibles attribués par le serveur, sous verrou de ligne ; pas de trou si la création échoue |
+| `groupes_producteurs` | nom, village_id, responsable_id, actif | nom unique par village ; responsable = producteur du village |
+| `parcelles` 📱 | id (UUID v7), producteur_id, nom, contour, surface_m2 (calculée), produit_id, annee_plantation, nb_arbres, sol, acces_eau, cree_par, actif | `contour` = géométrie GeoJSON (Polygon/MultiPolygon, WGS84) ; `surface_m2` recalculée par le modèle à chaque changement de contour, **non affectable** ; sans contour : vide (« non relevée »). Culture = `produit_id` (au lieu de `culture` texte). |
 
 ## Prêts
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `prets` | uuid, reference, producteur_id, campagne_id, montant_fcfa, forme (`especes`, `mobile_money`, `intrants`, `mixte`), prix_reference_kg_fcfa, grammes_attendus, echeance, statut, cree_par, valide_par, valide_at, motif_cloture | statut : `demande`, `valide`, `refuse`, `decaisse`, `en_cours`, `solde`, `reporte`, `perte` ; `valide_par ≠ cree_par` |
-| `pret_parcelle` | pret_id, parcelle_id | hectares financés = somme des surfaces |
-| `decaissements` 🔒 | pret_id, montant_fcfa, mode, reference_paiement, compte_tresorerie_id, date, justificatif, cree_par | produit un mouvement de trésorerie sortant |
+| `prets` | id (UUID v7), reference (`LYPR-000001`), producteur_id, campagne_id, montant_fcfa, forme (`especes`, `mobile_money` ; `intrants`, `mixte` en semaine 5), prix_reference_kg_fcfa, grammes_attendus, echeance, statut, **validations_requises**, **partie_liee**, **accord_ecrit**, motif_refus, cree_par, valide_at, motif_cloture | statut aujourd'hui : `demande`, `valide`, `refuse`, `decaisse` (les autres avec les remboursements) ; `valide_par` remplacé par la table `validations_pret` (2026-10-17) ; pas d'intérêt (question 4) ; kilos attendus = **estimation** au prix de référence (question 3) |
+| `validations_pret` 🔒 | pret_id, user_id, created_at | une ligne par validation ; unique (prêt, personne) ; aucune par l'auteur ; 2 au-dessus du seuil **ou si le seuil n'est pas défini**, 1 sinon |
+| `pret_parcelle` | pret_id, parcelle_id | hectares financés = somme des surfaces relevées ; plafond par hectare vérifié sur elles |
+| `decaissements` 🔒 | pret_id, montant_fcfa, mode, reference_paiement, compte_id, date_decaissement, justificatif, mouvement_id, cree_par | chaque tranche = une sortie de trésorerie (nature `decaissement_pret`) ; Σ tranches non contre-passées ≤ montant ; espèces : caisse + reçu signé ; Mobile Money : compte Mobile Money + référence |
 | `remboursements` 🔒 | pret_id, type (`especes`, `nature`), montant_fcfa, achat_id (si nature), mouvement_tresorerie_id (si espèces), date, annule_id | restant dû = montant − somme des remboursements |
 
 ## Intrants
@@ -71,11 +73,11 @@ flowchart TD
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `comptes_tresorerie` | nom, type (`caisse`, `banque`, `wave`, `orange_money`, `mtn_momo`), titulaire_id (caisse d'agent), actif | |
-| `mouvements_tresorerie` 🔒 | compte_id, sens (`entree`, `sortie`), montant_fcfa, date, libelle, source_type, source_id, reference_externe, annule_id, cree_par | solde = somme ; virement interne = deux mouvements liés |
-| `categories_depense` | nom, code_syscohada, exclue_fonds_campagne | art. 10.3 du contrat |
-| `depenses` 📱 | uuid, categorie_id, montant_fcfa, date, beneficiaire, justificatif, campagne_id, lot_id, pret_id, parcelle_id, statut, cree_par, valide_par, valide_at | au-dessus du seuil : validation obligatoire par une autre personne |
-| `avances_agents` | agent_id, montant_fcfa, date, justifie_fcfa (calculé) | reste à justifier = avance − achats − dépenses justifiées |
+| `comptes_tresorerie` | nom, type (`caisse`, `banque`, `wave`, `orange_money`, `mtn_momo`, `moov_money`), titulaire_id (caisse d'agent), campagne_id (compte dédié, art. 5), actif | **pas de colonne solde** |
+| `mouvements_tresorerie` 🔒 | compte_id, sens (`entree`, `sortie`), montant_fcfa, nature, date_operation, libelle, reference_externe, lien, source_type, source_id, annule_id (unique), motif, cree_par | solde = somme ; virement = deux mouvements de même `lien` ; écrits **seulement** par `App\Services\Tresorerie` (verrou du compte, jamais de solde négatif) ; contre-passation d'un virement = ses deux jambes |
+| `categories_depense` | nom, code_syscohada, exclue_fonds_campagne, actif | art. 10.3 du contrat : refusée sur un compte de campagne et sur une dépense rattachée à une campagne |
+| `depenses` 📱 | id (UUID v7), categorie_id, compte_id, montant_fcfa, date_depense, beneficiaire, description, justificatif (disque privé, obligatoire), campagne_id, parcelle_id, statut (`a_valider`, `payee`, `refusee`, `annulee`), cree_par, valide_par, valide_at, motif_refus, mouvement_id | au-dessus du seuil — **ou seuil non défini** — validation par une autre personne, l'argent sort à la validation ; `lot_id`, `pret_id` viendront avec leurs tables |
+| ~~`avances_agents`~~ | — | **remplacée (2026-10-10)** : une avance est un virement de nature `avance_agent` vers la caisse de l'agent (compte avec titulaire) ; le **reste à justifier est le solde de sa caisse**, sans table à tenir d'accord |
 
 ## Transverse
 
@@ -84,7 +86,7 @@ flowchart TD
 | `confirmations_sms` | producteur_id, objet_type, objet_id, message, envoye_at, statut, reponse | preuve envoyée au producteur |
 | `journal_activite` 🔒 | user_id, action, objet_type, objet_id, avant, apres, ip, appareil, at | qui a fait quoi |
 | `synchronisations` | appareil_id, user_id, recu_at, nb_operations, nb_rejetees, erreurs | trace des envois de l'appli terrain |
-| `parametres` | cle, valeur | seuils de validation, plafonds, prix |
+| `parametres` | cle, valeur | clés connues du code (`App\Enums\CleParametre`) ; **pas de valeur par défaut** : non défini ≠ 0, le code applique la règle prudente |
 
 ## Invariants à tester dès la semaine où la table naît
 

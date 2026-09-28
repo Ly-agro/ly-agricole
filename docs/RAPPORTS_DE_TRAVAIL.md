@@ -5,6 +5,313 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-28 — Front : menu latéral, barre du haut, page d'accueil analytique — FINI, NON COMMITÉ
+
+> Session `ly-agricole-fb`. Le front est **terminé et vérifié** ; ne pas le refaire. Il
+> reste à le commiter (voir « Reste »).
+
+**Fichiers (tous nouveaux sauf mention).**
+
+- `resources/views/components/layouts/app.blade.php` — **réécrit** : menu latéral
+  groupé (Terrain / Argent / Stock / Administration), barre du haut (titre, prix de la
+  campagne ouverte, bouton « Nouveau » filtré par droit, menu utilisateur). Les liens
+  gardent `href="{{ route(...) }}"` sous leur `@can` : les tests d'accès les cherchent.
+  Le lien « Intrants » de la session `f9` y est conservé.
+- `resources/views/components/nav-lien.blade.php` — un lien du menu (icône, état actif).
+  Un nouvel écran = une ligne `<x-nav-lien route=… motif=… icone=…>` + un tracé
+  d'icône dans le tableau `$traces`.
+- `resources/js/app.js` — menu qui glisse sur téléphone, menus déroulants (`<details>`).
+  Pas d'Alpine : les pages non Livewire n'en ont pas.
+- `app/Livewire/TableauDeBord.php` + `resources/views/livewire/tableau-de-bord/accueil.blade.php`
+  — remplacent `Route::view` et l'ancienne vue `tableau-de-bord.blade.php` (**supprimée**).
+  `routes/web.php` : une ligne changée + un `use`.
+- `app/Services/Indicateurs.php` — tous les chiffres, en lecture seule, entiers.
+- `app/Support/Graphique.php` + `resources/views/components/graphiques/{flux,barres,anneau}.blade.php`
+  — graphiques en SVG/HTML rendus côté serveur, **aucune bibliothèque JS**.
+- `tests/Feature/TableauDeBordTest.php` — 5 tests.
+
+**Ce que montre la page.** Prix officiel bord-champ de la campagne choisie (écart avec
+la précédente, historique par campagne) ; prêts accordés, remis (argent + intrants),
+dépenses payées, trésorerie ; entrées/sorties sur 6 mois ; « Revenus » (entrées d'argent
+par origine) ; dépenses par catégorie ; avancement des prêts ; actions à mener ; dernières
+nouvelles ; bilan campagne par campagne.
+
+**Choix à connaître.**
+
+- **Rien d'inventé** : achats, stock, remboursements, reventes n'existent pas encore.
+  « Revenus » = entrées de trésorerie (apports…), **contre-passations et virements
+  exclus**, et la page le dit ; quatre cases pointillées « Bientôt sur cette page »
+  marquent ce qui viendra. Les brancher = ajouter une méthode dans `Indicateurs`.
+- « Actualité » = les derniers faits enregistrés (prêts, versements, dépenses,
+  producteurs), pas le journal d'activité.
+- **Droits** : totaux de dépenses réservés à `valider-depenses` (un agent saisit, il ne
+  voit pas le total — trouvé par le test) ; trésorerie à `gerer-tresorerie` ; prêts à
+  `voir-prets`.
+- Les agrégats passent par `DB::table()` (pas de modèle : Larastan refuse les colonnes
+  calculées) et lisent `mouvements_intrants` directement pour la valeur des intrants.
+  **Si la session `f9` renomme cette table ou ses colonnes, `remisParCampagne()` casse.**
+
+**Vérifié.** `php artisan test` : **251 tests** verts (246 + 5), 1136 assertions ;
+Larastan 0 erreur (les 12 signalées par `f9` étaient dans `Indicateurs.php`, corrigées) ;
+Pint propre ; `npm run build` OK. **Dans Chrome** (`localhost:8000`, compte Comptable de
+dév.) : menu actif, prix « Pas encore annoncé » (aucun prix saisi en base), 7 prêts =
+21 000 000 FCFA accordés et remis, trésorerie 4 000 000 FCFA, graphique des flux sur
+septembre, revenus « Apport de fonds 25 000 000 » sans la contre-passation, fil des
+versements, tableau de bilan.
+
+**Téléphone (vérifié ensuite).** Dans un iframe de 390 px (la fenêtre Chrome ne se
+redimensionne pas ici) : menu caché hors écran, bouton burger visible, aucun défilement
+horizontal (`scrollWidth` = `clientWidth`), grille des chiffres sur 2 colonnes, graphique
+lisible. **Vrais clics** : burger → menu ouvert avec voile ; clic sur le voile → fermé.
+Par le code : Échap ferme, le burger rouvre. Piège de test : les mesures de position
+(`getBoundingClientRect`) retardent d'une étape à cause de la transition de 200 ms ; lire
+l'état par les classes ou attendre.
+
+**Pas vérifié.** Les rôles autres que Comptable n'ont été vus qu'en test ; les menus
+déroulants « Nouveau » et utilisateur n'ont pas été ouverts sur téléphone.
+
+**Reste.** Commit. Proposition : `f9` commite d'abord la semaine 5 sur `semaine-5`,
+puis le front en un commit séparé (les deux touchent `routes/web.php` et le layout :
+`git add -p` pour séparer les hunks).
+
+---
+
+## 2026-09-28 — Semaine 5 (en avance) : intrants et prêts en nature — FINI, COMMITÉ
+
+> **Note pour une autre session de travail sur ce dossier.** La semaine 5 a été écrite,
+> testée, vérifiée dans Chrome et commitée par la session `ly-agricole-f9` (branche
+> `semaine-5`) ; **ne pas la refaire**. Travail fait en parallèle de la session
+> `ly-agricole-fb` (front) : deux commits séparés, voir plus bas.
+
+**Fichiers de la semaine 5 (à ne pas retoucher sans se coordonner).**
+
+- Nouveaux : `database/migrations/2026_10_24_000001_create_intrants_tables.php`,
+  `app/Enums/UniteIntrant.php`, `app/Enums/TypeMouvementIntrant.php`,
+  `app/Models/Intrant.php`, `app/Models/MouvementIntrant.php`,
+  `app/Services/StockIntrants.php`, `app/Services/RecuRemise.php`,
+  `app/Livewire/Intrants/StockIntrant.php`, `app/Livewire/Referentiels/Intrants.php`,
+  `resources/views/livewire/intrants/stock-intrant.blade.php`,
+  `resources/views/prets/recu-remise.blade.php`, `tests/Feature/Intrants/*`.
+- Modifiés : `app/Models/Pret.php` (`valeurIntrantsRemis`, `montantRemis`,
+  `resteARemettre`, `restantDu` ; `resteADecaisser` **supprimée**),
+  `app/Enums/FormePret.php` (`accepteArgent`, `accepteIntrants` ; `disponible()`
+  supprimée), `app/Services/Prets.php` (`marquerSiToutRemis`), `FichePret` + sa vue
+  (remise d'intrants, mode de versement pour un prêt mixte, reçus PDF), `ListePrets` +
+  vue (« Remis (argent + intrants) »), `PretController::recuPdf`, onglet Intrants dans
+  `EcranReferentiel::onglets()`, droit `gerer-intrants` et morph map dans
+  `AppServiceProvider`, tests de prêts et `AccesReferentielsTest` mis à jour,
+  `CLAUDE.md` (piège apostrophe + `assertDontSee`).
+- **Partagés avec la session tableau de bord** : `routes/web.php` (mes routes :
+  `/intrants`, `referentiels.intrants`, `prets.recu-pdf`) et
+  `resources/views/components/layouts/app.blade.php` (mon lien « Intrants », repris
+  dans le nouveau menu latéral : ne pas le retirer).
+
+**Fait.** Stock d'intrants en unités de conditionnement (sac, bidon, pièce, rouleau ;
+pas de kg en vrac, D4), registre `mouvements_intrants` 🔒 ; stock = Σ ≥ 0 par magasin ;
+entrée, perte, ajustement, contre-passation motivée. Prêts `intrants` et `mixte`
+activés (question 2 toujours ouverte) : distribution à crédit depuis la fiche du prêt,
+valeur **figée au prix du jour** ; remis = argent + intrants ≤ montant ; **restant dû =
+remis** (pas d'intérêt, question 4 ; remboursements en semaine 6). Reçu PDF A5 de chaque
+remise (argent ou intrants) à faire signer.
+
+**Vérifié.** 246 tests verts (223 → 246) **avant** les changements de menu de l'autre
+session ; livrable en test (prêt mixte 1 000 000 = 20 sacs NPK à 18 500 + 630 000 en
+espèces → restant dû 1 000 000, stock 100 → 80). Larastan : 0 erreur dans mes
+fichiers ; les 12 erreurs actuelles sont dans `app/Services/Indicateurs.php` (session
+tableau de bord). Migration appliquée sur MySQL.
+
+**Vérifié ensuite sur le code combiné avec le front de `ly-agricole-fb`.** 251 tests
+verts, Pint propre, Larastan 0. **Livrable de la semaine 5, dans Chrome** (MySQL,
+nouveau menu latéral) : comptable → fiche « NPK 15-15-15 — sac de 50 kg » à 18 500 FCFA,
+entrée de 100 sacs au Magasin Chrome ; agent → prêt **mixte** LYPR-000008 de
+1 000 000 ; direction → validé ; comptable → remise de 20 sacs (aperçu « 370 000 FCFA »,
+restant dû 370 000, reste à remettre 630 000), puis 630 000 en espèces avec reçu →
+**Décaissé, remis 1 000 000 (argent 630 000 · intrants 370 000), restant dû
+1 000 000**. MySQL : stock NPK 80, argent 630 000 + intrants 370 000. Reçu PDF de la
+remise dessiné avec pdf.js **dans la page** (sans fichier temporaire) et regardé.
+
+**Corrigé en vérifiant.** Reçu PDF : la date de l'en-tête passait sous le filet (bloc
+flottant que dompdf faisait déborder → tableau) ; parenthèses doublées « (Mixte (argent
++ intrants)) ».
+
+**À savoir pour les scripts de vérification.** Avec le nouveau menu, « Se déconnecter »
+est dans un `<details>` fermé : son `innerText` est vide. Soumettre directement
+`form[action$="/deconnexion"]`.
+
+**Commits.** Semaine 5 seule sur `semaine-5` ; le front de `ly-agricole-fb` dans un
+commit séparé juste après (dans `routes/web.php`, le layout et ce fichier, chaque
+commit ne contient que les lignes de sa session). La modification de
+`.claude/skills/ly-agricole-metier/SKILL.md` (faite par l'utilisateur) n'est dans aucun
+des deux.
+
+---
+
+## 2026-09-28 — Semaine 4 (en avance) : prêts de campagne
+
+**Fait.**
+
+- Tables `prets`, `validations_pret` 🔒, `pret_parcelle`, `decaissements` 🔒 ;
+  nature de mouvement `decaissement_pret` ; paramètres `plafond_pret_producteur_fcfa`,
+  `plafond_pret_hectare_fcfa`.
+- `App\Services\Prets` : demande (producteur actif, campagne non clôturée, échéance
+  future, parcelles du producteur, plafonds s'ils sont définis, art. 17.3 avec accord
+  écrit) ; validation par la **direction**, jamais l'auteur, **deux validateurs
+  distincts au-dessus du seuil ou seuil non défini** ; refus motivé ; décaissement par
+  tranches (≤ reste, même forme que le prêt, bon type de compte, reçu signé en espèces,
+  référence en Mobile Money), sous verrou ; `decaisse` quand tout est versé ; une
+  contre-passation du versement rouvre le reste (`valide`).
+- Écrans : portefeuille (demandes, accordé, décaissé, reste, kilos attendus) et liste ;
+  demande (parcelles cochées, partie liée) ; fiche (validations, refus, versements,
+  pièces sur disque privé).
+- Droits : `voir-prets`, `saisir-prets` (direction, comptable, agent), `valider-prets`
+  (direction), `decaisser-prets` (direction, comptable).
+
+**Décisions prudentes en attendant les questions 2, 3, 4, 5** : seulement espèces et
+Mobile Money ; prix de référence = **estimation** des kilos, pas la règle de
+valorisation ; **aucun intérêt** ; seuil non défini = double validation ; plafond non
+défini = pas de plafond automatique (la validation reste).
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **223 tests** (194 → 223), 1 024 assertions, dont le livrable en
+  test (7 × 3 M → caisse − 21 M). Larastan 0, Pint propre.
+- **Livrable de la semaine 4, dans Chrome, de bout en bout** (MySQL) : agent → 5
+  producteurs de plus (7) ; direction → seuil de prêt 5 000 000 (**valeur d'essai**,
+  question 5) ; comptable → apport de 20 000 000 (caisse 25 000 000) ; agent → 7
+  demandes de 3 000 000 à 400 FCFA/kg ; direction → 7 validations (bouton) ; comptable
+  → versement sans reçu refusé (« joindre le reçu signé »), puis 7 versements avec reçu.
+  Portefeuille : 7 accordés · 21 000 000, décaissé 21 000 000, reste 0, 52 500 kg
+  attendus. **MySQL : caisse 4 000 000, 21 000 000 décaissés en 7 versements**, auteur
+  (agent) ≠ validateur (direction) sur les 7.
+
+**Surprise.** Un versement (LYPR-000006) n'était pas parti : clic pendant l'envoi du
+reçu ; vu dans MySQL, pas à l'écran, et refait. Même comportement qu'en semaine 2
+(bouton désactivé le temps d'une requête) : un utilisateur doit attendre la fin de
+l'envoi du fichier.
+
+**Reste.** Réponses aux questions 2, 3, 4, 5 ; prêts en intrants (semaine 5) ;
+remboursements et statuts `en_cours` / `solde` / `perte` (semaine 6).
+
+---
+
+## 2026-09-28 — Semaine 3 (en avance) : trésorerie et dépenses
+
+**Fait.**
+
+- `comptes_tresorerie` (caisse, banque, Wave, Orange Money, MTN, Moov ; caisse
+  d'agent ; compte dédié à une campagne), `mouvements_tresorerie` 🔒 (trait
+  `Immuable`), `categories_depense`, `depenses` 📱 (UUID v7).
+- `App\Services\Tresorerie`, seule porte des mouvements : entrée, virement (deux jambes
+  liées, tout ou rien), avance agent, paiement de dépense, **contre-passation**
+  motivée (un virement : ses deux jambes ; une dépense payée passe « annulée »). Comptes
+  verrouillés dans l'ordre des id ; **aucun solde négatif** ; date future, montant nul,
+  compte désactivé refusés. Solde = somme SQL, pas de colonne.
+- `App\Services\Depenses` : **seuil non défini ⇒ validation toujours exigée** ; sous
+  le seuil, payée tout de suite ; au-dessus, l'argent sort **à la validation** ;
+  `valide_par ≠ cree_par` vérifié dans le service (invariant 5) ; validation sous
+  verrou (pas de double paiement) ; refus motivé ; art. 10.3 bloqué sur compte de
+  campagne et dépense rattachée à une campagne ; un agent ne paie que depuis sa caisse.
+- **Avances aux agents = virement vers leur caisse**, le reste à justifier est le
+  solde de cette caisse (table `avances_agents` du modèle supprimée, documenté).
+- Écrans : Trésorerie (comptes et soldes, entrée, virement, avance, nouveau compte),
+  relevé avec solde courant et contre-passation, Dépenses (saisie avec justificatif
+  obligatoire, liste, valider / refuser), catégories dans les Référentiels.
+  `App\Support\Montant` : « 1 500 000 » accepté, « 1.500 » et « 1500,5 » **refusés**
+  (ambigus).
+- Droits : `gerer-tresorerie`, `valider-depenses` (direction, comptable) ;
+  `saisir-depenses` (+ agent).
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **194 tests** (150 → 194), 872 assertions ; invariants 3
+  (solde = somme, ≥ 0, y compris au-delà de 2³¹ FCFA), 5 et 6 sur les mouvements.
+  Larastan 0 (3 corrigées), Pint propre.
+- **Livrable de la semaine 3, dans Chrome** (MySQL) : comptable → compte « Caisse
+  centrale », apport de 5 000 000 ; catégorie Carburant ; dépense de 600 000 (seuil à
+  500 000) avec justificatif → « à valider par un autre », pas de bouton ; **appel
+  forcé de `valider` depuis la console du navigateur → refusé par le serveur** (« Vous
+  ne pouvez pas valider votre propre dépense ») ; direction → Valider → payée,
+  relevé à 4 400 000 ; contre-passation motivée depuis le relevé → 5 000 000, dépense
+  « annulée ». **Somme recalculée dans MySQL : 5 000 000**, `cree_par` 3 ≠
+  `valide_par` 2.
+
+**Bugs trouvés et corrigés en route.**
+
+- Après un essai refusé (motif trop court), le message d'erreur **restait affiché**
+  après l'essai réussi : `resetErrorBag()` en tête des actions.
+- « Annulée par Direction » laissait croire que le validateur avait annulé :
+  « validée par » / « refusée par ».
+
+**Session interrompue** pendant la dernière série de vérifications. À la reprise,
+6 tests échouaient (`RootTagMissingFromViewException` sur la liste des dépenses) :
+vue Blade **compilée** tronquée par l'interruption, pas le code. `php artisan
+view:clear` → 194/194, Larastan 0, Pint propre. Piège ajouté à `CLAUDE.md`.
+
+**Reste en semaine 3.** Catégories réelles et charges exclues (question 23), seuil de
+dépense à confirmer (question 5 ; 500 000 FCFA n'est qu'une valeur d'essai dans la base
+locale).
+
+---
+
+## 2026-09-28 — Semaine 2 (en avance) : producteurs, groupes, parcelles, carte QR
+
+**Fait.**
+
+- `producteurs` (UUID v7, D3) : fiche au bureau (identité, pièce, téléphone et Mobile
+  Money normalisés à 10 chiffres, village, groupe, photo). **Consentement obligatoire**
+  à la création (qui, quand) ; texte provisoire → question 21.
+- Code de carte `LYP-000001` attribué par le serveur (`compteurs`, verrou de ligne,
+  pas de trou si la création échoue).
+- Doublons (`DetectionDoublons`) : même pièce = **refus** ; même téléphone ou même
+  Mobile Money (croisés) = **alerte** à confirmer, confirmation inscrite au journal
+  (`doublon_confirme`).
+- Photo sur le disque **privé**, servie par une route qui vérifie le droit ; l'ancienne
+  est effacée au remplacement (minimisation) ; pas de photo orpheline si l'écriture échoue.
+- Droits : `voir-producteurs` (direction, agent, comptable, agronome),
+  `gerer-producteurs` (direction, agent). Ni admin ni investisseur (données personnelles).
+- Liste avec recherche (nom, code, téléphone même tapé « +225 07 … ») et filtre village.
+- Groupes de producteurs (écran commun `EcranReferentiel`, sans les onglets ;
+  responsable = producteur du village ; nombre de membres).
+- `parcelles` (UUID v7) : contour GeoJSON importé (fichier ou texte collé) ;
+  `App\Services\Geo\Contour` lit strictement (fermé, ≥ 3 sommets, en Côte d'Ivoire, avec
+  un message dédié si latitude/longitude inversées) et calcule la surface sur la sphère
+  (méthode turf.js) ; `surface_m2` recalculée par le modèle, **non affectable**, contour
+  verrouillé côté Livewire. Dessin SVG sans fond de carte. Sans contour : « non relevée ».
+- Carte producteur PDF (dompdf) au format ID-1 sur A4, QR (php-qrcode, correction Q) ne
+  contenant **que le code** ; pas de téléphone ni de numéro de pièce sur la carte ;
+  chaque impression journalisée (`impression_carte`).
+- `Format::hectares()` en entiers.
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **150 tests** (97 → 150), 706 assertions. Larastan 0, Pint propre.
+- Le QR généré, **décodé** par le lecteur de php-qrcode, redonne le code (test).
+- **Dans Chrome** (agent, MySQL) : fiche sans consentement → refus en français ; avec →
+  `LYP-000001`, photo affichée par la route privée, téléphone `+225 07 11 22 33 44` →
+  `0711223344` ; parcelle carrée de 150 m collée en GeoJSON → **2,25 ha**, carré dessiné,
+  total « 1 ; 2,25 ha relevés » sur la fiche ; 2ᵉ fiche avec le même téléphone →
+  alerte nommant `Coulibaly Awa (LYP-000001)`, confirmée → `LYP-000002` ; journal MySQL :
+  créations, impression de carte, doublon confirmé, au nom de l'agent.
+- Carte : PDF dessiné avec pdf.js (page temporaire, supprimée) et regardé ; puis le QR
+  **découpé dans le rendu du PDF** et décodé côté serveur → `LYP-000001`.
+
+**Bugs trouvés et corrigés en route.**
+
+- Choisir un PDF comme photo faisait **planter** le formulaire (aperçu d'un fichier non
+  image) : validation dès le choix + `isPreviewable()` ; test de non-régression.
+- Carte à **1,1 Mo** (police entière embarquée) → sous-ensemble de police : 30 Ko.
+- « LY AGRICOLE » coupé dans le bandeau de la carte (dompdf et `line-height`) → padding.
+
+**Pas vérifié.** Le scan de la carte **imprimée** avec un vrai téléphone (livrable de la
+semaine 2 : « la scanner au téléphone ») : à faire à la main. La saisie des 10 producteurs
+réels de test attend les vraies zones (question 1).
+
+**Surprise.** Un clic sur « Enregistrer » pendant la requête d'un `wire:model.live`
+(choix du village) est ignoré : le bouton est désactivé le temps de la requête.
+Normal, mais un utilisateur rapide devra recliquer.
+
+---
+
 ## 2026-09-28 — Semaine 1 : installation et écran de connexion
 
 **Fait.**
@@ -55,9 +362,138 @@ pas connectée. À refaire à l'écran (clic, rendu, état de chargement du bout
 - Extension PHP `intl` absente (non bloquant pour l'instant ; nécessaire pour
   `Number::format`).
 
-**Reste en semaine 1.** Rôles et politiques (un utilisateur par rôle ne voit que ses
-écrans), référentiels (zones, villages, produits, campagnes, magasins, points de
-collecte, paramètres), journal d'activité. Premier commit.
+**Premier commit** fait et poussé par le développeur (`4267663`, sur `origin/main`).
+
+### Suite : rôles et gestion des utilisateurs
+
+**Fait.**
+
+- `App\Enums\Role` (admin, direction, comptable, agent, agronome, investisseur), colonne
+  `users.role` (nouvelle migration, **sans valeur par défaut** : sans rôle = aucun
+  droit, message sur le tableau de bord).
+- Droits nommés dans `AppServiceProvider::definirLesDroits()` ; pour l'instant
+  `gerer-utilisateurs` (admin). **Pas** de `Gate::before` pour l'admin (séparation des
+  tâches). Matrice à valider : question ouverte n° 19.
+- Écran `/utilisateurs` (`GestionUtilisateurs`) : liste, création, modification,
+  désactivation, nouveau mot de passe. Droit revérifié dans **chaque** action Livewire.
+  L'admin ne peut ni se désactiver ni changer son propre rôle.
+- Middleware `CompteActif` : un compte désactivé perd sa session ouverte à la requête
+  suivante.
+- Menu affiché selon les droits ; page 403 en français.
+- Seeder : un compte par rôle, `<role>@ly-agricole.test`.
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **28 tests** (11 → 28), 148 assertions. Larastan 0 erreur
+  (il a trouvé les propriétés du modèle `User` non déclarées → `@property` ajoutés).
+- **Dans Chrome** : mauvais mot de passe → message français ; connexion admin →
+  lien « Utilisateurs », liste des 6 comptes ; création d'un compte (mot de passe trop
+  court refusé en français, puis accepté) ; déconnexion ; connexion avec le nouveau
+  compte agent → pas de lien, `/utilisateurs` → 403 « Accès refusé ».
+
+**Surprises.**
+
+- **Un service worker de VistaResidence contrôle `http://127.0.0.1:8000` dans Chrome**
+  (caches `vistimmob-*`) et bloque les navigations. Non touché (il appartient à
+  l'autre projet) : tester LY AGRICOLE sur **`http://localhost:8000`**, qui est une autre
+  origine. À ajouter aux pièges de `CLAUDE.md`.
+- L'outil d'automatisation de Chrome perdait ses frappes juste après un chargement de
+  page (aucune requête n'atteignait le serveur, vérifié dans le journal de
+  `artisan serve`). Contourné en remplissant les champs par JavaScript dans la page ;
+  ce n'est pas un défaut de l'appli.
+- Après un 403, l'objet de test Livewire ne peut plus rejouer d'appel : un composant
+  neuf par action dans le test.
+
+### Suite : journal d'activité
+
+**Fait.**
+
+- Table `journal_activite` 🔒 (user, action, objet_type/objet_id en texte pour les
+  futurs UUID, avant/apres JSON, ip, appareil, at). Pas de `nullOnDelete` sur `user_id`
+  (il réécrirait le journal).
+- **Protection réutilisable des registres immuables**, pour les registres des semaines
+  3 à 6 : trait `App\Models\Concerns\Immuable` (bloque `save`/`update`/`delete`, **y
+  compris** `saveQuietly`/`deleteQuietly`, car il remplace `performUpdate` et
+  `performDeleteOnModel` au lieu d'écouter des événements) +
+  `#[UseEloquentBuilder(BuilderImmuable::class)]` (bloque `query()->update()`,
+  `delete()`, `increment()`, `upsert()`…). Le trait refuse de démarrer si l'attribut
+  manque. Reste possible : SQL brut via `DB::table()` — ne jamais en écrire sur ces
+  tables.
+- Trait `Journalise` (sur `User`) : création, modification (seulement les champs
+  changés, avant → après), suppression. Attributs `$hidden` écrits « (masqué) ».
+  Changement du seul `remember_token` / `updated_at` : pas de ligne (sinon chaque
+  déconnexion en ferait une). Écrit dans la même transaction : une opération annulée
+  n'a pas de trace.
+- Connexion, déconnexion, échec (avec l'adresse tapée, même inconnue) et blocage après
+  5 essais sont journalisés.
+- `Relation::enforceMorphMap` : `objet_type` = nom court stable (`user`), pas un nom de
+  classe. Tout nouveau modèle référencé devra y être déclaré.
+- Écran `/journal` (admin et direction, droit `voir-journal`) : filtres action et
+  utilisateur (gardés dans l'adresse), 50 lignes par page, valeurs lisibles
+  (« oui/non », « (vide) »). Pagination en français.
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **59 tests** (28 → 59), 248 assertions. Invariant 6 testé sur
+  10 manières de modifier ou supprimer une ligne. Larastan : 0 erreur (8 corrigées :
+  types manquants, appel `static::` à une méthode privée, type générique du builder
+  → réglé par l'attribut `UseEloquentBuilder`). Pint : propre.
+- **Dans Chrome** (localhost:8000, base MySQL migrée) : déconnexion de l'agent, connexion
+  admin, modification du téléphone d'un compte → le journal montre les trois lignes,
+  avec auteur, IP et « (vide) → 0700000001 » ; filtre « Connexion » → une seule ligne,
+  `?action=connexion` dans l'adresse ; compte direction → lien Journal, pas de lien
+  Utilisateurs, `/utilisateurs` → « Accès refusé », `/journal` → sa propre connexion en
+  tête.
+
+**Surprise.** La première vérification des valeurs dans le journal a montré du JSON
+brut (`"Ancien Nom"`, `true`) : illisible pour la direction ; remplacé par
+`JournalActivite::valeurLisible()`.
+
+### Suite : référentiels
+
+**Fait.**
+
+- Tables `zones`, `villages`, `produits`, `campagnes`, `magasins`, `points_collecte`,
+  `parametres` (une migration). Pas de suppression : champ `actif`. Tous `Journalise`,
+  tous déclarés dans le morph map.
+- Écarts avec `MODELE_DE_DONNEES.md`, reportés dans le document : `magasins.capacite_g`
+  (grammes, D4) au lieu de `capacite_kg` ; pas de `produits.unite` (tout se pèse).
+- Écran commun `EcranReferentiel` (liste, ajout, modification, onglets selon les
+  droits) ; sous-classes Zones, Villages, Produits, Magasins, PointsCollecte, Campagnes.
+  `peutModifier()`/`actionsLigne()` protégées (une méthode publique Livewire est
+  appelable depuis le navigateur). Route de la page gardée dans `$routePage` verrouillé
+  (sinon l'onglet actif se perd après une action : la route devient `livewire.update`).
+- Campagnes (direction seule) : code `AAAA-AAAA` unique par produit, fin ≥ début, prix
+  officiel en FCFA entiers **facultatif** (non annoncé), action « Ouvrir », **une seule
+  ouverte par produit** (verrou `lockForUpdate`), produit figé une fois ouverte,
+  clôturée non modifiable. Pas de clôture : elle viendra avec le résultat et D6.
+- Paramètres (direction seule) : 3 seuils de validation (dépense, achat, prêt), **aucune
+  valeur par défaut**, « Non défini » affiché en orange. `Parametre::entier()` rend
+  `null` si non défini — au code des semaines 3 à 6 d'exiger alors la validation.
+- `App\Support\Format::fcfa()` / `::kg()` : affichage seulement, calcul **en entiers**
+  (pas de division flottante), testé au-delà de 2³¹ g.
+- Seeder de dev : produits anacarde, karité, tomate ; « Zone de test » / « Village de
+  test ». Aucun prix, aucun seuil.
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **97 tests** (59 → 97), 460 assertions ; matrice des droits
+  figée par `AccesReferentielsTest` (7 écrans × 6 rôles). Larastan 0 erreur, Pint propre.
+- **Dans Chrome** (direction, base MySQL migrée) : zone créée ; village avec GPS ;
+  produit Anacarde ; campagne 2026-2027 avec d'abord fin < début → message français,
+  puis correcte, puis « Ouvrir » → « Ouverte », prix « Non annoncé » ; magasin de
+  250 000 kg → « 250 000 kg » ; seuil de dépense 500 000 FCFA, les deux autres « Non
+  défini ». Le journal montre chacune de ces opérations avec son auteur, et l'ouverture
+  en « statut : preparation → ouverte ». L'onglet actif reste marqué après une action.
+
+**À améliorer (non bloquant).** Le journal affiche les noms de colonnes et les valeurs
+brutes (`capacite_g : 250000000`, `zone_id : 1`) : exact pour un audit, peu parlant pour
+la direction. Messages « Zone Zone Chrome : créé(e). » quand le nom contient déjà le type.
+
+**Semaine 1 : définition de « fini ».** Un utilisateur par rôle se connecte et ne voit
+que ses écrans (tests + Chrome) ; toute création apparaît au journal (tests + Chrome) ;
+le nombre de tests a augmenté (0 → 97). Commit `5b9ab56` sur la branche `semaine-1`.
+Reste : les réponses aux questions 1, 5, 19, 20.
 
 ---
 
