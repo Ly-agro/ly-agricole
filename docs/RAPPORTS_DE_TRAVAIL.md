@@ -5,6 +5,65 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-28 — Semaine 2 (en avance) : producteurs, groupes, parcelles, carte QR
+
+**Fait.**
+
+- `producteurs` (UUID v7, D3) : fiche au bureau (identité, pièce, téléphone et Mobile
+  Money normalisés à 10 chiffres, village, groupe, photo). **Consentement obligatoire**
+  à la création (qui, quand) ; texte provisoire → question 21.
+- Code de carte `LYP-000001` attribué par le serveur (`compteurs`, verrou de ligne,
+  pas de trou si la création échoue).
+- Doublons (`DetectionDoublons`) : même pièce = **refus** ; même téléphone ou même
+  Mobile Money (croisés) = **alerte** à confirmer, confirmation inscrite au journal
+  (`doublon_confirme`).
+- Photo sur le disque **privé**, servie par une route qui vérifie le droit ; l'ancienne
+  est effacée au remplacement (minimisation) ; pas de photo orpheline si l'écriture échoue.
+- Droits : `voir-producteurs` (direction, agent, comptable, agronome),
+  `gerer-producteurs` (direction, agent). Ni admin ni investisseur (données personnelles).
+- Liste avec recherche (nom, code, téléphone même tapé « +225 07 … ») et filtre village.
+- Groupes de producteurs (écran commun `EcranReferentiel`, sans les onglets ;
+  responsable = producteur du village ; nombre de membres).
+- `parcelles` (UUID v7) : contour GeoJSON importé (fichier ou texte collé) ;
+  `App\Services\Geo\Contour` lit strictement (fermé, ≥ 3 sommets, en Côte d'Ivoire, avec
+  un message dédié si latitude/longitude inversées) et calcule la surface sur la sphère
+  (méthode turf.js) ; `surface_m2` recalculée par le modèle, **non affectable**, contour
+  verrouillé côté Livewire. Dessin SVG sans fond de carte. Sans contour : « non relevée ».
+- Carte producteur PDF (dompdf) au format ID-1 sur A4, QR (php-qrcode, correction Q) ne
+  contenant **que le code** ; pas de téléphone ni de numéro de pièce sur la carte ;
+  chaque impression journalisée (`impression_carte`).
+- `Format::hectares()` en entiers.
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **150 tests** (97 → 150), 706 assertions. Larastan 0, Pint propre.
+- Le QR généré, **décodé** par le lecteur de php-qrcode, redonne le code (test).
+- **Dans Chrome** (agent, MySQL) : fiche sans consentement → refus en français ; avec →
+  `LYP-000001`, photo affichée par la route privée, téléphone `+225 07 11 22 33 44` →
+  `0711223344` ; parcelle carrée de 150 m collée en GeoJSON → **2,25 ha**, carré dessiné,
+  total « 1 ; 2,25 ha relevés » sur la fiche ; 2ᵉ fiche avec le même téléphone →
+  alerte nommant `Coulibaly Awa (LYP-000001)`, confirmée → `LYP-000002` ; journal MySQL :
+  créations, impression de carte, doublon confirmé, au nom de l'agent.
+- Carte : PDF dessiné avec pdf.js (page temporaire, supprimée) et regardé ; puis le QR
+  **découpé dans le rendu du PDF** et décodé côté serveur → `LYP-000001`.
+
+**Bugs trouvés et corrigés en route.**
+
+- Choisir un PDF comme photo faisait **planter** le formulaire (aperçu d'un fichier non
+  image) : validation dès le choix + `isPreviewable()` ; test de non-régression.
+- Carte à **1,1 Mo** (police entière embarquée) → sous-ensemble de police : 30 Ko.
+- « LY AGRICOLE » coupé dans le bandeau de la carte (dompdf et `line-height`) → padding.
+
+**Pas vérifié.** Le scan de la carte **imprimée** avec un vrai téléphone (livrable de la
+semaine 2 : « la scanner au téléphone ») : à faire à la main. La saisie des 10 producteurs
+réels de test attend les vraies zones (question 1).
+
+**Surprise.** Un clic sur « Enregistrer » pendant la requête d'un `wire:model.live`
+(choix du village) est ignoré : le bouton est désactivé le temps de la requête.
+Normal, mais un utilisateur rapide devra recliquer.
+
+---
+
 ## 2026-09-28 — Semaine 1 : installation et écran de connexion
 
 **Fait.**
@@ -185,8 +244,8 @@ la direction. Messages « Zone Zone Chrome : créé(e). » quand le nom contient
 
 **Semaine 1 : définition de « fini ».** Un utilisateur par rôle se connecte et ne voit
 que ses écrans (tests + Chrome) ; toute création apparaît au journal (tests + Chrome) ;
-le nombre de tests a augmenté (0 → 97). **Reste : commit**, et les réponses aux questions
-1, 5, 19, 20.
+le nombre de tests a augmenté (0 → 97). Commit `5b9ab56` sur la branche `semaine-1`.
+Reste : les réponses aux questions 1, 5, 19, 20.
 
 ---
 

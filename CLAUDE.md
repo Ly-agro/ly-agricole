@@ -122,6 +122,15 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
 - **Tester dans Chrome sur `http://localhost:8000`, pas `127.0.0.1:8000`** : un service
   worker de VistaResidence contrôle `127.0.0.1:8000` sur ce poste et bloque les
   navigations sans erreur visible (requêtes `/sw.js` dans le journal d'`artisan serve`).
+- **dompdf embarque toute la police** si on ne lui dit pas : 1,1 Mo pour une carte.
+  `->setOption('isFontSubsettingEnabled', true)` (30 Ko). Et un `line-height` haut
+  décale le texte vers le bas (coupé) : positionner avec `padding`. Pour **voir** un PDF
+  ici (pas de pdftoppm), le dessiner avec pdf.js dans une page temporaire de `public/`,
+  puis la supprimer.
+- **Un aperçu Livewire `temporaryUrl()` plante sur un fichier non image** : valider le
+  fichier dès son choix (`updated`) et tester `isPreviewable()`.
+- **`sed` et les antislashs PHP** : `use App\\Models\\X` passé à `sed` perd ses
+  antislashs (ou la ligne entière). Pour du code PHP, utiliser l'outil d'édition.
 - **Git Bash réécrit les chemins d'URL** : `/entreprise` devient
   `C:/Program Files/Git/entreprise`. Préfixer `MSYS_NO_PATHCONV=1`.
 - **Un chemin POSIX (`/tmp/...`) passé à PHP n'écrit nulle part** (PHP Windows le lit

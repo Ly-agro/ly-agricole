@@ -19,6 +19,17 @@
 
                     {{-- Chaque lien n'apparaît qu'avec le droit correspondant ; la route le revérifie. --}}
                     <nav class="flex items-center gap-1 text-sm">
+                        @can('voir-producteurs')
+                            <a href="{{ route('producteurs') }}"
+                                @class([
+                                    'rounded-md px-3 py-1.5',
+                                    'bg-emerald-50 text-emerald-900' => request()->routeIs('producteurs*'),
+                                    'text-stone-700 hover:bg-stone-100' => ! request()->routeIs('producteurs*'),
+                                ])>
+                                Producteurs
+                            </a>
+                        @endcan
+
                         @can('gerer-utilisateurs')
                             <a href="{{ route('utilisateurs') }}"
                                 @class([

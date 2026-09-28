@@ -1,8 +1,13 @@
 <?php
 
 use App\Http\Controllers\Auth\DeconnexionController;
+use App\Http\Controllers\ProducteurController;
 use App\Livewire\Auth\Connexion;
 use App\Livewire\Journal\ConsultationJournal;
+use App\Livewire\Producteurs\FormulaireParcelle;
+use App\Livewire\Producteurs\FormulaireProducteur;
+use App\Livewire\Producteurs\Groupes;
+use App\Livewire\Producteurs\ListeProducteurs;
 use App\Livewire\Referentiels\Campagnes;
 use App\Livewire\Referentiels\EcranReferentiel;
 use App\Livewire\Referentiels\Magasins;
@@ -29,6 +34,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/journal', ConsultationJournal::class)
         ->middleware('can:voir-journal')
         ->name('journal');
+
+    Route::prefix('producteurs')->name('producteurs')->group(function () {
+        Route::get('/', ListeProducteurs::class)->middleware('can:voir-producteurs')->name('');
+        Route::get('/nouveau', FormulaireProducteur::class)->middleware('can:gerer-producteurs')->name('.nouveau');
+        Route::get('/groupes', Groupes::class)->middleware('can:gerer-producteurs')->name('.groupes');
+        Route::get('/{producteur}', [ProducteurController::class, 'fiche'])->middleware('can:voir-producteurs')->name('.fiche');
+        Route::get('/{producteur}/modifier', FormulaireProducteur::class)->middleware('can:gerer-producteurs')->name('.modifier');
+        Route::get('/{producteur}/photo', [ProducteurController::class, 'photo'])->middleware('can:voir-producteurs')->name('.photo');
+        Route::get('/{producteur}/carte', [ProducteurController::class, 'carte'])->middleware('can:gerer-producteurs')->name('.carte');
+        Route::get('/{producteur}/parcelles/nouvelle', FormulaireParcelle::class)->middleware('can:gerer-producteurs')->name('.parcelles.nouvelle');
+        Route::get('/{producteur}/parcelles/{parcelle}/modifier', FormulaireParcelle::class)
+            ->middleware('can:gerer-producteurs')->scopeBindings()->name('.parcelles.modifier');
+    });
 
     // Référentiels : chaque écran vérifie son propre droit (EcranReferentiel::onglets()).
     Route::get('/referentiels', function () {

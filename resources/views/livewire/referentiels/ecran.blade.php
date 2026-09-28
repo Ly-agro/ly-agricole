@@ -1,5 +1,7 @@
 <div>
-    @include('livewire.referentiels.onglets')
+    @if ($afficherOnglets)
+        @include('livewire.referentiels.onglets')
+    @endif
 
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-xl font-semibold">{{ $titrePage }}</h1>
@@ -36,7 +38,7 @@
                             <label for="champ-{{ $champ }}" class="mb-1 block text-sm font-medium text-stone-700">{{ $def['libelle'] }}</label>
 
                             @if ($def['type'] === 'select')
-                                <select wire:model="donnees.{{ $champ }}" id="champ-{{ $champ }}"
+                                <select @if ($def['live'] ?? false) wire:model.live="donnees.{{ $champ }}" @else wire:model="donnees.{{ $champ }}" @endif id="champ-{{ $champ }}"
                                     class="block w-full rounded-md border border-stone-300 px-3 py-2 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 focus:outline-none">
                                     <option value="">— Choisir —</option>
                                     @foreach ($def['options'] ?? [] as $valeur => $libelle)

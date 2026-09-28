@@ -5,9 +5,12 @@ namespace App\Providers;
 use App\Enums\ActionJournal;
 use App\Enums\Role;
 use App\Models\Campagne;
+use App\Models\GroupeProducteur;
 use App\Models\Magasin;
 use App\Models\Parametre;
+use App\Models\Parcelle;
 use App\Models\PointCollecte;
+use App\Models\Producteur;
 use App\Models\Produit;
 use App\Models\User;
 use App\Models\Village;
@@ -57,6 +60,9 @@ class AppServiceProvider extends ServiceProvider
             'magasin' => Magasin::class,
             'point_collecte' => PointCollecte::class,
             'parametre' => Parametre::class,
+            'producteur' => Producteur::class,
+            'groupe_producteurs' => GroupeProducteur::class,
+            'parcelle' => Parcelle::class,
         ]);
     }
 
@@ -76,6 +82,11 @@ class AppServiceProvider extends ServiceProvider
         // La direction fixe les prix (cahier §2) et les seuils : ce sont des contrôles.
         Gate::define('gerer-campagnes', fn (User $user) => $user->aLeRole(Role::Direction));
         Gate::define('gerer-parametres', fn (User $user) => $user->aLeRole(Role::Direction));
+
+        // Données personnelles : seulement ceux qui en ont besoin (minimisation,
+        // loi 2013-450). Ni l'admin (il gère des comptes) ni l'investisseur.
+        Gate::define('voir-producteurs', fn (User $user) => $user->aLeRole(Role::Direction, Role::Agent, Role::Comptable, Role::Agronome));
+        Gate::define('gerer-producteurs', fn (User $user) => $user->aLeRole(Role::Direction, Role::Agent));
     }
 
     private function journaliserLesConnexions(): void

@@ -18,6 +18,21 @@ class Format
     }
 
     /**
+     * m² → hectares à 2 décimales (1 ha = 10 000 m²), arrondi au centième, en entiers.
+     */
+    public static function hectares(?int $m2): string
+    {
+        if ($m2 === null) {
+            return '—';
+        }
+
+        $centiemes = intdiv($m2 + 50, 100);
+
+        return number_format(intdiv($centiemes, 100), 0, ',', self::MILLIERS)
+            .','.str_pad((string) ($centiemes % 100), 2, '0', STR_PAD_LEFT).' ha';
+    }
+
+    /**
      * Grammes → kg, sans arrondi caché : les grammes restants s'affichent en décimales.
      */
     public static function kg(?int $grammes): string

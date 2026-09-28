@@ -69,9 +69,10 @@ abstract class EcranReferentiel extends Component
 
     /**
      * Champs du formulaire : nom => [libelle, type (text|number|select|checkbox|date),
-     * options (select), aide].
+     * options (select), aide, live (recharger le formulaire à chaque changement, pour
+     * un champ dont dépendent les options d'un autre)].
      *
-     * @return array<string, array{libelle: string, type: string, options?: array<int|string, string>, aide?: string}>
+     * @return array<string, array{libelle: string, type: string, options?: array<int|string, string>, aide?: string, live?: bool}>
      */
     abstract protected function champs(): array;
 
@@ -93,6 +94,12 @@ abstract class EcranReferentiel extends Component
     protected function droit(): string
     {
         return 'gerer-referentiels';
+    }
+
+    /** Les onglets des référentiels n'ont pas de sens hors de la rubrique Référentiels. */
+    protected function afficherOnglets(): bool
+    {
+        return true;
     }
 
     /** @return Builder<TModel> */
@@ -243,6 +250,7 @@ abstract class EcranReferentiel extends Component
 
         return view('livewire.referentiels.ecran', [
             'titrePage' => $this->titre(),
+            'afficherOnglets' => $this->afficherOnglets(),
             'lignes' => $lignes,
             'modifiables' => $lignes->filter(fn (Model $l) => $this->peutModifier($l))->modelKeys(),
             'actionsParLigne' => $lignes->mapWithKeys(fn (Model $l) => [$l->getKey() => $this->actionsLigne($l)])->all(),
