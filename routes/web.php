@@ -26,6 +26,7 @@ use App\Livewire\Referentiels\PointsCollecte;
 use App\Livewire\Referentiels\Produits;
 use App\Livewire\Referentiels\Villages;
 use App\Livewire\Referentiels\Zones;
+use App\Livewire\TableauDeBord;
 use App\Livewire\Tresorerie\Comptes;
 use App\Livewire\Tresorerie\ReleveCompte;
 use App\Livewire\Utilisateurs\GestionUtilisateurs;
@@ -37,7 +38,7 @@ Route::redirect('/', '/tableau-de-bord');
 Route::get('/connexion', Connexion::class)->middleware('guest')->name('login');
 
 Route::middleware('auth')->group(function () {
-    Route::view('/tableau-de-bord', 'tableau-de-bord')->name('tableau-de-bord');
+    Route::get('/tableau-de-bord', TableauDeBord::class)->name('tableau-de-bord');
 
     Route::get('/utilisateurs', GestionUtilisateurs::class)
         ->middleware('can:gerer-utilisateurs')

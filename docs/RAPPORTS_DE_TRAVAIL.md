@@ -5,6 +5,77 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-28 — Front : menu latéral, barre du haut, page d'accueil analytique — FINI, NON COMMITÉ
+
+> Session `ly-agricole-fb`. Le front est **terminé et vérifié** ; ne pas le refaire. Il
+> reste à le commiter (voir « Reste »).
+
+**Fichiers (tous nouveaux sauf mention).**
+
+- `resources/views/components/layouts/app.blade.php` — **réécrit** : menu latéral
+  groupé (Terrain / Argent / Stock / Administration), barre du haut (titre, prix de la
+  campagne ouverte, bouton « Nouveau » filtré par droit, menu utilisateur). Les liens
+  gardent `href="{{ route(...) }}"` sous leur `@can` : les tests d'accès les cherchent.
+  Le lien « Intrants » de la session `f9` y est conservé.
+- `resources/views/components/nav-lien.blade.php` — un lien du menu (icône, état actif).
+  Un nouvel écran = une ligne `<x-nav-lien route=… motif=… icone=…>` + un tracé
+  d'icône dans le tableau `$traces`.
+- `resources/js/app.js` — menu qui glisse sur téléphone, menus déroulants (`<details>`).
+  Pas d'Alpine : les pages non Livewire n'en ont pas.
+- `app/Livewire/TableauDeBord.php` + `resources/views/livewire/tableau-de-bord/accueil.blade.php`
+  — remplacent `Route::view` et l'ancienne vue `tableau-de-bord.blade.php` (**supprimée**).
+  `routes/web.php` : une ligne changée + un `use`.
+- `app/Services/Indicateurs.php` — tous les chiffres, en lecture seule, entiers.
+- `app/Support/Graphique.php` + `resources/views/components/graphiques/{flux,barres,anneau}.blade.php`
+  — graphiques en SVG/HTML rendus côté serveur, **aucune bibliothèque JS**.
+- `tests/Feature/TableauDeBordTest.php` — 5 tests.
+
+**Ce que montre la page.** Prix officiel bord-champ de la campagne choisie (écart avec
+la précédente, historique par campagne) ; prêts accordés, remis (argent + intrants),
+dépenses payées, trésorerie ; entrées/sorties sur 6 mois ; « Revenus » (entrées d'argent
+par origine) ; dépenses par catégorie ; avancement des prêts ; actions à mener ; dernières
+nouvelles ; bilan campagne par campagne.
+
+**Choix à connaître.**
+
+- **Rien d'inventé** : achats, stock, remboursements, reventes n'existent pas encore.
+  « Revenus » = entrées de trésorerie (apports…), **contre-passations et virements
+  exclus**, et la page le dit ; quatre cases pointillées « Bientôt sur cette page »
+  marquent ce qui viendra. Les brancher = ajouter une méthode dans `Indicateurs`.
+- « Actualité » = les derniers faits enregistrés (prêts, versements, dépenses,
+  producteurs), pas le journal d'activité.
+- **Droits** : totaux de dépenses réservés à `valider-depenses` (un agent saisit, il ne
+  voit pas le total — trouvé par le test) ; trésorerie à `gerer-tresorerie` ; prêts à
+  `voir-prets`.
+- Les agrégats passent par `DB::table()` (pas de modèle : Larastan refuse les colonnes
+  calculées) et lisent `mouvements_intrants` directement pour la valeur des intrants.
+  **Si la session `f9` renomme cette table ou ses colonnes, `remisParCampagne()` casse.**
+
+**Vérifié.** `php artisan test` : **251 tests** verts (246 + 5), 1136 assertions ;
+Larastan 0 erreur (les 12 signalées par `f9` étaient dans `Indicateurs.php`, corrigées) ;
+Pint propre ; `npm run build` OK. **Dans Chrome** (`localhost:8000`, compte Comptable de
+dév.) : menu actif, prix « Pas encore annoncé » (aucun prix saisi en base), 7 prêts =
+21 000 000 FCFA accordés et remis, trésorerie 4 000 000 FCFA, graphique des flux sur
+septembre, revenus « Apport de fonds 25 000 000 » sans la contre-passation, fil des
+versements, tableau de bilan.
+
+**Téléphone (vérifié ensuite).** Dans un iframe de 390 px (la fenêtre Chrome ne se
+redimensionne pas ici) : menu caché hors écran, bouton burger visible, aucun défilement
+horizontal (`scrollWidth` = `clientWidth`), grille des chiffres sur 2 colonnes, graphique
+lisible. **Vrais clics** : burger → menu ouvert avec voile ; clic sur le voile → fermé.
+Par le code : Échap ferme, le burger rouvre. Piège de test : les mesures de position
+(`getBoundingClientRect`) retardent d'une étape à cause de la transition de 200 ms ; lire
+l'état par les classes ou attendre.
+
+**Pas vérifié.** Les rôles autres que Comptable n'ont été vus qu'en test ; les menus
+déroulants « Nouveau » et utilisateur n'ont pas été ouverts sur téléphone.
+
+**Reste.** Commit. Proposition : `f9` commite d'abord la semaine 5 sur `semaine-5`,
+puis le front en un commit séparé (les deux touchent `routes/web.php` et le layout :
+`git add -p` pour séparer les hunks).
+
+---
+
 ## 2026-09-28 — Semaine 5 (en avance) : intrants et prêts en nature — FINI, COMMITÉ
 
 > **Note pour une autre session de travail sur ce dossier.** La semaine 5 a été écrite,
