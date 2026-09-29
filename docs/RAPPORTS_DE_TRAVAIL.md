@@ -35,6 +35,115 @@ droits : voir le comptage de la fin de session. Pas vu dans un navigateur.
 **Reste.** Traitement d'une perte au-delà des fonds (règle métier) ; rapport final (art. 18.2) ;
 politique d'information du producteur.
 
+## 2026-09-29 — Phase 2 : alertes quotidiennes et avis de campagne — FINI, branche `phase-2-alertes`
+
+> Session `ly-agricole-45` (B), branche `phase-2-alertes`, au-dessus de `phase-2-notifications`
+> **après fusion de `fusion-phase-2`** (commit `e851c4e` : 544 tests, conflits des fichiers
+> partagés résolus en gardant les deux côtés). Base `ly_agricole_b`. Bloc réclamé auprès
+> de la session A, qui a posé deux garde-fous : push générique, et alertes d'argent
+> seulement aux rôles qui voient déjà ces écrans.
+
+**Pourquoi.** Réponses du responsable projet : « tous les avis sont les bienvenus », à
+« toute personne ayant les permissions nécessaires » (question 52) ; imprimante : pas de
+modèle précis, Bluetooth basse énergie (question 50, déjà codé).
+
+**Fait.** `App\Services\Alertes` + commande `notifications:alertes` (planifiée à 7 h) :
+saisies à valider depuis plus de 48 h (un rappel par personne et par jour, sans ce que la
+personne a saisi elle-même) ; prêts en retard (définition de `FiabiliteProducteur`, sans
+nom ni montant) → `voir-prets` ; poste de budget dépassé → `voir-budget` (une fois par
+poste et montant prévu) ; écarts de poids et sauvegardes, repris du rapport « Alertes » de
+`Rapports` (semaine 10, non modifié) → `voir-rapports`. Table `alertes_envoyees` : une
+alerte ne part qu'une fois, même si la commande tourne deux fois en parallèle.
+`DeclencheursCampagne` : campagne ouverte, prix officiel annoncé ou changé →
+`saisir-achats`. **Push générique** pour tous les avis (`AvisLy::pourPush()`, texte
+« Ouvrir LY AGRICOLE pour voir le détail. » par défaut) : le détail reste dans
+l'application.
+
+**Vérifié.** 544 → **550 tests** verts ; Larastan 0 ; Pint propre. **En vrai** sur
+`ly_agricole_b` : migration, `notifications:alertes` → 3 alertes « sauvegardes » (copie
+hors site absente, restauration non vérifiée, archives non chiffrées) à la direction et
+au comptable, file traitée (18 envois, 0 échec), push parti vers le navigateur abonné ;
+relancée aussitôt → 0 partout. Attente, retard et budget à 0 sur ces données (achats en
+attente depuis moins de 48 h, aucune échéance dépassée, budget des prêts non dépassé) :
+ces cas sont couverts par les tests (`AlertesTest`).
+
+**Choix.** Pas d'avis à la **création** d'une campagne déjà ouverte : elle naît « en
+préparation » et c'est l'action « Ouvrir » qui prévient (sinon chaque campagne créée par
+un import ou un test envoyait un avis).
+
+**Reste.** Question 51 (projet Firebase pour les téléphones). Tâche planifiée du serveur
+(`schedule:run` chaque minute) à installer en production, comme pour les sauvegardes.
+
+---
+
+## 2026-09-29 — Phase 2 : notifications push, tickets 58 mm, motif du budget — FINI, branche `phase-2-notifications`
+
+> Session `ly-agricole-45` (B), branche `phase-2-notifications` (au-dessus de `078bc8b`,
+> visites), worktree `../ly-agricole-budget`, **base `ly_agricole_b`** (copie de
+> `ly_agricole` : une base par session, voir `docs/REPARTITION_DES_TACHES.md`). Blocs
+> demandés par le responsable projet (hors cahier) et réclamés auprès de la session A
+> avant la première ligne.
+
+**Notifications.** `App\Services\Notifications::envoyer()` (seul point d'entrée, ouvert
+aux autres blocs), notification `AvisLy` (liste dans l'application + push, en file, après
+le commit), canaux `WebPushCanal` (navigateurs du bureau, VAPID, `minishlink/web-push` 11)
+et `FcmCanal` (appli terrain, Firebase HTTP v1, pilote `journal` par défaut). Déclencheurs
+par observateur en lecture seule (`DeclencheursNotifications`) : achat, dépense, prêt,
+vente « à valider » → ceux qui valident, sauf l'auteur ; validé / refusé → l'auteur
+(motif compris). Bureau : cloche avec compteur dans l'en-tête, page `/notifications`
+(filtres toutes / non lues / à valider, regroupées par jour, couleur par sorte d'avis),
+activation sur l'appareil (service worker `public/sw-ly.js`). Téléphone : `/api/push`
+(jeton Firebase déclaré à la connexion, retiré à la déconnexion), `terrain/src/lib/push.ts`.
+Commande `notifications:cles-vapid`. Tables `notifications`, `abonnements_push`.
+
+**Tickets 58 mm.** Bureau : `App\Support\Ticket58` (32 colonnes), `App\Services\Tickets`
+(bon d'achat, reçu de remise argent / intrants : mêmes informations que les PDF, que je
+n'ai pas modifiés), page `/tickets/...` à imprimer avec le pilote de l'imprimante, liens
+« Ticket 58 mm » à côté des PDF. Terrain : `ticket.ts` (même mise en page), `escpos.ts`
+(ESC/POS, table PC437 : accents du français gardés), `imprimante.ts` (Bluetooth basse
+énergie : plugin Capacitor sur Android, Web Bluetooth dans Chrome), bon de pesée
+**provisoire** imprimable juste après l'achat, réimpression depuis « À envoyer », choix de
+l'imprimante et essai sur l'accueil. Phomemo M832 : A4, PDF existants via son pilote.
+
+**Budget.** Motif facultatif d'une modification (`lignes_budget.motif_modification`),
+entré au journal avec l'ancien et le nouveau montant (réponse 29 du questionnaire).
+
+**Vérifié.** PHP : 404 → **423 tests** verts (budget +1, notifications 13, tickets 5) ;
+Larastan 0 ; Pint propre ; terrain : 29 → **36 tests vitest**, svelte-check 0, build OK.
+**Dans Chrome** (localhost:8001, base `ly_agricole_b`) : compte comptable → `/notifications`
+→ « Activer » (clic et autorisation par l'utilisateur) → abonnement enregistré ; achat
+envoyé par l'agent via `/api/connexion` + `/api/sync` (même chemin que le téléphone) →
+worker de file : 4 envois `AvisLy`, 0 échec ; avis « Achat ACH-000008 à valider » pour
+comptable et direction, **rien pour l'agent auteur** ; push accepté par le service de
+Chrome (`dernier_envoi_at` rempli, 0 échec) et **notification Windows affichée**
+(confirmé par l'utilisateur). Validation par le comptable dans la liste des achats →
+l'agent reçoit « Achat ACH-000008 validé ». Ticket 58 mm d'ACH-000007 affiché à la bonne
+largeur (35 kg × 425 = 14 875 FCFA, « en attente de validation » en tête) ; ticket de
+remise : restant dû ; 7 liens « Ticket 58 mm » dans la liste des achats. Appli terrain :
+bloc « Imprimante 58 mm » sur l'accueil ; « Réimprimer » sans imprimante → « Choisir
+d'abord l'imprimante ».
+
+**Pas vérifié.** Impression Bluetooth sur une vraie imprimante (aucune sous la main,
+question 50) ; notifications sur le téléphone (ni projet Firebase ni APK, questions 26 et
+51) ; Phomemo M832.
+
+**Surprises.**
+1. **OpenSSL de XAMPP sans `openssl.cnf`** : impossible de créer une clé EC — donc ni
+   clés VAPID, ni **aucun envoi Web Push**, sans message visible. Seule la variable
+   d'environnement du processus corrige (`OPENSSL_CONF`), ni `putenv()` ni l'option
+   `config`. Noté dans CLAUDE.md ; le canal n'accuse plus les appareils d'une panne du
+   serveur (sinon ils étaient tous oubliés au bout de 5 avis) — test ajouté.
+2. La pastille de la cloche était décalée : CSS construite avant l'ajout de la cloche
+   (classes absentes) et lien « en ligne » contenant un bloc. `npm run build` et
+   `inline-flex`.
+3. Le bouton « Valider » de la liste des achats ouvre une confirmation du navigateur
+   (`wire:confirm`) : elle a bloqué l'onglet piloté ; l'utilisateur a répondu.
+4. `sed` a encore mangé des antislashs (`\s` dans une expression régulière de test) :
+   corrigé à l'outil d'édition.
+
+**Reste.** Question 51 (projet
+Firebase). Réponses 50 (BLE, pas de modèle précis) et 52 (tous les avis, à qui a les droits) : bloc « alertes » à suivre. Fusion : après `fusion-phase-2` de la session A.
+
 ---
 
 ## 2026-09-29 — Fusion des branches de la phase 1 et de la phase 2 — FINI, à pousser

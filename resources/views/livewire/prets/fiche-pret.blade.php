@@ -217,6 +217,7 @@
                         <td class="py-2 pr-4">{{ $d->auteur->nom }}</td>
                         <td class="py-2 pr-4">
                             <a href="{{ route('prets.recu-pdf', [$pret, 'argent', $d->id]) }}" target="_blank" class="text-emerald-800 underline">reçu PDF</a>
+                            · <a href="{{ route('tickets.remise', [$pret, 'argent', $d->id]) }}" target="_blank" class="text-emerald-800 underline">ticket 58 mm</a>
                             @if ($d->justificatif) · <a href="{{ route('prets.recu', $d) }}" target="_blank" class="text-emerald-800 underline">reçu signé</a> @endif
                         </td>
                     </tr>
@@ -237,6 +238,7 @@
                         <td class="py-2 pr-4">
                             @if ($m->type->value === 'distribution')
                                 <a href="{{ route('prets.recu-pdf', [$pret, 'intrants', $m->id]) }}" target="_blank" class="text-emerald-800 underline">reçu PDF</a>
+                                · <a href="{{ route('tickets.remise', [$pret, 'intrants', $m->id]) }}" target="_blank" class="text-emerald-800 underline">ticket 58 mm</a>
                             @endif
                         </td>
                     </tr>

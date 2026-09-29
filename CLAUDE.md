@@ -61,9 +61,14 @@ vendor/bin/pint                        # style
 vendor/bin/phpstan analyse --memory-limit=1G   # Larastan niveau 6 (phpstan.neon), plusieurs minutes ici
 npm run build                          # Vite + Tailwind 4 (config dans resources/css/app.css)
 php artisan serve                      # http://127.0.0.1:8000
-php artisan queue:work                 # envoie les SMS en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
+php artisan queue:work                 # envoie les SMS et les notifications en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
+php artisan notifications:cles-vapid   # une fois : clés du Web Push à mettre dans .env (PUSH_VAPID_PUBLIQUE / _PRIVEE)
+php artisan notifications:alertes      # alertes du jour (planifiée à 7 h via schedule:run) ; relancée le même jour : rien ne repart
 php artisan ly:sauvegarder --verifier  # archive base + fichiers, puis VRAIE restauration comparée (docs/MISE_EN_PRODUCTION.md)
 ```
+
+Notifications push du bureau : lancer `serve` **et** `queue:work` avec
+`OPENSSL_CONF=C:\xampp\php\extras\ssl\openssl.cnf` (voir pièges).
 
 Appli terrain (`terrain/`, semaine 8) — Node 26, npm :
 
@@ -178,6 +183,12 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
 - **`php -r` + `preg_replace` qui échoue = fichier vidé** : `preg_replace` rend `null`
   et `file_put_contents($f, null)` écrit 0 octet, sans erreur fatale (vu le 2026-09-28).
   Pour du code PHP, l'outil d'édition ; sinon vérifier le retour avant d'écrire.
+- **OpenSSL de XAMPP ne trouve pas `openssl.cnf`** : `openssl_pkey_new` échoue (« Unable to
+  create the key ») — génération des clés VAPID et **chaque envoi Web Push** (clé
+  éphémère). Seule la variable d'environnement du **processus** corrige :
+  `OPENSSL_CONF=C:\xampp\php\extras\ssl\openssl.cnf` avant `php artisan serve` /
+  `queue:work` ; `putenv()` et l'option `config` ne suffisent pas (vu le 2026-09-29).
+  Sans elle, l'avis reste dans l'application, le push est journalisé en erreur.
 - **Deux copies du dépôt (worktree) ⇒ Pint et Larastan plantent** (« Cannot declare class
   ComposerAutoloaderInit… » ou phar introuvable) : l'opcache du CLI, sous Windows,
   confond les archives phar identiques des deux copies. Lancer

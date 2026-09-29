@@ -30,7 +30,7 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label for="poste" class="mb-1 block text-sm font-medium text-stone-700">Poste</label>
-                        <select wire:model="poste" id="poste" class="block w-full rounded-md border border-stone-300 px-3 py-2 focus:border-emerald-600 focus:outline-none">
+                        <select wire:model.live="poste" id="poste" class="block w-full rounded-md border border-stone-300 px-3 py-2 focus:border-emerald-600 focus:outline-none">
                             <option value="">— Choisir —</option>
                             <option value="achats">Achats de produit (argent payé)</option>
                             <option value="prets">Prêts aux producteurs (argent versé)</option>
@@ -53,7 +53,14 @@
                     <input wire:model="note" id="note" type="text" placeholder="Hypothèse : 40 t à 425 F/kg" class="block w-full rounded-md border border-stone-300 px-3 py-2 focus:border-emerald-600 focus:outline-none">
                     @error('note') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
                 </div>
-                <p class="text-xs text-stone-500">Si le poste est déjà prévu, son montant est remplacé ; l'ancien reste au journal.</p>
+                @if ($modification)
+                    <div>
+                        <label for="motif" class="mb-1 block text-sm font-medium text-stone-700">Motif de la modification (optionnel)</label>
+                        <input wire:model="motif" id="motif" type="text" placeholder="Prix bord-champ relevé à 450 F/kg" class="block w-full rounded-md border border-stone-300 px-3 py-2 focus:border-emerald-600 focus:outline-none">
+                        @error('motif') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    </div>
+                @endif
+                <p class="text-xs text-stone-500">Si le poste est déjà prévu, son montant est remplacé ; l'ancien reste au journal, avec le motif.</p>
                 <div class="flex justify-end gap-3">
                     <button type="button" wire:click="$set('formulaire', false)" class="text-sm text-stone-600 hover:underline">Annuler</button>
                     <button type="submit" class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">Enregistrer</button>

@@ -74,6 +74,7 @@
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right">
                             <a href="{{ route('achats.bon', $a) }}" target="_blank" class="mr-1 rounded-md px-2 py-1 text-xs text-emerald-800 hover:bg-emerald-50">Bon PDF</a>
+                            <a href="{{ route('tickets.achat', $a) }}" target="_blank" class="mr-1 rounded-md px-2 py-1 text-xs text-emerald-800 hover:bg-emerald-50">Ticket 58 mm</a>
                             @if ($a->photo_pesee)
                                 @if ($a->photoPesee)
                                     <a href="{{ route('photos-terrain', $a->photoPesee) }}" target="_blank" class="mr-1 rounded-md px-2 py-1 text-xs text-emerald-800 hover:bg-emerald-50">Photo pesée</a>

@@ -184,6 +184,17 @@
                         </details>
                     @endcanany
 
+                    @auth
+                        @php $nonLues = auth()->user()->unreadNotifications()->count(); @endphp
+                        <a href="{{ route('notifications') }}" class="relative inline-flex items-center justify-center rounded-lg p-2 text-stone-700 hover:bg-stone-100"
+                            aria-label="Notifications{{ $nonLues > 0 ? ' : '.$nonLues.' non lue(s)' : '' }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20a2 2 0 0 0 4 0" /></svg>
+                            @if ($nonLues > 0)
+                                <span class="absolute -right-0.5 -top-0.5 min-w-5 rounded-full bg-red-600 px-1 text-center text-[11px] font-semibold leading-5 text-white tabular-nums">{{ $nonLues > 99 ? '99+' : $nonLues }}</span>
+                            @endif
+                        </a>
+                    @endauth
+
                     <details class="relative" data-deroulant>
                         <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg p-1 hover:bg-stone-100 [&::-webkit-details-marker]:hidden">
                             <span class="flex h-9 w-9 items-center justify-center rounded-full bg-stone-200 text-xs font-semibold text-stone-800">{{ $initiales }}</span>

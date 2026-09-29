@@ -33,8 +33,11 @@ use Illuminate\Support\Facades\DB;
  */
 class Budgets
 {
-    /** Fixe (crée ou modifie) le montant prévu d'un poste. */
-    public static function definir(Campagne $campagne, PosteBudget $poste, ?int $categorieId, int $montant, User $auteur, ?string $note = null): LigneBudget
+    /**
+     * Fixe (crée ou modifie) le montant prévu d'un poste. Le motif, facultatif, ne sert
+     * qu'à une modification : il entre au journal avec l'ancien et le nouveau montant.
+     */
+    public static function definir(Campagne $campagne, PosteBudget $poste, ?int $categorieId, int $montant, User $auteur, ?string $note = null, ?string $motif = null): LigneBudget
     {
         if (! $auteur->can('gerer-budget')) {
             throw new OperationRefusee('Votre rôle ne permet pas de modifier le budget.');
@@ -43,7 +46,7 @@ class Budgets
             throw new OperationRefusee('Le montant prévu ne peut pas être négatif.');
         }
 
-        return DB::transaction(function () use ($campagne, $poste, $categorieId, $montant, $auteur, $note) {
+        return DB::transaction(function () use ($campagne, $poste, $categorieId, $montant, $auteur, $note, $motif) {
             // Verrou sur la campagne : deux saisies simultanées du même poste ne créent
             // pas deux lignes (l'index unique ne compare pas les categorie_id NULL).
             $campagne = Campagne::query()->lockForUpdate()->findOrFail($campagne->id);
@@ -79,7 +82,12 @@ class Budgets
                 ]);
             }
 
-            $ligne->update(['montant_fcfa' => $montant, 'note' => $note, 'modifie_par' => $auteur->id]);
+            $ligne->update([
+                'montant_fcfa' => $montant,
+                'note' => $note,
+                'modifie_par' => $auteur->id,
+                'motif_modification' => filled($motif) ? trim((string) $motif) : null,
+            ]);
 
             return $ligne;
         });

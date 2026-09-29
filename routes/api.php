@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ConnexionController;
 use App\Http\Controllers\Api\PhotoController;
+use App\Http\Controllers\Api\PushController;
 use App\Http\Controllers\Api\TerrainController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,4 +15,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sync', [TerrainController::class, 'synchroniser'])->name('api.sync');
     // Photos à part des opérations (fichiers lourds, réseau faible).
     Route::post('/photos', [PhotoController::class, 'recevoir'])->name('api.photos');
+    // Notifications sur le téléphone (jeton Firebase de l'appareil).
+    Route::post('/push', [PushController::class, 'abonner'])->name('api.push');
+    Route::delete('/push', [PushController::class, 'desabonner'])->name('api.push.retirer');
 });
