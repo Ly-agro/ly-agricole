@@ -66,5 +66,6 @@ class FauxModele:
         ordre = {"pratique": 0, "biologique": 1, "chimique": 2}
         lignes = ["Voici ce que recommandent les fiches validées, dans l'ordre :"]
         for f in sorted(self.fiches, key=lambda f: ordre[f.type]):
-            lignes.append(f"- {f.titre} [FICHE-{f.id}]")
+            # Le repère seul : la plateforme le remplace par le texte validé de la fiche.
+            lignes.append(f"- [FICHE-{f.id}]")
         return "\n".join(lignes)

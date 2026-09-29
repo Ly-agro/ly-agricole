@@ -5,7 +5,7 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
-## 2026-09-29 — Phase 3 : socle IA (service ia/, référentiel, diagnostics) — FINI SAUF PARCOURS AGRONOME, branche `phase-3-ia`
+## 2026-09-29 — Phase 3 : socle IA (service ia/, référentiel, diagnostics) — FINI, branche `phase-3-ia`
 
 > Session `ly-agricole-45` (B), branche `phase-3-ia` depuis `phase-2-alertes` (`bb1c0a3`),
 > base `ly_agricole_b`. Demande de l'utilisateur : « fais l'ajout de LLM » ; les blocs
@@ -44,12 +44,21 @@ sur la visite avec photo → « 1 photo(s) confiée(s) », worker → `POST /dia
 diagnostic « **incertain** » en base avec son motif ; en **agronome**, `/ia/referentiel`
 vide avec son explication et le bouton « Nouvelle fiche ».
 
-**Pas vérifié.** La fin du parcours en agronome (fiche d'essai, validation, brouillon
-par le vrai `/conseil`) : coupé par l'indisponibilité du contrôle de sécurité, puis les
-processus (service IA, plateforme, worker) ont été **arrêtés faute de mémoire** sur le
-poste. À refaire. Aucun vrai modèle (Ollama) essayé : pas de serveur IA.
+**Parcours agronome** (« tu es l'agronome pour l'instant », compte de démonstration, sans
+Chrome ni serveur web faute de mémoire : vraies fonctions de la plateforme, vrai service
+par HTTP, vraie file d'attente) : fiche d'**ESSAI** « désherber autour des arbres »
+(pratique, sans produit) → proposable ; diagnostic « incertain » validé « sain » →
+« corrigé » ; brouillon demandé → worker → `POST /conseil` 200 → statut « brouillon »,
+fiche 1 citée, repère remplacé par le texte validé. Fiche d'essai ensuite **retirée**
+(plus proposable). **Aucune vraie fiche de produit ni de dose n'a été saisie** : le
+référentiel ne se remplit pas de mémoire (skill IA, règle 6) ; il attend un agronome.
+Défaut vu au rendu et corrigé : le faux modèle écrivait l'intitulé ET le repère
+(intitulé en double) ; il n'écrit plus que le repère.
 
-**Reste.** Parcours agronome ; questions 53 (agronome), 54 (serveur IA), 55 (jeu CCMT,
+**Pas vérifié.** Aucun vrai modèle (Ollama) : pas de serveur IA. Les processus lancés
+plus tôt (service, plateforme, worker) avaient été arrêtés faute de mémoire sur le poste.
+
+**Reste.** Questions 53 (agronome), 54 (serveur IA), 55 (jeu CCMT,
 consentement pour l'entraînement) ; brancher un modèle de vision (ONNX) quand il y aura
 des photos confirmées.
 
