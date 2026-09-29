@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -49,6 +50,12 @@ class Sauvegardes
     /** Crée l'archive et rend son chemin. */
     public function creer(): string
     {
+        $motDePasse = config('sauvegardes.mot_de_passe');
+        $minimum = (int) config('sauvegardes.mot_de_passe_longueur_min');
+        if ($motDePasse !== null && mb_strlen((string) $motDePasse) < $minimum) {
+            throw new RuntimeException("Mot de passe des sauvegardes trop court (moins de {$minimum} caractères) : en générer un avec « php artisan ly:mot-de-passe-sauvegardes ».");
+        }
+
         $dossier = (string) config('sauvegardes.dossier');
         File::ensureDirectoryExists($dossier);
         $horodatage = now()->format('Ymd-His');
@@ -151,6 +158,98 @@ class Sauvegardes
         $fichier = config('sauvegardes.dossier').DIRECTORY_SEPARATOR.'derniere-verification.json';
 
         return is_file($fichier) ? json_decode((string) file_get_contents($fichier), true) : null;
+    }
+
+    /**
+     * Copie l'archive hors site, la RELIT et compare son SHA-256 : une copie qu'on n'a
+     * pas relue ne compte pas. Purge les copies trop anciennes (les 7 dernières restent).
+     *
+     * @return array{ok: bool, configuree: bool, archive: string, cible: string|null, erreur: string|null, copie_at: string}
+     */
+    public function copierHorsSite(?string $archive = null): array
+    {
+        $archive ??= $this->derniere() ?? throw new RuntimeException('Aucune sauvegarde à copier.');
+        $nom = basename($archive);
+        $cible = config('sauvegardes.hors_site_disque') ?? config('sauvegardes.hors_site_dossier');
+        $statut = ['ok' => false, 'configuree' => $cible !== null, 'archive' => $nom, 'cible' => $cible, 'erreur' => null, 'copie_at' => now()->toIso8601String()];
+
+        try {
+            $disque = $this->disqueHorsSite();
+            if ($disque === null) {
+                throw new RuntimeException('Copie hors site non configurée (SAUVEGARDE_HORS_SITE_DISQUE ou SAUVEGARDE_HORS_SITE_DOSSIER).');
+            }
+
+            $source = fopen($archive, 'rb');
+            try {
+                $disque->writeStream($nom, $source);
+            } finally {
+                is_resource($source) && fclose($source);
+            }
+
+            $relue = $disque->readStream($nom);
+            $contexte = hash_init('sha256');
+            hash_update_stream($contexte, $relue);
+            is_resource($relue) && fclose($relue);
+            if (hash_final($contexte) !== hash_file('sha256', $archive)) {
+                $disque->delete($nom);
+                throw new RuntimeException('La copie relue diffère de l\'archive : copie supprimée, à refaire.');
+            }
+
+            $this->purgerHorsSite($disque);
+            $statut['ok'] = true;
+        } catch (\Throwable $e) {
+            $statut['erreur'] = $e->getMessage();
+        }
+
+        File::ensureDirectoryExists((string) config('sauvegardes.dossier'));
+        File::put(config('sauvegardes.dossier').DIRECTORY_SEPARATOR.'derniere-copie-hors-site.json', json_encode($statut, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+        return $statut;
+    }
+
+    /** @return array{ok: bool, configuree: bool, archive: string, cible: string|null, erreur: string|null, copie_at: string}|null */
+    public function derniereCopieHorsSite(): ?array
+    {
+        $fichier = config('sauvegardes.dossier').DIRECTORY_SEPARATOR.'derniere-copie-hors-site.json';
+
+        return is_file($fichier) ? json_decode((string) file_get_contents($fichier), true) : null;
+    }
+
+    public function horsSiteConfiguree(): bool
+    {
+        return config('sauvegardes.hors_site_disque') !== null || config('sauvegardes.hors_site_dossier') !== null;
+    }
+
+    private function disqueHorsSite(): ?Filesystem
+    {
+        if (($nom = config('sauvegardes.hors_site_disque')) !== null) {
+            return Storage::disk((string) $nom);
+        }
+        if (($dossier = config('sauvegardes.hors_site_dossier')) === null) {
+            return null;
+        }
+
+        // Le même dossier que les sauvegardes locales n'est pas « hors site ».
+        $local = realpath((string) config('sauvegardes.dossier'));
+        File::ensureDirectoryExists((string) $dossier);
+        if ($local !== false && realpath((string) $dossier) === $local) {
+            throw new RuntimeException('Le dossier hors site est le dossier des sauvegardes locales : ce n\'est pas une copie hors site.');
+        }
+
+        return Storage::build(['driver' => 'local', 'root' => (string) $dossier, 'throw' => true]);
+    }
+
+    private function purgerHorsSite(Filesystem $disque): void
+    {
+        $archives = array_values(array_filter($disque->files(), fn (string $f) => (bool) preg_match('/^ly-agricole-\d{8}-\d{6}\.zip$/', basename($f))));
+        rsort($archives);
+        $limite = now()->subDays((int) config('sauvegardes.hors_site_conserver_jours'))->getTimestamp();
+
+        foreach (array_slice($archives, 7) as $ancienne) {
+            if ($disque->lastModified($ancienne) < $limite) {
+                $disque->delete($ancienne);
+            }
+        }
     }
 
     public function derniere(): ?string
@@ -281,6 +380,8 @@ class Sauvegardes
             'cree_at' => now()->toIso8601String(),
             'base' => config('database.connections.'.DB::getDefaultConnection().'.database'),
             'chiffree' => $motDePasse !== null,
+            // Dit QUEL mot de passe ouvre l'archive (après un changement) sans le révéler.
+            'empreinte_mot_de_passe' => $motDePasse === null ? null : self::empreinteMotDePasse((string) $motDePasse),
             'empreinte' => $empreinte,
             'sha256' => $sha,
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -299,14 +400,36 @@ class Sauvegardes
         }
     }
 
+    /**
+     * Empreinte lente (PBKDF2, 200 000 tours) : assez pour reconnaître le bon mot de
+     * passe, trop coûteuse pour le deviner à partir du manifeste (lisible sans lui).
+     */
+    public static function empreinteMotDePasse(string $motDePasse): string
+    {
+        return hash_pbkdf2('sha256', $motDePasse, 'ly-agricole-sauvegarde', 200_000, 16);
+    }
+
     private function extraire(string $archive, string $vers): void
     {
         $zip = new ZipArchive;
         if ($zip->open($archive) !== true) {
             throw new RuntimeException("Archive illisible : {$archive}");
         }
-        if (config('sauvegardes.mot_de_passe') !== null) {
-            $zip->setPassword((string) config('sauvegardes.mot_de_passe'));
+
+        // Le manifeste n'est pas chiffré : on sait tout de suite si le mot de passe est le bon.
+        $manifeste = json_decode((string) $zip->getFromName('manifest.json'), true) ?: [];
+        $motDePasse = config('sauvegardes.mot_de_passe');
+        if (($manifeste['chiffree'] ?? false) === true) {
+            if ($motDePasse === null) {
+                $zip->close();
+                throw new RuntimeException('Archive chiffrée : définir SAUVEGARDE_MOT_DE_PASSE pour la lire.');
+            }
+            $attendue = $manifeste['empreinte_mot_de_passe'] ?? null;
+            if ($attendue !== null && $attendue !== self::empreinteMotDePasse((string) $motDePasse)) {
+                $zip->close();
+                throw new RuntimeException("Mot de passe différent de celui de l'archive (empreinte attendue {$attendue}) : un ancien mot de passe ?");
+            }
+            $zip->setPassword((string) $motDePasse);
         }
         File::ensureDirectoryExists($vers);
         if (! $zip->extractTo($vers)) {

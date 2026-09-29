@@ -242,7 +242,20 @@ class Rapports
         }
 
         // Une sauvegarde jamais restaurée n'est pas une sauvegarde (vérification hebdomadaire).
-        $verification = app(Sauvegardes::class)->derniereVerification();
+        $sauvegardes = app(Sauvegardes::class);
+        $copie = $sauvegardes->derniereCopieHorsSite();
+        if (! $sauvegardes->horsSiteConfiguree()) {
+            $lignes[] = ['Copie hors site absente', '—', 'Les sauvegardes restent sur le serveur : un vol, un incendie ou un piratage les emporterait avec la base.', null];
+        } elseif ($copie !== null && ! $copie['ok']) {
+            $lignes[] = ['Copie hors site en échec', $copie['archive'], (string) $copie['erreur'], Carbon::parse($copie['copie_at'])];
+        } elseif ($copie === null || Carbon::parse($copie['copie_at'])->lt($aujourdhui->copy()->subDays(2))) {
+            $lignes[] = ['Copie hors site ancienne', $copie['archive'] ?? '—', 'Aucune copie hors site réussie depuis plus de 2 jours.', $copie === null ? null : Carbon::parse($copie['copie_at'])];
+        }
+        if (config('sauvegardes.mot_de_passe') === null) {
+            $lignes[] = ['Sauvegardes non chiffrées', '—', 'Données personnelles en clair dans les archives : « php artisan ly:mot-de-passe-sauvegardes ».', null];
+        }
+
+        $verification = $sauvegardes->derniereVerification();
         if ($verification === null) {
             $lignes[] = ['Sauvegarde non vérifiée', '—', 'Aucune restauration de sauvegarde vérifiée : lancer « php artisan ly:sauvegarder --verifier ».', null];
         } elseif (! $verification['ok']) {

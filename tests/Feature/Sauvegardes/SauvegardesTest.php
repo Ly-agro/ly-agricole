@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Rapports;
 use App\Services\Sauvegardes;
 use App\Services\Tresorerie;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +42,9 @@ class SauvegardesTest extends TestCase
         parent::setUp();
         Storage::fake('local');
         $this->dossier = storage_path('framework/testing/sauvegardes-'.uniqid());
-        config(['sauvegardes.dossier' => $this->dossier, 'sauvegardes.mot_de_passe' => null]);
+        // Configuration neutre : rien ne doit venir du .env du développeur.
+        config(['sauvegardes.dossier' => $this->dossier, 'sauvegardes.mot_de_passe' => null,
+            'sauvegardes.hors_site_disque' => null, 'sauvegardes.hors_site_dossier' => null]);
         $this->app->instance(Sauvegardes::class, new SauvegardesDeTest);
 
         $this->direction = User::factory()->role(Role::Direction)->create();
@@ -139,19 +142,156 @@ class SauvegardesTest extends TestCase
     #[Test]
     public function avec_un_mot_de_passe_l_archive_est_chiffree_aes_256(): void
     {
-        config(['sauvegardes.mot_de_passe' => 'coffre-LY-2026']);
+        config(['sauvegardes.mot_de_passe' => 'coffre-LY-AGRICOLE-2026']);
         $archive = $this->service()->creer();
 
         $zip = new ZipArchive;
         $zip->open($archive);
         $this->assertSame(ZipArchive::EM_AES_256, $zip->statName('base.sql')['encryption_method']);
         $this->assertSame(ZipArchive::EM_AES_256, $zip->statName('fichiers/depenses/justificatifs/recu.jpg')['encryption_method']);
+        $manifeste = json_decode((string) $zip->getFromName('manifest.json'), true);
         $zip->close();
+        // Le manifeste dit quel mot de passe ouvre l'archive, sans le contenir.
+        $this->assertSame(Sauvegardes::empreinteMotDePasse('coffre-LY-AGRICOLE-2026'), $manifeste['empreinte_mot_de_passe']);
+        $this->assertStringNotContainsString('coffre', (string) json_encode($manifeste));
 
         $this->assertTrue($this->service()->verifier($archive)['ok']);
 
-        config(['sauvegardes.mot_de_passe' => 'mauvais']);
-        $this->assertFalse($this->service()->verifier($archive)['ok']);
+        config(['sauvegardes.mot_de_passe' => 'un-autre-mot-de-passe-long']);
+        $this->assertStringContainsString('Mot de passe différent de celui de l\'archive', $this->service()->verifier($archive)['erreurs'][0]);
+
+        config(['sauvegardes.mot_de_passe' => null]);
+        $this->assertStringContainsString('définir SAUVEGARDE_MOT_DE_PASSE', $this->service()->verifier($archive)['erreurs'][0]);
+    }
+
+    #[Test]
+    public function un_mot_de_passe_trop_court_bloque_la_sauvegarde(): void
+    {
+        config(['sauvegardes.mot_de_passe' => 'court']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('trop court');
+        $this->service()->creer();
+    }
+
+    #[Test]
+    public function la_commande_genere_un_mot_de_passe_dans_le_env_sans_ecraser_l_existant(): void
+    {
+        $dossierEnv = $this->dossier.'/env';
+        File::ensureDirectoryExists($dossierEnv);
+        File::put($dossierEnv.'/.env', "APP_NAME=Test\nSAUVEGARDE_MOT_DE_PASSE=\n");
+        $this->app->useEnvironmentPath($dossierEnv);
+
+        $this->artisan('ly:mot-de-passe-sauvegardes', ['--sans-afficher' => true])->assertSuccessful();
+        preg_match('/^SAUVEGARDE_MOT_DE_PASSE=(.*)$/m', File::get($dossierEnv.'/.env'), $m);
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9]{32}$/', $m[1]);
+        $this->assertSame(1, substr_count(File::get($dossierEnv.'/.env'), 'SAUVEGARDE_MOT_DE_PASSE='));
+
+        // Un second appel ne remplace pas le mot de passe sans --remplacer.
+        $this->artisan('ly:mot-de-passe-sauvegardes', ['--sans-afficher' => true])->assertFailed();
+        $this->assertStringContainsString($m[1], File::get($dossierEnv.'/.env'));
+    }
+
+    #[Test]
+    public function la_copie_hors_site_dans_un_dossier_est_relue_et_identique(): void
+    {
+        $horsSite = $this->dossier.'-hors-site';
+        config(['sauvegardes.hors_site_dossier' => $horsSite]);
+
+        try {
+            $archive = $this->service()->creer();
+            $copie = $this->service()->copierHorsSite($archive);
+
+            $this->assertTrue($copie['ok'], (string) $copie['erreur']);
+            $this->assertFileEquals($archive, $horsSite.'/'.basename($archive));
+            $this->assertTrue($this->service()->derniereCopieHorsSite()['ok']);
+        } finally {
+            File::deleteDirectory($horsSite);
+        }
+    }
+
+    #[Test]
+    public function la_copie_hors_site_passe_aussi_par_un_disque_de_stockage(): void
+    {
+        Storage::fake('hors_site_test');
+        config(['sauvegardes.hors_site_disque' => 'hors_site_test']);
+
+        $archive = $this->service()->creer();
+
+        $this->assertTrue($this->service()->copierHorsSite($archive)['ok']);
+        Storage::disk('hors_site_test')->assertExists(basename($archive));
+    }
+
+    #[Test]
+    public function une_copie_relue_differente_est_supprimee_et_signalee(): void
+    {
+        $archive = $this->service()->creer();
+        $disque = \Mockery::mock(Filesystem::class);
+        $disque->shouldReceive('writeStream')->once()->andReturn(true);
+        $disque->shouldReceive('readStream')->once()->andReturnUsing(function () {
+            $flux = fopen('php://memory', 'r+');
+            fwrite($flux, 'copie abîmée pendant le transfert');
+            rewind($flux);
+
+            return $flux;
+        });
+        $disque->shouldReceive('delete')->once()->with(basename($archive));
+        Storage::set('hors_site_abime', $disque);
+        config(['sauvegardes.hors_site_disque' => 'hors_site_abime']);
+
+        $copie = $this->service()->copierHorsSite($archive);
+
+        $this->assertFalse($copie['ok']);
+        $this->assertStringContainsString('relue diffère', (string) $copie['erreur']);
+        $this->assertContains('Copie hors site en échec', array_column(app(Rapports::class)->alertes()->lignes, 0));
+    }
+
+    #[Test]
+    public function le_dossier_des_sauvegardes_locales_n_est_pas_un_hors_site(): void
+    {
+        config(['sauvegardes.hors_site_dossier' => $this->dossier]);
+
+        $copie = $this->service()->copierHorsSite($this->service()->creer());
+
+        $this->assertFalse($copie['ok']);
+        $this->assertStringContainsString('n\'est pas une copie hors site', (string) $copie['erreur']);
+    }
+
+    #[Test]
+    public function hors_site_les_7_dernieres_restent_et_les_trop_vieilles_partent(): void
+    {
+        Storage::fake('hors_site_test');
+        config(['sauvegardes.hors_site_disque' => 'hors_site_test']);
+        $disque = Storage::disk('hors_site_test');
+        foreach (range(1, 10) as $i) {
+            $nom = 'ly-agricole-202601'.sprintf('%02d', $i).'-020000.zip';
+            $disque->put($nom, 'x');
+            touch($disque->path($nom), now()->subDays(200)->getTimestamp());
+        }
+        $disque->put('autre-fichier.txt', 'à ne pas toucher');
+
+        $this->service()->copierHorsSite($this->service()->creer());
+
+        $this->assertCount(7, array_filter($disque->files(), fn ($f) => str_starts_with($f, 'ly-agricole-')));
+        $disque->assertExists('autre-fichier.txt');
+    }
+
+    #[Test]
+    public function la_commande_de_sauvegarde_echoue_si_la_copie_hors_site_echoue_mais_garde_l_archive(): void
+    {
+        config(['sauvegardes.hors_site_dossier' => $this->dossier]);
+
+        $this->artisan('ly:sauvegarder')->expectsOutputToContain('Copie hors site échouée')->assertFailed();
+        $this->assertNotNull($this->service()->derniere());
+    }
+
+    #[Test]
+    public function sans_copie_hors_site_ni_chiffrement_les_rapports_le_signalent(): void
+    {
+        $alertes = array_column(app(Rapports::class)->alertes()->lignes, 0);
+
+        $this->assertContains('Copie hors site absente', $alertes);
+        $this->assertContains('Sauvegardes non chiffrées', $alertes);
     }
 
     #[Test]

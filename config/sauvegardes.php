@@ -22,4 +22,20 @@ return [
 
     // Base jetable où la vérification restaure l'archive, puis la supprime.
     'base_verification' => env('SAUVEGARDE_BASE_VERIFICATION') ?: 'ly_agricole_verif',
+
+    /*
+     * Copie HORS SITE de chaque archive (vol, incendie, piratage du serveur). Au choix :
+     * - `hors_site_disque` : un disque de config/filesystems.php (ex. « s3 » chez
+     *   l'hébergeur, une fois `league/flysystem-aws-s3-v3` installé) ;
+     * - `hors_site_dossier` : un dossier ailleurs que le serveur (autre disque, partage
+     *   réseau \\serveur\partage, dossier synchronisé avec un stockage en ligne).
+     * Aucun des deux : pas de copie, et une alerte dans les rapports.
+     */
+    'hors_site_disque' => env('SAUVEGARDE_HORS_SITE_DISQUE') ?: null,
+    'hors_site_dossier' => env('SAUVEGARDE_HORS_SITE_DOSSIER') ?: null,
+    // Plus longue qu'en local : c'est la dernière ligne de défense.
+    'hors_site_conserver_jours' => (int) (env('SAUVEGARDE_HORS_SITE_CONSERVER_JOURS') ?: 90),
+
+    // Longueur minimale du mot de passe des archives : en dessous, sauvegarde refusée.
+    'mot_de_passe_longueur_min' => 16,
 ];

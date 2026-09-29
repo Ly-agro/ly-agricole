@@ -46,7 +46,8 @@ production.**
 | `LOG_LEVEL` | `warning` | |
 | `SMS_PILOTE` | `journal` tant que le fournisseur n'est pas choisi (question 11) | |
 | `SAUVEGARDE_DOSSIER` | dossier sur un **autre disque** | un disque qui lâche ne doit pas emporter base et sauvegardes |
-| `SAUVEGARDE_MOT_DE_PASSE` | long, aléatoire, **noté hors du serveur** | archives chiffrées AES-256 (données personnelles, loi 2013-450) ; sans lui, aucune restauration |
+| `SAUVEGARDE_MOT_DE_PASSE` | généré par `php artisan ly:mot-de-passe-sauvegardes`, **noté hors du serveur** | archives chiffrées AES-256 (données personnelles, loi 2013-450) ; sans lui, aucune restauration |
+| `SAUVEGARDE_HORS_SITE_DISQUE` ou `SAUVEGARDE_HORS_SITE_DOSSIER` | ⏳ selon l'hébergeur (section 5) | copie de chaque archive hors du serveur |
 
 Une clé déclarée vide (`X=`) n'est pas une clé absente (piège de CLAUDE.md) : le code
 filtre `''`, mais mieux vaut supprimer la ligne que la laisser vide.
@@ -84,9 +85,43 @@ base de production (refus si les deux noms sont égaux). Le résultat est dans
 `storage/sauvegardes/derniere-verification.json` et, s'il manque, a échoué ou date de
 plus de 8 jours, dans **Rapports → Alertes**.
 
-**Copie hors site** ⏳ : une sauvegarde sur le même serveur ne protège ni du vol, ni de
-l'incendie, ni d'un piratage. Copier chaque nuit la dernière archive ailleurs (stockage
-de l'hébergeur, second site, disque chez la direction). À décider avec la question 10.
+**Mot de passe des archives** — une seule fois, sur le serveur :
+
+```bash
+php artisan ly:mot-de-passe-sauvegardes    # 32 caractères, écrit dans .env, affiché UNE fois
+php artisan config:cache
+```
+
+Le noter **tout de suite** hors du serveur, en deux exemplaires (coffre, et papier sous
+enveloppe chez la direction). Chaque archive note l'**empreinte** du mot de passe qui
+l'ouvre (`manifest.json`, lisible sans lui, sans le révéler) : après un changement
+(`--remplacer`), on sait quelle archive demande l'ancien — le garder aussi. La commande
+refuse d'écraser un mot de passe existant sans `--remplacer` ; une sauvegarde refuse un
+mot de passe de moins de 16 caractères. Tant qu'il n'est pas défini : alerte
+« Sauvegardes non chiffrées » dans les rapports.
+
+**Copie hors site** : une sauvegarde sur le même serveur ne protège ni du vol, ni de
+l'incendie, ni d'un piratage. Après chaque sauvegarde, `ly:sauvegarder` copie l'archive
+hors site, la **relit** et compare son SHA-256 (une copie différente est supprimée et
+signalée). Conservation hors site : 90 jours, les 7 dernières toujours gardées. Relancer
+une copie : `php artisan ly:copier-sauvegarde`. Deux façons, selon l'hébergeur ⏳
+(question 10) :
+
+- **stockage objet** (S3 ou compatible, chez l'hébergeur ou ailleurs) :
+  `composer require league/flysystem-aws-s3-v3`, un disque `s3` dans
+  `config/filesystems.php` (clés dans `.env`), puis `SAUVEGARDE_HORS_SITE_DISQUE=s3` ;
+- **dossier** hors du serveur : partage réseau `\\serveur\partage`, disque monté d'un
+  second site, dossier synchronisé avec un stockage en ligne :
+  `SAUVEGARDE_HORS_SITE_DOSSIER=…`. Le dossier des sauvegardes locales est refusé.
+
+Les archives étant chiffrées, le stockage hors site ne voit jamais les données en
+clair. Alertes dans les rapports : « Copie hors site absente », « en échec », ou
+« ancienne » (plus de 2 jours).
+
+**Si le serveur est perdu** : sur un nouveau serveur installé (section 2), avec le mot
+de passe noté, `php artisan ly:verifier-sauvegarde /chemin/de/la/copie.zip` restaure
+directement la copie hors site dans la base jetable et la vérifie ; puis restaurer pour
+de vrai ci-dessous.
 
 **Restaurer pour de vrai** (panne, erreur grave) — à deux, jamais seul :
 

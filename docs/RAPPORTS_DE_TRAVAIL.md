@@ -5,6 +5,52 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Semaine 12 (suite) : copie hors site et mot de passe des archives — FINI, COMMITÉ
+
+> Même worktree, branche `semaine-12`. Demande de l'utilisateur : « fais copie des …
+> et mot de passe des archives ».
+
+**Fait.**
+
+- **Copie hors site** (`copierHorsSite`, lancée par `ly:sauvegarder`, relançable par
+  `ly:copier-sauvegarde`) : vers un disque Laravel (`SAUVEGARDE_HORS_SITE_DISQUE`, ex. S3)
+  ou un dossier (`SAUVEGARDE_HORS_SITE_DOSSIER`). La copie est **relue** et son SHA-256
+  comparé ; différente ⇒ supprimée, signalée, commande en échec (l'archive locale
+  reste). Refus du dossier des sauvegardes locales comme « hors site ». Conservation
+  hors site 90 jours, 7 dernières gardées, autres fichiers du stockage jamais touchés.
+- **Mot de passe** : `ly:mot-de-passe-sauvegardes` (32 lettres et chiffres, écrit dans
+  `.env`, affiché une fois ; refuse d'écraser sans `--remplacer`). Sauvegarde refusée
+  sous 16 caractères. Empreinte PBKDF2 (200 000 tours) du mot de passe dans le
+  manifeste : la vérification dit tout de suite « mot de passe différent de celui de
+  l'archive (empreinte attendue …) » ou « archive chiffrée : définir … ».
+- Rapports → Alertes : copie hors site absente / en échec / de plus de 2 jours,
+  sauvegardes non chiffrées.
+- `docs/MISE_EN_PRODUCTION.md` (mot de passe en deux exemplaires hors du serveur, deux
+  façons de copier selon l'hébergeur, restauration « serveur perdu » depuis la copie),
+  `.env.example`.
+
+**Vérifié en l'exécutant.**
+
+- 349 tests (340 → 349), Larastan 0, Pint propre. Dont : copie relue différente
+  (disque simulé qui rend autre chose) ⇒ copie supprimée + alerte ; mauvais mot de
+  passe ; commande de mot de passe sur un `.env` jetable (le vrai `.env` n'a pas été
+  touché : vérifié).
+- **Réel, MySQL** : mot de passe de dev généré **sans affichage** (sert aux essais
+  seulement ; celui de production sera généré sur le serveur), copie vers un dossier
+  temporaire jouant le hors site. `ly:sauvegarder --verifier` ⇒ archive chiffrée de
+  100 Ko, « copie hors site relue et identique », « restauration vérifiée : 290 lignes,
+  22 fichiers ». Contre-vérifications : SHA-256 local = hors site ; `base.sql` illisible
+  sans mot de passe (manifeste lisible) ; **restauration directement depuis la copie
+  hors site** réussie (scénario « serveur perdu »). Alertes de sauvegarde disparues des
+  rapports.
+- Un test dépendait du `.env` du développeur (copie hors site désormais définie) :
+  configuration neutre imposée dans le test.
+
+**Reste.** Choisir la cible hors site réelle avec l'hébergeur (question 10) ; générer le
+mot de passe de production sur le serveur et le mettre au coffre.
+
+---
+
 ## 2026-09-29 — Semaine 12 (préparation) : sauvegardes vérifiées par restauration, procédure de mise en production — FINI, COMMITÉ
 
 > Session `ly-agricole-f9`, worktree `ly-agricole-phase1`, branche `semaine-12` (depuis
