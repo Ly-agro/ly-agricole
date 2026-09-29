@@ -22,7 +22,7 @@
         <aside data-menu id="menu"
             class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-stone-200 bg-stone-50 transition-transform duration-200 lg:translate-x-0">
             <div class="flex h-16 shrink-0 items-center gap-3 border-b border-stone-200 px-5">
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-800 text-sm font-bold text-white" aria-hidden="true">LY</span>
+                <img src="{{ asset('images/logo-yl-agro.png') }}" alt="" width="36" height="36" class="h-9 w-9 shrink-0">
                 <a href="{{ route('tableau-de-bord') }}" class="leading-tight">
                     <span class="block text-sm font-semibold tracking-wide">LY AGRICOLE</span>
                     <span class="block text-xs text-stone-500">Gestion de campagne</span>
@@ -33,9 +33,12 @@
             <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Menu principal">
                 <div class="space-y-1">
                     <x-nav-lien route="tableau-de-bord" motif="tableau-de-bord" icone="accueil">Tableau de bord</x-nav-lien>
+                    @can('voir-rapports')
+                        <x-nav-lien route="rapports" motif="rapports*" icone="rapports">Rapports</x-nav-lien>
+                    @endcan
                 </div>
 
-                @canany(['voir-producteurs', 'saisir-achats', 'valider-achats', 'voir-visites'])
+                @canany(['voir-producteurs', 'saisir-achats', 'valider-achats', 'voir-rendements', 'voir-fiabilite', 'voir-visites'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Terrain</p>
                         <div class="space-y-1">
@@ -45,6 +48,12 @@
                             @canany(['saisir-achats', 'valider-achats'])
                                 <x-nav-lien route="achats" motif="achats*" icone="achats">Achats</x-nav-lien>
                             @endcanany
+                            @can('voir-fiabilite')
+                                <x-nav-lien route="fiabilite" motif="fiabilite*" icone="fiabilite">Fiabilité</x-nav-lien>
+                            @endcan
+                            @can('voir-rendements')
+                                <x-nav-lien route="rendements" motif="rendements" icone="rendements">Rendements</x-nav-lien>
+                            @endcan
                             @can('voir-visites')
                                 <x-nav-lien route="visites" motif="visites" icone="visites">Visites</x-nav-lien>
                             @endcan
@@ -52,7 +61,7 @@
                     </div>
                 @endcanany
 
-                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'voir-budget', 'saisir-depenses', 'valider-depenses'])
+                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'voir-resultat-campagne', 'voir-rapport-campagne', 'voir-budget', 'saisir-depenses', 'valider-depenses'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Argent</p>
                         <div class="space-y-1">
@@ -67,6 +76,12 @@
                             @endcan
                             @can('gerer-apports')
                                 <x-nav-lien route="apports" motif="apports" icone="apports">Apports</x-nav-lien>
+                            @endcan
+                            @can('voir-rapport-campagne')
+                                <x-nav-lien route="rapport-campagne" motif="rapport-campagne*" icone="rapport">Rapport de campagne</x-nav-lien>
+                            @endcan
+                            @can('voir-resultat-campagne')
+                                <x-nav-lien route="resultat" motif="resultat" icone="resultat">Résultat</x-nav-lien>
                             @endcan
                             @can('voir-budget')
                                 <x-nav-lien route="budget" motif="budget" icone="budget">Budget</x-nav-lien>

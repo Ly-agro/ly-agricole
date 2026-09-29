@@ -85,7 +85,7 @@ flowchart TD
 | --- | --- | --- |
 | `apports` 🔒 | investisseur_id (nullable = apport de LY), campagne_id, montant_fcfa (**signé**), date_apport, motif, mouvement_id, annule_id, cree_par | contrat art. 5 (compte dédié) et art. 9 (apport de LY facultatif) ; un apport hors du compte dédié de la campagne est refusé |
 
-**Limite connue, volontaire.** `App\Services\Apports` ne calcule **aucun résultat net ni quote-part** (contrat art. 10 à 14) : le texte exact de ces articles n'est pas disponible (question 15 bis, `docs/QUESTIONS_OUVERTES.md`). `Apports::repartition()` donne seulement la part de chaque investisseur dans l'ensemble des apports d'investisseurs — un calcul objectif, pas le partage du résultat prévu par le contrat. Le portail investisseur (`/mon-investissement`) l'indique explicitement à l'écran.
+**Partage du résultat (contrat art. 10 à 14).** Aucune table : tout est recalculé. `App\Services\PartageResultat` (pur, entiers) applique l'art. 12 (40 % investisseurs / 60 % LY, quote-part au prorata investi), l'art. 13 (perte au prorata des apports, LY sur son apport propre, exception 13.4 = décision de la direction) et reprend les deux exemples de l'art. 14 en tests. `App\Services\ResultatCampagne` lit les registres : recettes = encaissements de ventes ; charges = achats validés + dépenses payées non exclues (10.3) ; valeur du stock invendu = donnée par la direction (11.3). Résultat **provisoire** : affiché à la direction et à la comptabilité seulement (`/resultat`), pas aux investisseurs (question 32).
 
 ## Trésorerie et dépenses
 
@@ -112,7 +112,12 @@ flowchart TD
 | `abonnements_push` | user_id, canal (`web` : navigateur, Web Push VAPID ; `fcm` : appli terrain, Firebase), destination (adresse ou jeton), empreinte (sha256, unique), cle_p256dh, cle_auth, appareil, dernier_envoi_at, echecs | un appareil qui reçoit le « push ». Repris par un autre utilisateur ⇒ réattribué. Appareil disparu (404 / 410 / `UNREGISTERED`) oublié tout de suite ; 5 échecs de suite ⇒ oublié ; une panne du serveur n'est pas comptée. Sans clés VAPID, rien ne part vers les navigateurs ; Firebase en pilote `journal` par défaut (rien ne part, comme les SMS) |
 | `operations_recues` | **uuid** (clé primaire = UUID du téléphone = id de ce qui est créé), type (`producteur`, `achat`, `parcelle`, `depense`, `visite`), synchronisation_id, appareil_id, user_id, statut (`accepte`, `rejete`), motif, cree_at (heure du téléphone), recu_at (heure du serveur) | clé d'idempotence : acceptée ⇒ un renvoi répond `deja_recu` sans rien refaire ; rejetée ⇒ renvoyable corrigée avec le même UUID |
 | `personal_access_tokens` | (Sanctum) tokenable, name (= appareil), token, abilities, last_used_at, expires_at | un jeton par téléphone ; révoqué à la déconnexion ; un compte désactivé est refusé même avec un jeton valide |
-| `parametres` | cle, valeur | clés connues du code (`App\Enums\CleParametre`) ; **pas de valeur par défaut** : non défini ≠ 0, le code applique la règle prudente |
+| `parametres` | cle, valeur | clés connues du code (`App\Enums\CleParametre`) ; **pas de valeur par défaut** : non défini ≠ 0, le code applique la règle prudente. Sem. 10 : `seuil_alerte_ecart_poids_pour_mille` (non défini ⇒ **tout** écart est signalé) |
+
+Rapports (sem. 10, `App\Services\Rapports`) : **aucune table**. Restant dû, stock, soldes et
+écarts sont recalculés à chaque affichage à partir des registres. Écart de poids d'un lot =
+pertes + ajustements d'inventaire + corrections ; une vente (sortie de phase 2) n'est pas un
+écart.
 
 ## Invariants à tester dès la semaine où la table naît
 

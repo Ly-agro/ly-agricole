@@ -17,6 +17,7 @@ enum CleParametre: string
     case PlafondPretProducteur = 'plafond_pret_producteur_fcfa';
     case PlafondPretHectare = 'plafond_pret_hectare_fcfa';
     case RegleRemboursementNature = 'regle_remboursement_nature';
+    case SeuilAlerteEcartPoids = 'seuil_alerte_ecart_poids_pour_mille';
 
     public function libelle(): string
     {
@@ -28,6 +29,7 @@ enum CleParametre: string
             self::PlafondPretProducteur => 'Plafond de prêt par producteur et par campagne',
             self::PlafondPretHectare => 'Plafond de prêt par hectare financé',
             self::RegleRemboursementNature => 'Valorisation des remboursements en kilos',
+            self::SeuilAlerteEcartPoids => 'Seuil d\'alerte d\'écart de poids d\'un lot',
         };
     }
 
@@ -41,6 +43,7 @@ enum CleParametre: string
             self::PlafondPretProducteur => 'Total des prêts d\'un producteur sur une campagne. Non défini : pas de plafond automatique (la validation reste obligatoire).',
             self::PlafondPretHectare => 'Montant maximal par hectare de parcelles financées (surfaces relevées). Non défini : pas de plafond automatique.',
             self::RegleRemboursementNature => 'Prix appliqué aux kilos livrés en remboursement d\'un prêt (question 3). Tant qu\'il n\'est pas choisi, un achat ne peut pas rembourser un prêt.',
+            self::SeuilAlerteEcartPoids => 'Écart (séchage, pertes, inventaire) au-delà duquel un lot est signalé dans les alertes, en pour mille des kilos achetés (50 = 5 %). Non défini : tous les lots avec un écart sont signalés.',
         };
     }
 
@@ -68,6 +71,7 @@ enum CleParametre: string
     {
         return match ($this) {
             self::PlafondPretHectare => 'FCFA / ha',
+            self::SeuilAlerteEcartPoids => '‰',
             self::RegleRemboursementNature => '',
             default => 'FCFA',
         };

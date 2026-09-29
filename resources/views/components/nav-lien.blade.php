@@ -22,8 +22,14 @@
         // Prévu contre réel : deux barres, une pleine, une en cours.
         'budget' => 'M4 20h16M7 20V9m5 11V5m5 15v-7',
         'referentiels' => 'M4 6h16M4 12h16M4 18h10',
+        'fiabilite' => 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3ZM9 12l2 2 4-4',
+        'rapport' => 'M7 3h7l5 5v13H7V3ZM14 3v5h5M10 13h6M10 17h6',
+        'resultat' => 'M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5',
+        'rendements' => 'M4 20h16M6 20V12M12 20V5M18 20v-6',
         'journal' => 'M8 4h9a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM6 8H4m2 4H4m2 4H4M10 9h6M10 13h6',
         'utilisateurs' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0',
+        // Barres (rapports).
+        'rapports' => 'M4 20h16M7 16v-5M12 16V6M17 16v-8',
     ];
 @endphp
 

@@ -25,3 +25,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Contrat de campagne signé ou à signer : contient le RIB de la société, jamais dans le dépôt.
+docs/CONTRAT_*.pdf

@@ -120,6 +120,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('gerer-utilisateurs', fn (User $user) => $user->aLeRole(Role::Admin));
         Gate::define('voir-journal', fn (User $user) => $user->aLeRole(Role::Admin, Role::Direction));
+        // Rapports de la direction (restant dû, stock, caisses, écarts, alertes) et exports.
+        Gate::define('voir-rapports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
 
         // Zones, villages, produits, magasins, points de collecte.
         Gate::define('gerer-referentiels', fn (User $user) => $user->aLeRole(Role::Admin, Role::Direction));
@@ -168,6 +170,15 @@ class AppServiceProvider extends ServiceProvider
         // l'investisseur (cahier §2 : « consulte sa quote-part », en attendant le
         // calcul exact — voir App\Services\Apports).
         Gate::define('gerer-apports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Rendements (cahier §4) : lecture des chiffres de tous les producteurs.
+        Gate::define('voir-rendements', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Résultat net et partage (contrat art. 10 à 14) : direction et comptabilité, lecture.
+        Gate::define('voir-resultat-campagne', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Rapports du contrat (art. 18), distincts de `voir-rapports` (rapports de gestion, semaine 10).
+        Gate::define('voir-rapport-campagne', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Fiabilité des producteurs (cahier §10) : historique de remboursement de personnes réelles,
+        // réservé à ceux qui décident des prêts.
+        Gate::define('voir-fiabilite', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
 
         // Budget de campagne (cahier §8) : fixé par la direction, comme le prix officiel

@@ -75,7 +75,230 @@ Firebase). Réponses 50 (BLE, pas de modèle précis) et 52 (tous les avis, à q
 
 ---
 
-## 2026-09-29 — Phase 2 : visites de parcelle — FINI, commit `078bc8b`
+## 2026-09-29 — Fusion des branches de la phase 1 et de la phase 2 — FINI, à pousser
+
+> Branche `fusion-phase-2`, créée depuis `origin/main` (`450446e`). Demande du responsable projet :
+> « fais la fusion, je vais faire le push ». Plan : `docs/PLAN_DE_FUSION.md`.
+
+**Fusionné, dans l'ordre :** `semaine-12` (semaines 6 à 12 : terrain, rapports de gestion,
+sauvegardes) → `phase-2-reventes` (A) → `phase-2-visites` au commit `078bc8b` (B : budget, visites).
+Conflits : uniquement ceux prévus (`routes/web.php` ; menu `layouts/app` ; `QUESTIONS_OUVERTES.md` et
+`RAPPORTS_DE_TRAVAIL.md`), tous résolus en gardant les deux côtés. **Numérotation des questions
+adoptée** : celle du fichier de réponses du responsable projet (28 activités, 29 budget, 30 visites,
+31 rendement, 32 résultat, 33 exports, 34 écart de poids, 35 fiabilité, 36 qui voit les rapports) ;
+les anciennes 28, 29, 30 de `semaine-12` sont devenues 33, 34, 36 (références corrigées).
+
+**Pas fusionné :** `phase-2-notifications` (notifications push, tickets 58 mm de B, en cours), et
+`main` local n'a pas été déplacé.
+
+**Vérifié en l'exécutant, sur l'arbre fusionné :**
+- `php artisan test` : **525 tests, tous verts** (462 côté A + 26 propres à `semaine-12` = 488 après la
+  2e fusion ; + les tests de B). Pint propre ; Larastan 0 erreur.
+- Terrain : vitest 29/29, `svelte-check` 0 erreur, `npm run build` OK ; base Dexie versions 1 à 3.
+- **Base de contrôle** `ly_agricole_fusion` (créée pour l'occasion, supprimée ensuite) : `migrate` complet
+  sans erreur, 0 migration en attente ; rendu de `/`, `/connexion`, `/tableau-de-bord`, `/resultat`,
+  `/rapport-campagne`, `/fiabilite`, `/rendements`, `/rapports`, `/budget`, `/visites`, `/apports`,
+  `/ventes`, `/prets`, `/producteurs` : tous en 200 pour la direction (`/mon-investissement` : 403, normal,
+  réservé à l'investisseur).
+- Pas vu dans un navigateur ; l'APK et le mode avion restent à tester sur un vrai téléphone.
+
+**À faire par le responsable projet :** pousser `fusion-phase-2` et ouvrir la pull request vers `main`
+(le dépôt fonctionne par PR). La base de dev `ly_agricole` n'a PAS les tables `lignes_budget`, `visites`,
+`visite_photo` : `php artisan migrate` avant d'utiliser ces écrans avec elle.
+
+---
+
+## 2026-09-29 — Note de fiabilité du producteur — FINI
+
+> Branche `phase-2-reventes`, après `3e11c9a`. Bloc réclamé par A (`REPARTITION_DES_TACHES.md`).
+
+**Choix de conception.** Le cahier (§10) dit seulement « propose un plafond pour la campagne
+suivante ; la direction décide ». Comme il s'agit de personnes réelles et qu'aucune règle n'est
+donnée, **aucun score n'est inventé** : ni note, ni « bon » ou « mauvais » payeur, ni coefficient.
+`App\Services\FiabiliteProducteur::fiche()` donne l'**historique objectif** des prêts versés (remis,
+remboursé en ‰ entier, soldé à temps ou avec X jours de retard, en cours, en retard) et un plafond
+**proposé** par une règle prudente : le plus gros prêt soldé à l'échéance ou avant, borné par le
+plafond par producteur des Paramètres ; rien sans historique, sans prêt soldé à temps, ou si un prêt
+est en retard ; jamais d'augmentation. La direction reste seule à décider (aucune action sur l'écran).
+Les remboursements contre-passés ne comptent pas. Question ouverte n° 35.
+
+**Écrans.** `/fiabilite` (producteurs ayant reçu un prêt, recherche, pagination) et
+`/fiabilite/{producteur}` (synthèse, plafond proposé et sa raison, prêts, lien vers l'évolution du
+rendement). Droit `voir-fiabilite` : **direction et comptable seulement** (jamais l'agent ni l'investisseur).
+Ni `ProducteurController` ni la fiche producteur ne sont touchés (fichiers de B).
+
+**Vérifié en l'exécutant.** 18 tests (soldé à temps, plus gros prêt, retard, soldé en retard, contre-
+passation, plafond des Paramètres, droits, écrans) au vert du premier coup. Sur la vraie base MySQL :
+`/fiabilite` 200 avec 7 producteurs (aucun plafond proposé : aucun prêt soldé en dev), fiche 200.
+Pas vu dans un navigateur.
+
+**Reste.** Question 35 (règle de progression, qui voit, information du producteur).
+
+---
+
+## 2026-09-29 — Rapport de campagne : point d'étape (contrat art. 18.1) — FINI, commité
+
+> Branche `phase-2-reventes`, après `a5f6cdc`. Bloc réclamé par A dans
+> `docs/REPARTITION_DES_TACHES.md`.
+
+**Fait.** `App\Services\RapportCampagne::pointEtape()` relit les registres (fonds collectés et
+apport de LY, kilos achetés / vendus / en stock, achats et charges par catégorie, avances versées
+et non remboursées, ventes facturées / encaissées / reste, solde des comptes de la campagne) et
+`pointEtapePdf()` en fait un PDF A4 d'**une page**. Les « principaux événements » sont un texte
+libre de la direction (3 000 caractères), jamais rempli automatiquement. La note ne contient
+**ni résultat net, ni quote-part, ni nom de producteur** (test) : le contrat ne les demande pas à
+l'art. 18.1, et un résultat provisoire lu comme définitif tromperait les investisseurs. Écran
+`/rapport-campagne` (aperçu + formulaire POST → PDF), droit `voir-rapport-campagne` (direction,
+comptable), lien « Rapport de campagne » sous Argent. Noms distincts de `/rapports`, `voir-rapports`
+et `resources/views/rapports/` de la branche `semaine-10` (fusion sans collision).
+
+**Vérifié en l'exécutant.** 12 tests ajoutés : 432 → **444** ; Larastan 0 erreur ; Pint propre.
+Vrai PDF généré avec les données MySQL de dev : `%PDF`, 1 page (comptée), **vu dans Chrome**
+(première version, en-tête, sections 1 à 3) ; deux défauts corrigés après coup (accord « 1 vente
+validée » ; signature qui débordait sur une 2e page). Après ces corrections, la relecture dans
+Chrome a échoué (rendu figé, poste court en mémoire) : la page unique n'est vérifiée que par le
+compte de pages.
+
+**Instabilité corrigée (mon erreur).** `RendementsTest` échouait de temps en temps : ses codes de
+campagne explicites (2030-2031…) pouvaient coïncider avec ceux, aléatoires (2030 à 2099), de la
+fabrique. Codes déplacés en 1990-1993 ; 3 exécutions de suite au vert.
+
+**Reste.** Rapport final (art. 18.2) : attend la question 32. Les exports PDF/Excel sont déjà dans
+`semaine-10` (répartition mise à jour).
+
+---
+
+## 2026-09-29 — Vitrine publique, logo et partage du résultat (contrat art. 10 à 14) — FINI, commité
+
+> Branche `phase-2-reventes`, après `bacfdf5`. Deux demandes du responsable projet : une
+> page d'accueil publique (« pour ne pas atterrir direct sur la connexion »), et le calcul
+> des articles 10 à 14 maintenant que le contrat est dans `docs/`.
+
+**Contrat.** `docs/CONTRAT_CAMPAGNE_LY_AGRICOLE (1).pdf` est bien le bon document : les
+articles 10 à 14 y sont complets, avec les deux exemples chiffrés de l'art. 14. Question
+15b **répondue**. (Le PDF contient le RIB de la société : ne jamais le recopier ailleurs.)
+
+**Vitrine.** `/` n'est plus une redirection : page publique (`resources/views/vitrine.blade.php`),
+logo `public/images/logo-yl-agro.png`, bouton « Se connecter » (ou « Mon espace » si déjà
+connecté). Le logo est aussi dans la barre latérale et sur la page de connexion. Contenu :
+uniquement ce que le projet établit (mission, vision, produits, traçabilité, siège). **Rien sur
+l'opération d'investissement** : art. 2.3 du contrat, « aucune publicité » ; un test le garde
+(mots interdits : investisseur, souscription, FCFA…). Pas de téléphone ni d'e-mail publiés : non
+fournis. « Élevage » et « pisciculture » y figurent sur la parole du responsable projet (question 28).
+
+**Partage du résultat.** `App\Services\PartageResultat` (pur, entiers) : art. 12 (40 % / 60 %,
+quote-part au prorata investi), art. 13 (perte au prorata des apports ; art. 13.4 faute de
+gestion = décision cochée par la direction, jamais déduite), art. 14 repris **tels quels** en
+tests. Arrondi (le contrat n'en dit rien) : part globale au plus proche, LY prend le reste,
+plus fort reste entre investisseurs ⇒ aucun franc créé ni perdu. `App\Services\ResultatCampagne` :
+recettes = encaissements de ventes ; charges = achats validés + dépenses payées non exclues
+(art. 10.3) ; valeur du stock invendu (11.3) donnée à la main, jamais devinée ; avances non
+remboursées et stock en information seulement. Écran `/resultat` (direction, comptable),
+**provisoire**, rien n'est enregistré ni montré aux investisseurs. Question 32.
+
+**Vérifié en l'exécutant.** 390 → **432 tests** (vitrine +2, partage 24, résultat 16), tous verts ;
+Larastan 0 erreur ; Pint propre ; `npm run build` OK. Sur la vraie base MySQL : `/` en HTTP → 200,
+logo 200, `/tableau-de-bord` anonyme → 302 vers la connexion ; `/resultat` en direction → 200 avec
+les vrais chiffres de la campagne 2026-2027. **Dans Chrome** : vitrine vue à l'écran (ordinateur).
+Pas vu : largeur téléphone, ni `/resultat` dans un navigateur.
+
+**Pas fait, volontairement.** Résultat visible des investisseurs et rapport final art. 18 (attendent
+la question 32) ; contrôles de l'art. 3 (minimum 500 000 FCFA, plafond 10 M, 10 investisseurs au
+plus, période de souscription) et échéances de l'art. 6 à 8 : jamais codés, à faire si voulu.
+
+**Fusion des branches.** Numérotation des questions : 29 (budget) et 30 (visites) sont réservées à
+`phase-2-visites`/budget ; ici rendement = 31, résultat = 32. `routes/web.php` et le menu seront à
+fusionner à la main (ajouts seulement).
+
+---
+
+## 2026-09-29 — Phase 2 : évolution du rendement d'un producteur — FINI, commité
+
+> Suite de `6487feb` (branche `phase-2-reventes`). Dernier élément « tableaux de bord
+> de rendement » du cahier §4 réalisable sans les visites.
+
+**Fait.** `Rendements::evolution($producteur)` : une ligne par campagne où il a un
+rendement, de la plus ancienne à la plus récente ; l'écart (kg/ha, entier) se mesure à
+la campagne précédente **du même produit** — un produit ne se compare pas à un autre,
+et la première campagne d'un produit n'a pas d'écart. Page `/rendements/producteurs/{producteur}`
+(`EvolutionProducteur`, même droit `voir-rendements`), atteinte par le nom du producteur
+dans le classement. Aucune table nouvelle : tout est recalculé.
+
+**Vérifié en l'exécutant.** 4 tests ajoutés : 386 → **390 tests** verts, Larastan 0
+erreur, Pint propre. Sur la vraie base MySQL (transaction annulée, comptes 8/1/7 avant
+et après) : producteur fictif à 500 puis 650 kg/ha sur deux campagnes du même produit →
+page 200, « première campagne » puis « +150 kg/ha ». Pas vu dans un navigateur.
+
+**Limite.** Coût : le classement de chaque campagne est recalculé pour trouver la
+ligne du producteur — sans importance à quelques campagnes, à revoir si elles se
+comptent par dizaines. Question 31 toujours ouverte.
+
+**Reste du bloc rendements.** Comparaison des pratiques des meilleurs et des moins bons :
+attend la saisie des visites et pratiques (module 2), pas encore codée.
+
+---
+
+## 2026-09-29 — Phase 2 : carte des parcelles par rendement — FINI, commité
+
+> Suite de `4c2f383` (branche `phase-2-reventes`). Deuxième moitié du « carte des
+> parcelles colorée par rendement » du cahier §4.
+
+**Fait.** `Rendements::carte($campagne)` : parcelles financées avec contour, chacune
+avec le rendement de **son producteur** (les kilos sont pesés par producteur, pas par
+parcelle : deux parcelles du même producteur portent le même chiffre, dit sur l'écran),
+classée par cinquièmes égaux de l'écart min–max (entiers). `Geo\CarteSvg::projeter()` :
+projection SVG **commune** à toutes les parcelles, sans fond de carte ni réseau (comme
+`Contour::pointsSvg`, qui projette une parcelle seule). Carte + légende + infobulle
+(`<title>`) sous le classement de `/rendements`. Rien d'anacarde en dur : le produit
+vient de la campagne (précision du responsable projet : plusieurs produits selon la
+saison et le prix).
+
+**Choix à connaître.** Un producteur financé qui n'a rien livré a **0 kg/ha** (vrai
+rendement, classe la plus faible), pas « inconnu » ; le gris « pas de rendement » ne
+sert que si un producteur manquait au classement (cas quasi impossible : contour ⇒
+surface > 0).
+
+**Vérifié en l'exécutant.** 5 tests ajoutés : 381 → **386 tests** verts, Larastan 0
+erreur, Pint propre. Sur la vraie base MySQL (transaction annulée ensuite, comptes
+8/2/7 avant et après) : 3 producteurs fictifs à 200 / 600 / 1 000 kg/ha → page 200,
+3 polygones, couleurs clair / moyen / foncé, viewBox `0 0 600 202`, trois carrés côte à
+côte d'ouest en est avec les bons écarts. **Non vu dans un navigateur** (extension
+Chrome non connectée) : la lisibilité réelle (contraste, taille sur téléphone) reste à
+regarder.
+
+**Reste.** Évolution d'un producteur d'une campagne à l'autre ; comparaison des
+pratiques (dépend de la saisie des visites). Question 31 toujours ouverte.
+
+---
+
+## 2026-09-29 — Phase 2 : comparaison des rendements — FINI, commité
+
+> Branche `phase-2-reventes`, après `ad360cd`. Bloc « comparaison des rendements » du
+> plan de phase 2 (cahier §3 et §4). Ne dépend d'aucune question ouverte bloquante.
+
+**Fait.** `App\Services\Rendements::classement($campagne)` (lecture seule, entiers) :
+kg/ha par producteur = poids net des achats **validés** de la campagne ÷ hectares
+des parcelles des prêts accordés (validé, décaissé, soldé), chaque parcelle comptée
+une fois ; classement, 20 % meilleurs / 20 % moins bons (à partir de 5 producteurs),
+moyenne pondérée par la surface. Un producteur sans contour relevé n'a **pas** de
+rendement : listé à part, jamais classé. Écran `/rendements` (`ClassementRendements`),
+droit `voir-rendements` (direction, comptable), lien « Rendements » sous Terrain,
+`Format::entier()`. Fichiers : `app/Services/Rendements.php`,
+`app/Livewire/Rendements/`, vue `rendements/classement-rendements`,
+`tests/Feature/Rendements/RendementsTest.php` (14 tests).
+
+**Vérifié en l'exécutant.** `php artisan test` : 367 → **381 tests**, tous verts ;
+Larastan 0 erreur ; Pint propre. Sur la vraie base MySQL, requête HTTP via le noyau
+Laravel : `/rendements` → 302 pour un anonyme, 200 pour la direction, page rendue.
+**Non vérifié dans Chrome** (extension non connectée) ; et la base de dev n'a aucune
+parcelle rattachée à un prêt, donc l'écran n'a été vu **que vide** en réel — le
+classement rempli n'est vérifié que par les tests.
+
+**Reste.** Carte des parcelles colorée par rendement ; évolution d'un producteur d'une
+campagne à l'autre ; comparaison des **pratiques** (les pratiques ne sont pas encore
+saisies — visites, module 2). Question 31 ci-dessous.
+
+## 2026-09-29 — Phase 2 : visites de parcelle — FINI, commité
 
 > Session `ly-agricole-45`, branche `phase-2-visites` (depuis `92dbebd`), worktree
 > `../ly-agricole-budget`. **Travail en double** : la session `ly-agricole-05` codait
@@ -325,6 +548,160 @@ les deux travaux sont indépendants en fichiers mais partagent le même schéma 
 Écran dédié « Reventes » sur la fiche du lot (`FicheLot`, propriété de la session f9) :
 pas fait, pour ne pas toucher à son fichier sans coordination — la marge est visible
 depuis la fiche de la vente à la place.
+
+## 2026-09-29 — Semaine 12 (suite) : copie hors site et mot de passe des archives — FINI, COMMITÉ
+
+> Même worktree, branche `semaine-12`. Demande de l'utilisateur : « fais copie des …
+> et mot de passe des archives ».
+
+**Fait.**
+
+- **Copie hors site** (`copierHorsSite`, lancée par `ly:sauvegarder`, relançable par
+  `ly:copier-sauvegarde`) : vers un disque Laravel (`SAUVEGARDE_HORS_SITE_DISQUE`, ex. S3)
+  ou un dossier (`SAUVEGARDE_HORS_SITE_DOSSIER`). La copie est **relue** et son SHA-256
+  comparé ; différente ⇒ supprimée, signalée, commande en échec (l'archive locale
+  reste). Refus du dossier des sauvegardes locales comme « hors site ». Conservation
+  hors site 90 jours, 7 dernières gardées, autres fichiers du stockage jamais touchés.
+- **Mot de passe** : `ly:mot-de-passe-sauvegardes` (32 lettres et chiffres, écrit dans
+  `.env`, affiché une fois ; refuse d'écraser sans `--remplacer`). Sauvegarde refusée
+  sous 16 caractères. Empreinte PBKDF2 (200 000 tours) du mot de passe dans le
+  manifeste : la vérification dit tout de suite « mot de passe différent de celui de
+  l'archive (empreinte attendue …) » ou « archive chiffrée : définir … ».
+- Rapports → Alertes : copie hors site absente / en échec / de plus de 2 jours,
+  sauvegardes non chiffrées.
+- `docs/MISE_EN_PRODUCTION.md` (mot de passe en deux exemplaires hors du serveur, deux
+  façons de copier selon l'hébergeur, restauration « serveur perdu » depuis la copie),
+  `.env.example`.
+
+**Vérifié en l'exécutant.**
+
+- 349 tests (340 → 349), Larastan 0, Pint propre. Dont : copie relue différente
+  (disque simulé qui rend autre chose) ⇒ copie supprimée + alerte ; mauvais mot de
+  passe ; commande de mot de passe sur un `.env` jetable (le vrai `.env` n'a pas été
+  touché : vérifié).
+- **Réel, MySQL** : mot de passe de dev généré **sans affichage** (sert aux essais
+  seulement ; celui de production sera généré sur le serveur), copie vers un dossier
+  temporaire jouant le hors site. `ly:sauvegarder --verifier` ⇒ archive chiffrée de
+  100 Ko, « copie hors site relue et identique », « restauration vérifiée : 290 lignes,
+  22 fichiers ». Contre-vérifications : SHA-256 local = hors site ; `base.sql` illisible
+  sans mot de passe (manifeste lisible) ; **restauration directement depuis la copie
+  hors site** réussie (scénario « serveur perdu »). Alertes de sauvegarde disparues des
+  rapports.
+- Un test dépendait du `.env` du développeur (copie hors site désormais définie) :
+  configuration neutre imposée dans le test.
+
+**Reste.** Choisir la cible hors site réelle avec l'hébergeur (question 10) ; générer le
+mot de passe de production sur le serveur et le mettre au coffre.
+
+---
+
+## 2026-09-29 — Semaine 12 (préparation) : sauvegardes vérifiées par restauration, procédure de mise en production — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, worktree `ly-agricole-phase1`, branche `semaine-12` (depuis
+> `semaine-10`). Semaine 11 (pilote) non commencée : il faut un téléphone (question 26,
+> en suspens). La mise en ligne réelle attend l'hébergement (question 10) et le domaine
+> (question 18).
+
+**Fait.**
+
+- `App\Services\Sauvegardes` + commandes `ly:sauvegarder [--verifier]` et
+  `ly:verifier-sauvegarde [archive]` : archive datée = `base.sql` (mysqldump
+  `--single-transaction`, mot de passe par `MYSQL_PWD`, pas en ligne de commande) +
+  fichiers privés + `manifest.json` (lignes par table, **sommes des registres**, SHA-256
+  de chaque fichier). Empreinte prise avant et après le dump : si la base a bougé,
+  nouvel essai (3 au plus). Chiffrement AES-256 si `SAUVEGARDE_MOT_DE_PASSE`.
+  Conservation 30 jours, les 7 dernières toujours gardées.
+- Vérification : refus d'une archive altérée (SHA-256) **avant** toute restauration ;
+  restauration réelle dans `ly_agricole_verif` (refus si c'est le nom de la base de
+  production) ; comparaison des comptes et des sommes ; chaque fichier cité par la base
+  (justificatifs, accords, photos) doit être dans l'archive ; base jetable supprimée.
+  Résultat dans `storage/sauvegardes/derniere-verification.json`.
+- Planification : sauvegarde chaque nuit 02:00, restauration vérifiée chaque dimanche
+  03:00. **Rapports → Alertes** : « Sauvegarde non vérifiée » (jamais, ou plus de
+  8 jours) et « Sauvegarde en échec ».
+- `docs/MISE_EN_PRODUCTION.md` : serveur, installation, `.env` de production, processus
+  permanents (file, planificateur), sauvegarde et **restauration pas à pas**, appli
+  terrain, comptes réels, gel. `.env.example` : clés `SAUVEGARDE_*`. Archives exclues
+  de git (données personnelles).
+
+**Vérifié en l'exécutant.**
+
+- 340 tests (330 → 340 : 10 sauvegardes, sur sqlite avec un faux mysqldump / import ;
+  archive, chiffrement, SHA, comptes, sommes, fichiers cités, conservation réels),
+  Larastan 0, Pint propre.
+- **Vraie sauvegarde et vraie restauration sur MySQL** (base de dev `ly_agricole`,
+  fichiers privés de dev copiés dans le worktree) : `ly:sauvegarder --verifier` ⇒
+  archive de 99 Ko, « Restauration vérifiée : 290 lignes, 22 fichiers : identiques » ;
+  `ly_agricole_verif` bien supprimée ; production intacte (19 mouvements de trésorerie).
+- **Contre-épreuve** : archive sabotée (l'INSERT de `remboursements` retiré du dump,
+  SHA recalculé pour tromper le contrôle d'intégrité) ⇒ « remboursements = 0, attendu
+  1 ; remboursements_fcfa = 0, attendu 170000 », code retour 1. La restauration attrape
+  ce que l'empreinte de fichier ne voit pas.
+- **Défaut trouvé en vrai et corrigé** : sur MySQL, `getTableListing()` sans schéma
+  liste les tables de **toutes** les bases du serveur (ici un autre projet XAMPP :
+  `acquisition_opportunities`) ; limité à la base courante.
+
+**Reste.** Semaine 11 (pilote, téléphone) ; mise en ligne réelle (questions 10, 18) ;
+copie hors site des sauvegardes (avec la question 10) ; choisir et garder hors serveur
+le mot de passe des archives.
+
+---
+
+## 2026-09-29 — Semaine 10 (en avance) : rapports de la direction et exports — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, **worktree `C:\xampp\htdocs\ly-agricole-phase1`**, branche
+> `semaine-10` (depuis `semaine-9`, 6ecd725). L'autre session (`ly-agricole-fb`) fait la
+> phase 2 (reventes, marge) dans le dossier principal, branche `phase-2-reventes` :
+> accord pour ne pas toucher à `Indicateurs.php` / `TableauDeBord.php` (les siens) ;
+> ses migrations seront datées après 2026-12-05.
+
+**Fait.**
+
+- Section **Rapports** (droit `voir-rapports` : direction, comptable ; lien dans le
+  menu) : page de synthèse avec les trois questions — **combien reste dû, combien en
+  stock (par produit), combien en caisse** — et cinq rapports : portefeuille de prêts
+  (remis, remboursé, restant dû, échus, filtre par campagne), stock par lot et magasin,
+  caisses et comptes (solde, dernier mouvement), **écarts de poids** par lot, alertes
+  (prêts échus, prêts / achats / dépenses à valider, photos de pesée attendues, écarts).
+- Chaque rapport en **PDF** (dompdf, A4 portrait ou paysage, sous-ensemble de police)
+  et en fichier pour **Excel** (CSV `;`, UTF-8 avec BOM, nombres bruts additionnables,
+  kilos à virgule) — question 33.
+- `App\Support\Tableau` : un seul format de tableau (valeurs brutes FCFA / grammes /
+  ‰ / dates) rendu à l'écran, en PDF et en CSV ; mise en forme en entiers.
+- Paramètre `SeuilAlerteEcartPoids` (‰) : non défini ⇒ tout écart est signalé
+  (question 34). Aucune table : tout est recalculé à partir des registres.
+
+**Vérifié en l'exécutant.**
+
+- 330 tests (323 → 330 : 7 rapports), Larastan 0, Pint propre — **dans le worktree,
+  sur son propre code** (voir « Surpris »).
+- Chrome, `localhost:8001` (code du worktree, MySQL partagée) : synthèse **21 830 000
+  FCFA restant dû, 600 kg d'anacarde, 3 270 000 FCFA en caisse** — les trois recalculés
+  à la main en SQL (décaissements non contre-passés + intrants − remboursements ; Σ
+  grammes ; Σ entrées − sorties des comptes actifs) : **identiques**. Alertes : 5 achats
+  à valider (ceux de la semaine 8) + un écart. PDF du portefeuille (8 prêts, total
+  21 830 000) et des caisses ouverts dans Chrome.
+- **Défaut trouvé en vrai et corrigé** : l'autre session a enregistré dans la base de dev
+  une vente de 400 kg (`sortie_vente`, phase 2) ; mon premier calcul (écart = stock −
+  achats) la comptait comme **−400 kg d'écart (−66,6 %)**. Écart désormais = pertes +
+  inventaires + corrections ; les ventes ont leur colonne. Test ajouté. À l'écran après
+  correction : 600 kg achetés, −400 kg vendus, stock 200 kg, écart 0.
+- En-têtes des colonnes chiffrées du PDF alignés à droite (règle CSS trop faible).
+
+**Surpris.**
+
+- **Les worktrees des semaines précédentes vérifiaient peut-être le mauvais code** :
+  avec `vendor` en jonction, l'autoloader charge `App\` depuis le dossier d'origine.
+  Ici le premier passage « 323 verts » testait le code du dossier principal. Corrigé
+  (vendor copié, opcache CLI coupé) ; piège ajouté à `CLAUDE.md`. Les commits des
+  semaines 5 et 6 ont depuis été couverts par les suites complètes des semaines
+  suivantes sur leur propre dossier.
+- Blade ne compile pas `mot@if` ; le `@endif` si.
+
+**Données de dev** : aucune ajoutée par cette semaine (lecture seule).
+
+**Reste.** Semaine 11 (pilote terrain : dépend du téléphone, question 26 en suspens) ;
+semaine 12 (mise en production, sauvegardes testées par restauration) ; questions 33, 34 et 36 (anciens 28, 29, 30 de cette branche).
 
 ---
 
@@ -598,7 +975,7 @@ semaines 8-9) ; SMS de confirmation au producteur (semaine 7).
 
 ---
 
-## 2026-09-28 — Tableau de bord branché sur la semaine 6 (achats, stock, remboursements) — FINI, NON COMMITÉ
+## 2026-09-28 — Tableau de bord branché sur la semaine 6 (achats, stock, remboursements) — FINI, commité
 
 > Session `ly-agricole-fb`, à la demande de `f9` (qui a écrit la semaine 6 : ne pas la
 > retoucher). Je n'ai modifié **que** le tableau de bord ; à commiter **après** le

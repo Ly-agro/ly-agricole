@@ -63,6 +63,7 @@ npm run build                          # Vite + Tailwind 4 (config dans resource
 php artisan serve                      # http://127.0.0.1:8000
 php artisan queue:work                 # envoie les SMS et les notifications en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
 php artisan notifications:cles-vapid   # une fois : clés du Web Push à mettre dans .env (PUSH_VAPID_PUBLIQUE / _PRIVEE)
+php artisan ly:sauvegarder --verifier  # archive base + fichiers, puis VRAIE restauration comparée (docs/MISE_EN_PRODUCTION.md)
 ```
 
 Notifications push du bureau : lancer `serve` **et** `queue:work` avec
@@ -197,3 +198,15 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
   tâche de fond ne tue que son shell).
 - **`assertSessionHas` ne voit pas un message flash Livewire** : vérifier ce que la vue
   affiche (`assertSee`).
+- **Blade : une directive collée à un mot n'est pas compilée** (« en cours@if (…) ») ;
+  son `@endif` l'est, d'où une `ParseError` « unexpected endif ». Mettre la directive
+  sur sa propre ligne.
+- **Worktree git : ne pas relier `vendor` par une jonction.** L'autoloader de Composer
+  charge alors les classes `App\` du dossier d'origine, pas celles du worktree : les
+  tests passent sur le mauvais code (vu le 2026-09-29). Copier `vendor` (robocopy,
+  ~110 Mo), donner au worktree son propre `public/build` (`npm run build`) et son
+  `APP_URL`. Et **lancer PHP avec `-d opcache.enable_cli=0`** dans le worktree :
+  l'opcache CLI ressert sinon l'`autoload.php` de l'autre dossier (« Cannot declare
+  class ComposerAutoloaderInit… »). Servir le worktree depuis `public/` :
+  `php -d opcache.enable=0 -S localhost:8001 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`
+  (le redémarrer après un `npm run build` : le manifeste Vite reste en mémoire).
