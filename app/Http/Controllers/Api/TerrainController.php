@@ -10,6 +10,7 @@ use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\GroupeProducteur;
+use App\Models\Langue;
 use App\Models\Lot;
 use App\Models\Parcelle;
 use App\Models\Pisteur;
@@ -61,6 +62,7 @@ class TerrainController extends Controller
             'lots' => $this->delta(Lot::query(), $depuis)->get(['id', 'code', 'produit_id', 'campagne_id', 'magasin_id', 'statut'])
                 ->map(fn (Lot $l) => $l->toArray() + ['actif' => $l->statut === StatutLot::Ouvert]),
             'points_collecte' => $this->delta(PointCollecte::query(), $depuis)->get(['id', 'village_id', 'nom', 'actif']),
+            'langues' => $this->delta(Langue::query(), $depuis)->get(['id', 'code', 'nom', 'actif']),
             'categories_depense' => $this->delta(CategorieDepense::query(), $depuis)->get(['id', 'nom', 'exclue_fonds_campagne', 'actif']),
             'pisteurs' => $this->delta(Pisteur::query(), $depuis)->get(['id', 'nom', 'telephone', 'actif']),
             // Seulement les comptes d'où cet utilisateur peut payer (un agent : sa caisse).

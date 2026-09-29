@@ -15,6 +15,7 @@ use App\Models\Depense;
 use App\Models\Encaissement;
 use App\Models\GroupeProducteur;
 use App\Models\Intrant;
+use App\Models\Langue;
 use App\Models\LigneBudget;
 use App\Models\Lot;
 use App\Models\Magasin;
@@ -109,6 +110,7 @@ class AppServiceProvider extends ServiceProvider
             'apport' => Apport::class,
             'ligne_budget' => LigneBudget::class,
             'visite' => Visite::class,
+            'langue' => Langue::class,
             'valorisation_stock' => ValorisationStock::class,
             'decision_plafond' => DecisionPlafond::class,
         ]);

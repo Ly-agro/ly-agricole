@@ -37,6 +37,7 @@ use App\Livewire\Referentiels\Campagnes;
 use App\Livewire\Referentiels\CategoriesDepense;
 use App\Livewire\Referentiels\EcranReferentiel;
 use App\Livewire\Referentiels\Intrants as IntrantsReferentiel;
+use App\Livewire\Referentiels\Langues;
 use App\Livewire\Referentiels\Magasins;
 use App\Livewire\Referentiels\Parametres;
 use App\Livewire\Referentiels\Pisteurs;
@@ -115,6 +116,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/categories-depense', CategoriesDepense::class)->middleware('can:gerer-tresorerie')->name('categories-depense');
         Route::get('/intrants', IntrantsReferentiel::class)->middleware('can:gerer-intrants')->name('intrants');
         Route::get('/pisteurs', Pisteurs::class)->middleware('can:gerer-referentiels')->name('pisteurs');
+        Route::get('/langues', Langues::class)->middleware('can:gerer-referentiels')->name('langues');
     });
 
     // Achats : la liste vérifie elle-même le droit (saisir OU valider).

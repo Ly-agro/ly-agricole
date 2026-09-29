@@ -206,6 +206,7 @@ class Synchronisation
             'piece_numero' => ['nullable', 'string', 'max:50', 'required_with:piece_type'],
             'village_id' => ['required', 'integer', Rule::exists('villages', 'id')],
             'groupe_id' => ['nullable', 'integer', Rule::exists('groupes_producteurs', 'id')->where('village_id', $d['village_id'] ?? null)],
+            'langue_id' => ['nullable', 'integer:strict', Rule::exists('langues', 'id')->where('actif', true)],
             'consentement' => ['accepted'],
         ], [
             'consentement.accepted' => 'Sans l\'accord du producteur, sa fiche ne peut pas être créée.',
@@ -238,6 +239,7 @@ class Synchronisation
             'piece_numero' => $d['piece_numero'],
             'village_id' => (int) $d['village_id'],
             'groupe_id' => $d['groupe_id'] ?? null,
+            'langue_id' => $d['langue_id'] ?? null,
             'consentement_at' => now(),
             'consentement_par' => $auteur->id,
             'cree_par' => $auteur->id,

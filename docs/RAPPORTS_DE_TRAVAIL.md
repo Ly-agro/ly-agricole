@@ -5,6 +5,31 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Langue par producteur (question 12, repris de B) — FINI
+
+> Branche `phase-2-suite`. Quatrième des cinq blocs repris de B.
+
+**Décision du responsable projet (question 12).** Français d'abord ; préférence de langue par producteur à
+prévoir ; langues locales à confirmer ; messages courts et sans accent pour les SMS ; message vocal plus tard.
+
+**Fait.** Table `langues` (code unique en minuscules, nom, actif) et `producteurs.langue_id` (nullable = français).
+**Aucune langue locale n'est pré-remplie** : la direction ou l'administrateur les ajoutent (Référentiels ›
+Langues) quand elles sont confirmées ; l'écran donne le nombre de producteurs par langue, pour choisir lesquelles
+traduire d'abord. Le champ est dans le formulaire producteur du bureau (facultatif, « Français (par défaut) »), sur
+la fiche, et **sur le téléphone** (`terrain/` : table locale `langues` en **Dexie version 4**, téléchargée avec
+les référentiels, liste affichée seulement si elle n'est pas vide). `/api/sync` accepte `langue_id` (inconnue ou
+désactivée ⇒ opération rejetée avec motif ; absente ⇒ français). **Aucun message n'est traduit** : tout part encore
+en français ; ce bloc n'enregistre que la préférence.
+
+**Vérifié en l'exécutant.** PHP : 12 tests (aucune langue par défaut, code unique et en minuscules, colonne des
+producteurs, droits, formulaire, langue refusée si inactive ou inconnue, fiche, synchro, référentiels). Terrain :
+4 tests vitest (version 4, langues gardées avec celles désactivées, complet / delta, ancien serveur) ; **72 tests**
+au total, `svelte-check` et build OK. Pas vu sur un téléphone.
+
+**Reste.** Traductions des messages (SMS) : à faire quand les langues seront confirmées.
+
+---
+
 ## 2026-09-29 — Appareils et jetons (question 25, repris de B) — FINI
 
 > Branche `phase-2-suite`. Troisième des cinq blocs repris de B.

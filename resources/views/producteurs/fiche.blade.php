@@ -43,6 +43,7 @@
         <div><dt class="text-stone-500">Mobile Money</dt><dd>{{ $producteur->numero_mobile_money ? \App\Support\Telephone::afficher($producteur->numero_mobile_money).' ('.$producteur->operateur_mm?->libelle().')' : '—' }}</dd></div>
         <div><dt class="text-stone-500">Village</dt><dd>{{ $producteur->village->nom }} ({{ $producteur->village->zone->nom }})</dd></div>
         <div><dt class="text-stone-500">Groupe</dt><dd>{{ $producteur->groupe?->nom ?? '—' }}</dd></div>
+        <div><dt class="text-stone-500">Langue des messages</dt><dd>{{ $producteur->langue?->nom ?? 'Français (par défaut)' }}</dd></div>
         <div class="sm:col-span-2">
             <dt class="text-stone-500">Accord du producteur</dt>
             <dd>Recueilli le {{ $producteur->consentement_at->format('d/m/Y à H:i') }} par {{ $producteur->auteurConsentement->nom }}</dd>

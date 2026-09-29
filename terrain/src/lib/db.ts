@@ -19,6 +19,9 @@ export interface PretEnCours { id: string; reference: string; producteur_id: str
 /** Parcelle (sans contour) : pour choisir celle d'une visite. `surface_m2` : null si non relevée. */
 export interface Parcelle { id: string; producteur_id: string; nom: string; surface_m2: number | null; produit_id: number | null; actif: boolean }
 
+/** Langue de préférence d'un producteur pour les messages (question 12) ; le français est le défaut. */
+export interface Langue { id: number; code: string; nom: string; actif: boolean }
+
 export interface CategorieDepense { id: number; nom: string; exclue_fonds_campagne: boolean; actif: boolean }
 
 /** `abandonne` : rejetée et laissée de côté par l'agent (gardée pour la trace). */
@@ -65,6 +68,7 @@ export class BaseTerrain extends Dexie {
     categories_depense!: EntityTable<CategorieDepense, 'id'>;
     photos!: EntityTable<Photo, 'uuid'>;
     parcelles!: EntityTable<Parcelle, 'id'>;
+    langues!: EntityTable<Langue, 'id'>;
 
     constructor(nom = 'ly-terrain') {
         super(nom);
@@ -93,6 +97,13 @@ export class BaseTerrain extends Dexie {
         // Phase 2 : visites de parcelle. Même raison : téléchargement complet au prochain appel.
         this.version(3).stores({
             parcelles: 'id, producteur_id',
+        }).upgrade(async (tx) => {
+            await tx.table('reglages').delete('horodatage');
+        });
+        // Phase 2 : langue de préférence du producteur pour les messages (question 12). Version 4 :
+        // on ne modifie jamais une version déjà publiée.
+        this.version(4).stores({
+            langues: 'id',
         }).upgrade(async (tx) => {
             await tx.table('reglages').delete('horodatage');
         });

@@ -137,6 +137,7 @@ interface Referentiels {
     prets_en_cours: object[];
     categories_depense: object[];
     parcelles?: object[];
+    langues?: object[];
 }
 
 /** Télécharge les référentiels : tout la première fois, puis seulement ce qui a changé. */
@@ -144,7 +145,7 @@ export async function telechargerReferentiels(base: BaseTerrain, f: Fetch = fetc
     const depuis = await reglage<string>(base, 'horodatage');
     const r = (await appeler(base, '/referentiels' + (depuis ? '?depuis=' + encodeURIComponent(depuis) : ''), {}, f)) as Referentiels;
 
-    const tables = [base.villages, base.produits, base.campagnes, base.lots, base.points_collecte, base.producteurs, base.categories_depense, base.parcelles] as const;
+    const tables = [base.villages, base.produits, base.campagnes, base.lots, base.points_collecte, base.producteurs, base.categories_depense, base.parcelles, base.langues] as const;
     await base.transaction('rw', [...tables, base.comptes, base.prets_en_cours, base.reglages, base.operations], async () => {
         if (r.complet) {
             await Promise.all(tables.map((t) => t.clear()));
@@ -157,6 +158,7 @@ export async function telechargerReferentiels(base: BaseTerrain, f: Fetch = fetc
         await base.producteurs.bulkPut(r.producteurs as never[]);
         await base.categories_depense.bulkPut((r.categories_depense ?? []) as never[]);
         await base.parcelles.bulkPut((r.parcelles ?? []) as never[]);
+        await base.langues.bulkPut((r.langues ?? []) as never[]);
         // Fiches créées sur le téléphone et pas encore au bureau : elles restent utilisables.
         const locales = await base.operations.filter((o) => o.type === 'producteur' && o.statut !== 'envoye' && o.statut !== 'abandonne').toArray();
         for (const o of locales) {
