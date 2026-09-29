@@ -16,6 +16,9 @@ export interface Compte { id: number; nom: string; type: string; titulaire_id: n
 export interface Producteur { id: string; code: string | null; nom: string; prenoms: string; telephone: string | null; village_id: number; groupe_id: number | null; actif: boolean }
 export interface PretEnCours { id: string; reference: string; producteur_id: string; campagne_id: number; restant_du_fcfa: number }
 
+/** Parcelle (sans contour) : pour choisir celle d'une visite. `surface_m2` : null si non relevée. */
+export interface Parcelle { id: string; producteur_id: string; nom: string; surface_m2: number | null; produit_id: number | null; actif: boolean }
+
 export interface CategorieDepense { id: number; nom: string; exclue_fonds_campagne: boolean; actif: boolean }
 
 /** `abandonne` : rejetée et laissée de côté par l'agent (gardée pour la trace). */
@@ -23,7 +26,7 @@ export type StatutOperation = 'en_attente' | 'envoye' | 'rejete' | 'abandonne';
 
 export interface Operation {
     uuid: string;
-    type: 'achat' | 'producteur' | 'parcelle' | 'depense';
+    type: 'achat' | 'producteur' | 'parcelle' | 'depense' | 'visite';
     /** Heure du téléphone (peut être fausse ; le serveur garde aussi la sienne). */
     cree_at: string;
     donnees: Record<string, unknown>;
@@ -61,6 +64,7 @@ export class BaseTerrain extends Dexie {
     operations!: EntityTable<Operation, 'uuid'>;
     categories_depense!: EntityTable<CategorieDepense, 'id'>;
     photos!: EntityTable<Photo, 'uuid'>;
+    parcelles!: EntityTable<Parcelle, 'id'>;
 
     constructor(nom = 'ly-terrain') {
         super(nom);
@@ -84,6 +88,12 @@ export class BaseTerrain extends Dexie {
         }).upgrade(async (tx) => {
             // Nouvelle table de référentiel : un delta n'y mettrait que les lignes
             // modifiées depuis. Le prochain téléchargement doit être complet.
+            await tx.table('reglages').delete('horodatage');
+        });
+        // Phase 2 : visites de parcelle. Même raison : téléchargement complet au prochain appel.
+        this.version(3).stores({
+            parcelles: 'id, producteur_id',
+        }).upgrade(async (tx) => {
             await tx.table('reglages').delete('horodatage');
         });
     }

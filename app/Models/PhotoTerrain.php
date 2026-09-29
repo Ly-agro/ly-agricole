@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -38,6 +39,12 @@ class PhotoTerrain extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** @return BelongsToMany<Visite, $this> */
+    public function visites(): BelongsToMany
+    {
+        return $this->belongsToMany(Visite::class, 'visite_photo', 'photo_id', 'visite_id');
     }
 
     protected function casts(): array

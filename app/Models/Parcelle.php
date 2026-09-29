@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Parcelle 📱 : UUID v7 (D3). `surface_m2` est recalculée à chaque changement de
@@ -67,6 +68,12 @@ class Parcelle extends Model
     public function produit(): BelongsTo
     {
         return $this->belongsTo(Produit::class);
+    }
+
+    /** @return HasMany<Visite, $this> */
+    public function visites(): HasMany
+    {
+        return $this->hasMany(Visite::class);
     }
 
     protected function casts(): array

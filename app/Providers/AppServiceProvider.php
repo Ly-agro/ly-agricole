@@ -14,6 +14,7 @@ use App\Models\Depense;
 use App\Models\Encaissement;
 use App\Models\GroupeProducteur;
 use App\Models\Intrant;
+use App\Models\LigneBudget;
 use App\Models\Lot;
 use App\Models\Magasin;
 use App\Models\MouvementIntrant;
@@ -31,6 +32,7 @@ use App\Models\User;
 use App\Models\ValidationPret;
 use App\Models\Vente;
 use App\Models\Village;
+use App\Models\Visite;
 use App\Models\Zone;
 use App\Services\Journal;
 use App\Services\Sms\EnvoyeurSms;
@@ -103,6 +105,8 @@ class AppServiceProvider extends ServiceProvider
             'vente' => Vente::class,
             'encaissement' => Encaissement::class,
             'apport' => Apport::class,
+            'ligne_budget' => LigneBudget::class,
+            'visite' => Visite::class,
         ]);
     }
 
@@ -176,6 +180,16 @@ class AppServiceProvider extends ServiceProvider
         // réservé à ceux qui décident des prêts.
         Gate::define('voir-fiabilite', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
+
+        // Budget de campagne (cahier §8) : fixé par la direction, comme le prix officiel
+        // et les seuils ; suivi aussi par la comptabilité (question 29).
+        Gate::define('voir-budget', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('gerer-budget', fn (User $user) => $user->aLeRole(Role::Direction));
+
+        // Visites de parcelle (cahier §4) : saisies sur le terrain par les agents et
+        // l'agronome ; lues par ceux qui voient déjà les producteurs (question 30).
+        Gate::define('saisir-visites', fn (User $user) => $user->aLeRole(Role::Direction, Role::Agent, Role::Agronome));
+        Gate::define('voir-visites', fn (User $user) => $user->aLeRole(Role::Direction, Role::Agent, Role::Comptable, Role::Agronome));
     }
 
     private function journaliserLesConnexions(): void

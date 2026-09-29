@@ -73,6 +73,7 @@
                         <th class="px-4 py-3 font-medium">Surface</th>
                         <th class="px-4 py-3 font-medium">Plantation</th>
                         <th class="px-4 py-3 font-medium">Arbres</th>
+                        <th class="px-4 py-3 font-medium">Dernière visite</th>
                         <th class="px-4 py-3"></th>
                     </tr>
                 </thead>
@@ -93,6 +94,16 @@
                             </td>
                             <td class="px-4 py-3">{{ $parcelle->annee_plantation ?? '—' }}</td>
                             <td class="px-4 py-3">{{ $parcelle->nb_arbres ?? '—' }}</td>
+                            <td class="px-4 py-3">
+                                @if ($parcelle->visites_max_date_visite === null)
+                                    <span class="text-stone-500">Jamais</span>
+                                @else
+                                    {{ \Illuminate\Support\Carbon::parse($parcelle->visites_max_date_visite)->format('d/m/Y') }}
+                                    @can('voir-visites')
+                                        <a href="{{ route('visites', ['q' => $parcelle->nom]) }}" class="block text-xs text-emerald-800 hover:underline">{{ $parcelle->visites_count }} visite(s)</a>
+                                    @endcan
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-right">
                                 @can('gerer-producteurs')
                                     <a href="{{ route('producteurs.parcelles.modifier', [$producteur, $parcelle]) }}" class="text-emerald-800 hover:underline">Modifier</a>
@@ -100,7 +111,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-4 py-6 text-center text-stone-500">Aucune parcelle.</td></tr>
+                        <tr><td colspan="7" class="px-4 py-6 text-center text-stone-500">Aucune parcelle.</td></tr>
                     @endforelse
                 </tbody>
             </table>

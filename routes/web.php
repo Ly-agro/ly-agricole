@@ -11,6 +11,7 @@ use App\Http\Controllers\RapportController;
 use App\Livewire\Achats\FormulaireAchat;
 use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Auth\Connexion;
+use App\Livewire\Budget\SuiviBudget;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
 use App\Livewire\Fiabilite\FicheFiabilite;
@@ -50,6 +51,7 @@ use App\Livewire\Utilisateurs\GestionUtilisateurs;
 use App\Livewire\Ventes\FicheVente;
 use App\Livewire\Ventes\FormulaireVente;
 use App\Livewire\Ventes\ListeVentes;
+use App\Livewire\Visites\ListeVisites;
 use Illuminate\Support\Facades\Route;
 
 // Vitrine publique : on n'atterrit plus directement sur la connexion. Sans aucune donnée
@@ -148,6 +150,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/rapport-campagne/point-etape', [RapportCampagneController::class, 'pointEtape'])->middleware('can:voir-rapport-campagne')->name('rapport-campagne.point-etape');
     Route::get('/resultat', ResultatDeCampagne::class)->middleware('can:voir-resultat-campagne')->name('resultat');
     Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
+    Route::get('/visites', ListeVisites::class)->middleware('can:voir-visites')->name('visites');
+    Route::get('/budget', SuiviBudget::class)->middleware('can:voir-budget')->name('budget');
 
     Route::prefix('prets')->name('prets')->group(function () {
         Route::get('/', ListePrets::class)->middleware('can:voir-prets')->name('');

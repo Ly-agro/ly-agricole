@@ -195,6 +195,123 @@ classement rempli n'est vérifié que par les tests.
 campagne à l'autre ; comparaison des **pratiques** (les pratiques ne sont pas encore
 saisies — visites, module 2). Question 31 ci-dessous.
 
+## 2026-09-29 — Phase 2 : visites de parcelle — FINI, commité
+
+> Session `ly-agricole-45`, branche `phase-2-visites` (depuis `92dbebd`), worktree
+> `../ly-agricole-budget`. **Travail en double** : la session `ly-agricole-05` codait
+> aussi les visites dans `ly-agricole/`. Découvert à la migration (« table visites
+> already exists »). L'utilisateur a gardé cette version-ci ; l'autre a été retirée
+> (tables vides supprimées, patch gardé dans `%TEMP%/sauvegarde-visites/`). Depuis, les
+> deux sessions s'annoncent leur bloc avant de commencer.
+
+**Fichiers nouveaux.** `app/Enums/PratiqueCulturale.php`, `app/Models/Visite.php`,
+`database/migrations/2026_12_26_000001_create_visites_tables.php`,
+`app/Livewire/Visites/ListeVisites.php` + sa vue, `tests/Feature/Api/VisitesTest.php`
+(16 tests) ; appli terrain : `src/routes/visite/+page.svelte`, `src/lib/pratiques.ts`,
+`src/lib/photos.test.ts`.
+
+**Fichiers modifiés.** `Synchronisation` (type `visite`), `TerrainController`
+(parcelles dans les référentiels, sans contour ; accès avec `saisir-visites`),
+`PhotoTerrainController` (photo de visite visible de qui voit les visites),
+`Parcelle`/`PhotoTerrain` (relations), `AppServiceProvider` (droits `saisir-visites` :
+direction, agent, agronome ; `voir-visites` : direction, agent, comptable, agronome ;
+morph map), `ProducteurController` + fiche (« Dernière visite » par parcelle), route et
+menu `/visites` ; terrain : `db.ts` (version 3, table `parcelles`), `synchro.ts`
+(parcelles téléchargées, parcelles relevées sur le téléphone gardées), page parcelle
+(visitable avant l'envoi), `photos.ts` (délai GPS), menu Saisir. `ApiTerrainTest` mis à
+jour : l'agronome reçoit désormais les référentiels (il saisit des visites).
+
+**Vérifié.** PHP : 388 → **404 tests**, tous verts ; Larastan 0 erreur (avec
+`-d opcache.enable_cli=0`, voir CLAUDE.md) ; Pint propre ; terrain : **29 tests
+vitest** (24 → 29), svelte-check 0 erreur, build OK. Migration appliquée sur MySQL.
+**Dans Chrome**, appli terrain (localhost:4173 → API localhost:8001, compte agent) :
+connexion, téléchargement complet (passage Dexie v2 → v3), Saisir → Visite, producteur
+Coulibaly Awa → sa parcelle téléchargée « Champ du marigot — 2,25 ha » choisie
+d'office, 2 pratiques, observation, photo ; « Enregistrer » → dans la file ; « Envoyer
+maintenant » → « 1 nouveau, 0 rejeté, 2 photos ». En base : la visite, ses pratiques,
+son auteur, `cree_at` du téléphone, la photo rattachée. Au bureau en **agronome** : menu
+Producteurs + Visites, la visite avec pratiques, observation et photo affichée ; photo
+d'un reçu de dépense → 403 ; fiche producteur → « 29/09/2026 · 1 visite(s) ».
+
+**Bogues trouvés par le vrai parcours (invisibles aux tests).**
+1. La visite ne s'enregistrait pas, **sans aucun message** : IndexedDB refuse les
+   tableaux réactifs de Svelte 5 (`DataCloneError`). Corrigé par `$state.snapshot`, et
+   l'erreur est maintenant affichée à l'agent.
+2. Photo bloquée en « Compression… » **pour toujours** tant que la question « Autoriser
+   la position ? » reste sans réponse (le délai du GPS ne court pas pendant la question).
+   Touchait aussi la photo de pesée des achats. Corrigé : délai à nous, photo gardée sans
+   position ; test vitest ajouté.
+
+**Limites / surprises.** Dans Chrome, les clics et la frappe n'atteignaient plus l'onglet
+après la connexion (même extension d'émulation qu'au budget) : parcours mené en
+JavaScript dans la page (mêmes événements, vrai code de l'appli). Une photo prise puis
+abandonnée (tentative ratée) part quand même au bureau, sans fiche : orpheline, sans
+effet, mais elle occupe le disque. `vite preview` servait l'ancienne build (voir
+CLAUDE.md). Pas testé sur un vrai téléphone (question 26).
+
+**Reste.** Commit ; question 30 (liste des pratiques, saisie par l'agronome).
+
+---
+
+## 2026-09-29 — Phase 2 : budget de campagne, prévu contre réel — FINI, branche `phase-2-budget`
+
+> Session `ly-agricole-45`, branche `phase-2-budget` (depuis `ad360cd`), dans un
+> **worktree séparé** `../ly-agricole-budget` : une autre session (`ly-agricole-05`)
+> codait les rendements au même moment dans `ly-agricole/`. Pour lancer ce worktree :
+> `vendor/` et `node_modules/` y ont été copiés, `.env` aussi, `npm run build` fait ;
+> servi sur le port **8001**.
+
+**Fichiers nouveaux.** `app/Enums/PosteBudget.php`, `app/Models/LigneBudget.php`,
+`app/Services/Budgets.php`, `database/migrations/2026_12_19_000001_create_lignes_budget_table.php`,
+`app/Livewire/Budget/SuiviBudget.php` + sa vue, `tests/Feature/Budget/{BudgetsTest,EcranBudgetTest}.php`
+(21 tests).
+
+**Fichiers modifiés (additifs).** `AppServiceProvider` (droits `voir-budget` : direction
+et comptable, `gerer-budget` : direction ; morph map `ligne_budget`), `routes/web.php`
+(+ `/budget`), menu (+ Budget sous Argent, icône `budget`), `MODELE_DE_DONNEES.md`,
+question ouverte n° 29.
+
+**Choix.** Le prévu est saisi par poste : chaque catégorie de dépense, plus « achats »
+et « prêts », qui ne passent pas par les dépenses. Le réel **n'est pas stocké** : il est
+recalculé depuis les registres, en **argent sorti** pour ne rien compter deux fois —
+dépenses payées rattachées à la campagne ; espèces payées sur les achats validés (la
+part retenue sur un prêt a déjà été comptée au décaissement) ; décaissements des prêts
+non contre-passés (les intrants remis à crédit sont déjà comptés à leur achat). Une
+catégorie dépensée sans budget apparaît en « Non prévu » ; ce qui attend une validation
+est montré à part. Une ligne se modifie (l'ancien montant reste au journal), jamais sur
+une campagne clôturée ; une catégorie exclue par l'art. 10.3 ne se budgète pas.
+
+**Vérifié.** `php artisan test` : 367 → **388 tests**, tous verts ; Larastan 0 erreur ;
+Pint propre ; `npm run build` OK ; migration appliquée sur la base MySQL partagée
+(table nouvelle seulement).
+**Dans Chrome** (localhost:8001, base MySQL partagée, compte direction) : sans budget,
+les réels affichés recoupent la base à la main (SQL) — achats validés 85 000 FCFA payés
+en espèces (valeur 255 000, dont 170 000 retenus sur des prêts : pas comptés deux fois),
+159 340 FCFA d'achats à valider en attente, 21 630 000 FCFA décaissés sur les prêts ;
+les dépenses existantes, sans campagne, n'y sont pas. Prêts prévus à 20 000 000 →
+« 108,1 % », « Dépassé de 1 630 000 FCFA » en rouge ; « Modifier » reprend montant et
+note ; passé à 22 000 000 → « 98,3 % », reste 370 000 FCFA ; une seule ligne en base,
+journal « 20000000 → 22000000 ». **Pas fait dans Chrome** : la vue du comptable (lecture
+seule) et le refus pour l'agent — la déconnexion n'a pas abouti (menu du profil
+inaccessible, une extension d'émulation de téléphone s'est ouverte par-dessus) ; ces
+droits sont couverts par `EcranBudgetTest`.
+
+**Corrigé après Chrome.** « Réel » n'est plus en rouge quand rien n'est prévu ; le
+message « Budget enregistré. » disparaît quand on rouvre le formulaire.
+
+**Surprises.** `php artisan serve` répond lentement ici (22 s pour la connexion) : un
+clic sans effet visible est souvent une requête en cours, pas un bug. Dans le worktree,
+`vendor/bin/pint` échoue (conflit d'archive phar avec la copie de `ly-agricole/`) : le
+lancer depuis `ly-agricole/` sur les fichiers du worktree.
+
+**Précision du responsable projet** (pendant la session) : l'anacarde n'est pas seul,
+plusieurs produits entrent selon la période et le prix. Le budget est déjà par campagne,
+donc par produit ; plusieurs campagnes ouvertes en même temps ont chacune le leur. Un
+budget **global toutes campagnes** (ou par période) n'existe pas : ajouté à la question
+29.
+
+**Reste.** Vue comptable dans Chrome ; question 29 ; fusion avec `phase-2-reventes` (conflit attendu dans `QUESTIONS_OUVERTES.md` : garder la 28 et la 29).
+
 ---
 
 ## 2026-09-29 — Phase 2 : apports de campagne et portail investisseur — FINI, commit `ad360cd`

@@ -38,7 +38,7 @@
                     @endcan
                 </div>
 
-                @canany(['voir-producteurs', 'saisir-achats', 'valider-achats', 'voir-rendements', 'voir-fiabilite'])
+                @canany(['voir-producteurs', 'saisir-achats', 'valider-achats', 'voir-rendements', 'voir-fiabilite', 'voir-visites'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Terrain</p>
                         <div class="space-y-1">
@@ -54,11 +54,14 @@
                             @can('voir-rendements')
                                 <x-nav-lien route="rendements" motif="rendements" icone="rendements">Rendements</x-nav-lien>
                             @endcan
+                            @can('voir-visites')
+                                <x-nav-lien route="visites" motif="visites" icone="visites">Visites</x-nav-lien>
+                            @endcan
                         </div>
                     </div>
                 @endcanany
 
-                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'voir-resultat-campagne', 'voir-rapport-campagne', 'saisir-depenses', 'valider-depenses'])
+                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'voir-resultat-campagne', 'voir-rapport-campagne', 'voir-budget', 'saisir-depenses', 'valider-depenses'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Argent</p>
                         <div class="space-y-1">
@@ -79,6 +82,9 @@
                             @endcan
                             @can('voir-resultat-campagne')
                                 <x-nav-lien route="resultat" motif="resultat" icone="resultat">Résultat</x-nav-lien>
+                            @endcan
+                            @can('voir-budget')
+                                <x-nav-lien route="budget" motif="budget" icone="budget">Budget</x-nav-lien>
                             @endcan
                             @canany(['saisir-depenses', 'valider-depenses'])
                                 <x-nav-lien route="depenses" motif="depenses*" icone="depenses">Dépenses</x-nav-lien>

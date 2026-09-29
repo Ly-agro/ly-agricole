@@ -11,6 +11,7 @@ use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\GroupeProducteur;
 use App\Models\Lot;
+use App\Models\Parcelle;
 use App\Models\Pisteur;
 use App\Models\PointCollecte;
 use App\Models\Pret;
@@ -42,7 +43,7 @@ class TerrainController extends Controller
         $request->validate(['depuis' => ['nullable', 'date']]);
         /** @var User $user */
         $user = $request->user();
-        abort_unless($user->can('saisir-achats') || $user->can('gerer-producteurs'), 403);
+        abort_unless($user->can('saisir-achats') || $user->can('gerer-producteurs') || $user->can('saisir-visites'), 403);
 
         // Pris AVANT les lectures : une modification pendant la lecture reviendra au
         // prochain appel plutôt que d'être perdue.
@@ -66,6 +67,8 @@ class TerrainController extends Controller
             'comptes' => CompteTresorerie::query()->where('actif', true)->orderBy('nom')->get(['id', 'nom', 'type', 'titulaire_id', 'actif'])
                 ->filter(fn (CompteTresorerie $c) => Depenses::peutPayerDepuis($user, $c))->values(),
             'producteurs' => $this->delta(Producteur::query(), $depuis)->get(['id', 'code', 'nom', 'prenoms', 'telephone', 'village_id', 'groupe_id', 'actif']),
+            // Pour choisir la parcelle d'une visite (sans le contour : trop lourd).
+            'parcelles' => $this->delta(Parcelle::query(), $depuis)->get(['id', 'producteur_id', 'nom', 'surface_m2', 'produit_id', 'actif']),
             'prets_en_cours' => Pret::query()->whereIn('statut', [StatutPret::Valide, StatutPret::Decaisse])->get()
                 ->map(fn (Pret $p) => [
                     'id' => $p->id,

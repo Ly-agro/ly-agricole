@@ -23,15 +23,26 @@ export async function compresser(fichier: Blob): Promise<Blob> {
 
 export interface PositionGps { lat: number; lng: number; precision: number }
 
-/** Position actuelle, ou null (refus, pas de signal) : une photo sans position reste valable. */
+/**
+ * Position actuelle, ou null (refus, pas de signal) : une photo sans position reste valable.
+ * Le `timeout` du GPS ne court pas tant que la demande d'autorisation reste sans réponse :
+ * sans ce délai à nous, une question ignorée bloquerait la saisie pour toujours.
+ */
 export function positionActuelle(delaiMs = 10_000): Promise<PositionGps | null> {
     return new Promise((ok) => {
         if (!('geolocation' in navigator)) {
             return ok(null);
         }
+        const abandon = setTimeout(() => ok(null), delaiMs + 2_000);
         navigator.geolocation.getCurrentPosition(
-            (p) => ok({ lat: p.coords.latitude, lng: p.coords.longitude, precision: p.coords.accuracy }),
-            () => ok(null),
+            (p) => {
+                clearTimeout(abandon);
+                ok({ lat: p.coords.latitude, lng: p.coords.longitude, precision: p.coords.accuracy });
+            },
+            () => {
+                clearTimeout(abandon);
+                ok(null);
+            },
             { enableHighAccuracy: true, timeout: delaiMs, maximumAge: 30_000 },
         );
     });

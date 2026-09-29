@@ -178,6 +178,14 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
 - **`php -r` + `preg_replace` qui échoue = fichier vidé** : `preg_replace` rend `null`
   et `file_put_contents($f, null)` écrit 0 octet, sans erreur fatale (vu le 2026-09-28).
   Pour du code PHP, l'outil d'édition ; sinon vérifier le retour avant d'écrire.
+- **Deux copies du dépôt (worktree) ⇒ Pint et Larastan plantent** (« Cannot declare class
+  ComposerAutoloaderInit… » ou phar introuvable) : l'opcache du CLI, sous Windows,
+  confond les archives phar identiques des deux copies. Lancer
+  `php -d opcache.enable_cli=0 vendor/phpstan/phpstan/phpstan.phar analyse …` (idem pour
+  Pint), ou lancer Pint depuis l'autre copie sur les fichiers voulus (vu le 2026-09-29).
+- **`vite preview` garde la page de la build précédente** : relancer l'aperçu après
+  `npm run build` — et vérifier que l'ancien `node` a bien quitté le port (arrêter la
+  tâche de fond ne tue que son shell).
 - **`assertSessionHas` ne voit pas un message flash Livewire** : vérifier ce que la vue
   affiche (`assertSee`).
 - **Blade : une directive collée à un mot n'est pas compilée** (« en cours@if (…) ») ;
