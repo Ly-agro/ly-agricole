@@ -1,0 +1,37 @@
+# Serveur IA de LY AGRICOLE : Ollama (modèle de langage local) + service FastAPI.
+# Installation pas à pas : docs/INSTALLATION_IA.md.
+#
+#   cp .env.example .env    (puis remplir IA_JETON)
+#   docker compose up -d --build
+#   docker compose exec ollama ollama pull qwen2.5:7b-instruct
+services:
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama          # modèles téléchargés (plusieurs Go)
+    # Pas de port publié : seul le service IA parle à Ollama, sur le réseau interne.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia            # carte graphique NVIDIA (pilotes + nvidia-container-toolkit)
+              count: all
+              capabilities: [gpu]
+
+  ia:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      OLLAMA_URL: http://ollama:11434
+    depends_on:
+      - ollama
+    # Publié seulement sur l'interface du VPN (WireGuard) : la plateforme y accède, Internet non.
+    ports:
+      - "${IA_ECOUTE:-10.8.0.2}:8100:8100"
+    volumes:
+      - ./modeles:/service/modeles:ro   # modèles de vision entraînés (ONNX), en lecture seule
+
+volumes:
+  ollama:

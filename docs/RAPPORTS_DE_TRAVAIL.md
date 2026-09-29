@@ -5,6 +5,56 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Phase 3 : socle IA (service ia/, référentiel, diagnostics) — FINI SAUF PARCOURS AGRONOME, branche `phase-3-ia`
+
+> Session `ly-agricole-45` (B), branche `phase-3-ia` depuis `phase-2-alertes` (`bb1c0a3`),
+> base `ly_agricole_b`. Demande de l'utilisateur : « fais l'ajout de LLM » ; les blocs
+> restants de B ont été confiés à la session A. Réponses : préparer l'installation du
+> serveur ; **pas d'agronome pour l'instant**.
+
+**Contexte.** Poste de dev : 6 Go de mémoire (1,2 libres), i3 de 2011, pas de carte
+graphique, pas d'Ollama — aucun vrai modèle n'y tourne. Le service est donc écrit pour
+le serveur IA de LY et testé ici avec un **faux modèle** ; le serveur conseillé est décrit
+dans `docs/INSTALLATION_IA.md` (NVIDIA 12 Go au moins, 32 Go, onduleur, chez LY, VPN).
+
+**Service `ia/` (Python FastAPI).** `/sante`, `/conseil`, `/diagnostic`, jeton obligatoire
+(fermé par défaut). Le modèle ne reçoit des fiches que leur repère, type, cible et
+intitulé — **jamais le nom commercial ni la dose** — et doit citer `[FICHE-n]`.
+**Contrôle après génération** (`app/controle.py`) : rejette une dose écrite, un nom de
+produit ou de matière active en clair (même retiré ou interdit), une fiche non fournie,
+« fongicide / insecticide… » sans fiche chimique citée, un produit chimique avant ou
+sans les pratiques et solutions biologiques fournies, une fiche chimique incomplète.
+Diagnostic : « incertain » tant qu'aucun modèle de vision n'est entraîné. Docker Compose
+(Ollama + service, carte NVIDIA, écoute sur le VPN seulement) ; les tests tournent à la
+construction de l'image.
+
+**Plateforme.** Tables `fiches_traitement`, `diagnostics` ; `Referentiel` (agronome
+seul, daté, fiche chimique incomplète non proposable), `Diagnostics` (demande par
+direction / agronome / agent, traitement en file, validation par l'**agronome seul**,
+brouillon de conseil après validation, rendu des repères par le texte validé, brouillon
+rejeté si une fiche non fournie est citée). Écrans `/ia/diagnostics` et `/ia/referentiel`,
+bouton « Demander un avis IA » sur les visites, commande `ia:exporter-jeu` (photos
+validées seulement, sans donnée personnelle, jeu de test fixe). Droits et alias dans
+`IaServiceProvider` (pas dans `AppServiceProvider`, fichier partagé).
+
+**Vérifié.** Python : **15 tests** (contrôle et API) ; PHP : 550 → **560 tests** (`IaTest`,
+10) ; Larastan 0 ; Pint propre. **En vrai** sur ce poste : service lancé (faux modèle) —
+`/sante` répond, `/conseil` sans jeton → 401 ; en **direction**, « Demander un avis IA »
+sur la visite avec photo → « 1 photo(s) confiée(s) », worker → `POST /diagnostic` 200 →
+diagnostic « **incertain** » en base avec son motif ; en **agronome**, `/ia/referentiel`
+vide avec son explication et le bouton « Nouvelle fiche ».
+
+**Pas vérifié.** La fin du parcours en agronome (fiche d'essai, validation, brouillon
+par le vrai `/conseil`) : coupé par l'indisponibilité du contrôle de sécurité, puis les
+processus (service IA, plateforme, worker) ont été **arrêtés faute de mémoire** sur le
+poste. À refaire. Aucun vrai modèle (Ollama) essayé : pas de serveur IA.
+
+**Reste.** Parcours agronome ; questions 53 (agronome), 54 (serveur IA), 55 (jeu CCMT,
+consentement pour l'entraînement) ; brancher un modèle de vision (ONNX) quand il y aura
+des photos confirmées.
+
+---
+
 ## 2026-09-29 — Phase 2 : alertes quotidiennes et avis de campagne — FINI, branche `phase-2-alertes`
 
 > Session `ly-agricole-45` (B), branche `phase-2-alertes`, au-dessus de `phase-2-notifications`

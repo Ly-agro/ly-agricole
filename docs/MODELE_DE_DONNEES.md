@@ -129,3 +129,14 @@ pertes + ajustements d'inventaire + corrections ; une vente (sortie de phase 2) 
 4. Un achat enregistré deux fois avec le même UUID = un seul achat.
 5. `valide_par ≠ cree_par` sur tout ce qui se valide.
 6. Aucun `UPDATE`/`DELETE` possible sur une table 🔒 (le modèle lève une exception).
+
+## IA (phase 3)
+
+Skill `ly-agricole-ia-conseil`. Service `ia/` (FastAPI + Ollama) sur un serveur de LY,
+appelé seulement depuis la file d'attente (`TraiterDiagnosticIa`, `RedigerConseilIa`),
+avec le jeton `IA_JETON`. Installation : `docs/INSTALLATION_IA.md`.
+
+| Table | Colonnes principales | Remarques |
+| --- | --- | --- |
+| `fiches_traitement` | produit_id (culture), type (`pratique`, `biologique`, `chimique`), cible, titre, description, nom_commercial, matiere_active, dose, passages, delai_avant_recolte_jours, toxicite_humaine, protection, effet_abeilles, reference_homologation, statut (`autorisee`, `retiree`, `interdite`), validee_le, validee_par | référentiel tenu par l'**agronome seul** (`App\Services\Ia\Referentiel`), daté à chaque enregistrement, jamais supprimé ni rempli de mémoire ; vide au départ. Une fiche chimique incomplète n'est **pas proposable**. Une fiche non chimique ne garde ni nom commercial ni dose. Le modèle de langage ne voit jamais `nom_commercial`, `matiere_active` ni `dose` : il cite `[FICHE-n]`, la plateforme remplace le repère par le texte validé (`Diagnostics::rendreConseil`) |
+| `diagnostics` | visite_id, photo_id (unique ensemble), statut (`en_attente`, `propose`, `incertain`, `confirme`, `corrige`, `erreur`), classe_proposee, confiance_pour_mille, modele_vision, motif, classe_retenue, note_agronome, valide_par, valide_at, conseil_statut (`en_attente`, `brouillon`, `rejete`, `erreur`), conseil_texte, conseil_fiches, conseil_motifs, conseil_modele, demande_par | avis sur une photo de visite. Sans modèle de vision entraîné : `incertain`. Seul un **agronome** passe à `confirme` / `corrige` (droit `valider-diagnostics`) ; le brouillon de conseil n'est demandé qu'après et reste **interne** (rien vers le producteur). Rejeté si le service cite une fiche non fournie (défense en profondeur, en plus du contrôle du service). Les diagnostics validés forment le jeu d'entraînement (`php artisan ia:exporter-jeu`, jeu de test fixe tiré de l'identifiant de la photo, sans donnée personnelle) |
