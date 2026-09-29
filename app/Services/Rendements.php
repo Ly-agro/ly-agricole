@@ -129,6 +129,37 @@ class Rendements
         return ['parcelles' => $parcelles, 'bornes' => $bornes];
     }
 
+    /**
+     * Évolution d'un producteur d'une campagne à l'autre : une ligne par campagne où il a
+     * un rendement, de la plus ancienne à la plus récente. L'écart (`ecart_kg_par_ha`)
+     * se mesure à la campagne précédente **du même produit** : le rendement d'un produit
+     * ne se compare pas à celui d'un autre. `null` pour la première campagne d'un produit.
+     *
+     * @return list<array{campagne: Campagne, surface_m2: int, grammes: int, kg_par_ha: int, ecart_kg_par_ha: int|null}>
+     */
+    public static function evolution(Producteur $producteur): array
+    {
+        $lignes = [];
+        $dernierParProduit = [];
+        foreach (Campagne::query()->with('produit')->orderBy('debut')->orderBy('id')->get() as $campagne) {
+            $ligne = self::classement($campagne)['classes']->first(fn (array $l) => $l['producteur']->id === $producteur->id);
+            if ($ligne === null) {
+                continue;
+            }
+            $precedent = $dernierParProduit[$campagne->produit_id] ?? null;
+            $lignes[] = [
+                'campagne' => $campagne,
+                'surface_m2' => $ligne['surface_m2'],
+                'grammes' => $ligne['grammes'],
+                'kg_par_ha' => $ligne['kg_par_ha'],
+                'ecart_kg_par_ha' => $precedent === null ? null : $ligne['kg_par_ha'] - $precedent,
+            ];
+            $dernierParProduit[$campagne->produit_id] = $ligne['kg_par_ha'];
+        }
+
+        return $lignes;
+    }
+
     /** kg/ha = grammes ÷ 1000 ÷ (m² ÷ 10 000) = grammes × 10 ÷ m², arrondi au plus proche. */
     public static function kgParHa(int $grammes, int $surfaceM2): int
     {

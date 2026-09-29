@@ -5,6 +5,32 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Phase 2 : évolution du rendement d'un producteur — FINI, NON COMMITÉ
+
+> Suite de `6487feb` (branche `phase-2-reventes`). Dernier élément « tableaux de bord
+> de rendement » du cahier §4 réalisable sans les visites.
+
+**Fait.** `Rendements::evolution($producteur)` : une ligne par campagne où il a un
+rendement, de la plus ancienne à la plus récente ; l'écart (kg/ha, entier) se mesure à
+la campagne précédente **du même produit** — un produit ne se compare pas à un autre,
+et la première campagne d'un produit n'a pas d'écart. Page `/rendements/producteurs/{producteur}`
+(`EvolutionProducteur`, même droit `voir-rendements`), atteinte par le nom du producteur
+dans le classement. Aucune table nouvelle : tout est recalculé.
+
+**Vérifié en l'exécutant.** 4 tests ajoutés : 386 → **390 tests** verts, Larastan 0
+erreur, Pint propre. Sur la vraie base MySQL (transaction annulée, comptes 8/1/7 avant
+et après) : producteur fictif à 500 puis 650 kg/ha sur deux campagnes du même produit →
+page 200, « première campagne » puis « +150 kg/ha ». Pas vu dans un navigateur.
+
+**Limite.** Coût : le classement de chaque campagne est recalculé pour trouver la
+ligne du producteur — sans importance à quelques campagnes, à revoir si elles se
+comptent par dizaines. Question 29 toujours ouverte.
+
+**Reste du bloc rendements.** Comparaison des pratiques des meilleurs et des moins bons :
+attend la saisie des visites et pratiques (module 2), pas encore codée.
+
+---
+
 ## 2026-09-29 — Phase 2 : carte des parcelles par rendement — FINI, NON COMMITÉ
 
 > Suite de `4c2f383` (branche `phase-2-reventes`). Deuxième moitié du « carte des

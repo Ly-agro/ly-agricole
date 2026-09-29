@@ -34,6 +34,7 @@ use App\Livewire\Referentiels\Produits;
 use App\Livewire\Referentiels\Villages;
 use App\Livewire\Referentiels\Zones;
 use App\Livewire\Rendements\ClassementRendements;
+use App\Livewire\Rendements\EvolutionProducteur;
 use App\Livewire\Stock\FicheLot;
 use App\Livewire\Stock\ListeLots;
 use App\Livewire\TableauDeBord;
@@ -126,6 +127,7 @@ Route::middleware('auth')->group(function () {
     // l'investisseur (deux écrans distincts : pas les mêmes droits ni la même vue).
     Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
     Route::get('/rendements', ClassementRendements::class)->middleware('can:voir-rendements')->name('rendements');
+    Route::get('/rendements/producteurs/{producteur}', EvolutionProducteur::class)->middleware('can:voir-rendements')->name('rendements.producteur');
     Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
 
     Route::prefix('prets')->name('prets')->group(function () {

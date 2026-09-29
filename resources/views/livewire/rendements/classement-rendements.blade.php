@@ -43,7 +43,7 @@
                     @foreach ($resultat['classes'] as $l)
                         <tr>
                             <td class="px-4 py-2 tabular-nums">{{ $l['rang'] }}</td>
-                            <td class="px-4 py-2">{{ $l['producteur']->nom }}</td>
+                            <td class="px-4 py-2"><a href="{{ route('rendements.producteur', $l['producteur']) }}" class="text-emerald-800 hover:underline">{{ $l['producteur']->nom }}</a></td>
                             <td class="px-4 py-2 text-right tabular-nums">{{ Format::hectares($l['surface_m2']) }}</td>
                             <td class="px-4 py-2 text-right tabular-nums">{{ Format::kg($l['grammes']) }}</td>
                             <td class="px-4 py-2 text-right font-medium tabular-nums">{{ Format::entier($l['kg_par_ha']) }} kg/ha</td>

@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Enums\StatutAchat;
 use App\Enums\StatutCampagne;
 use App\Livewire\Rendements\ClassementRendements;
+use App\Livewire\Rendements\EvolutionProducteur;
 use App\Models\Campagne;
 use App\Models\CompteTresorerie;
 use App\Models\Magasin;
@@ -310,5 +311,81 @@ class RendementsTest extends TestCase
         $this->actingAs(User::factory()->role(Role::Direction)->create());
         Livewire::test(ClassementRendements::class)
             ->assertSeeHtml('<polygon')->assertSee('Carte des parcelles financées');
+    }
+
+    /** Un hectare relevé livrant `$kg` kg dans `$campagne` (les aides écrivent dans $this->campagne). */
+    private function saison(Campagne $campagne, Producteur $producteur, int $kg): void
+    {
+        $this->campagne = $campagne;
+        $this->financer($producteur, $this->hectare($producteur));
+        $this->livrer($producteur, $kg * 1000);
+    }
+
+    #[Test]
+    public function l_evolution_mesure_l_ecart_a_la_campagne_precedente_du_meme_produit(): void
+    {
+        $produit = $this->campagne->produit;
+        $p = Producteur::factory()->create();
+        $c1 = Campagne::factory()->create(['produit_id' => $produit->id, 'code' => '2030-2031', 'debut' => '2030-12-01']);
+        $c2 = Campagne::factory()->create(['produit_id' => $produit->id, 'code' => '2031-2032', 'debut' => '2031-12-01']);
+        $c3 = Campagne::factory()->create(['produit_id' => $produit->id, 'code' => '2032-2033', 'debut' => '2032-12-01']);
+        $this->saison($c2, $p, 800);
+        $this->saison($c1, $p, 500);
+        $this->saison($c3, $p, 700);
+
+        $evolution = Rendements::evolution($p);
+
+        $this->assertSame(['2030-2031', '2031-2032', '2032-2033'], array_map(fn ($l) => $l['campagne']->code, $evolution));
+        $this->assertNull($evolution[0]['ecart_kg_par_ha']);
+        $this->assertEqualsWithDelta(300, $evolution[1]['ecart_kg_par_ha'], 6);
+        $this->assertEqualsWithDelta(-100, $evolution[2]['ecart_kg_par_ha'], 6);
+        $this->assertSame($evolution[1]['kg_par_ha'] - $evolution[0]['kg_par_ha'], $evolution[1]['ecart_kg_par_ha']);
+    }
+
+    #[Test]
+    public function deux_produits_ne_se_comparent_pas(): void
+    {
+        $p = Producteur::factory()->create();
+        $anacarde = Campagne::factory()->create(['code' => '2030-2031', 'debut' => '2030-12-01']);
+        $tomate = Campagne::factory()->create(['code' => '2031-2032', 'debut' => '2031-12-01']);
+        $this->assertNotSame($anacarde->produit_id, $tomate->produit_id);
+        $this->saison($anacarde, $p, 500);
+        $this->saison($tomate, $p, 5000);
+
+        $evolution = Rendements::evolution($p);
+
+        $this->assertCount(2, $evolution);
+        $this->assertNull($evolution[0]['ecart_kg_par_ha']);
+        $this->assertNull($evolution[1]['ecart_kg_par_ha']); // première campagne de SON produit
+    }
+
+    #[Test]
+    public function un_producteur_sans_rendement_a_une_evolution_vide_et_les_autres_ne_sont_pas_melanges(): void
+    {
+        $p = Producteur::factory()->create();
+        $autre = Producteur::factory()->create();
+        $this->saison($this->campagne, $autre, 900);
+
+        $this->assertSame([], Rendements::evolution($p));
+        $this->assertCount(1, Rendements::evolution($autre));
+    }
+
+    #[Test]
+    public function la_page_d_evolution_suit_le_meme_droit_et_affiche_les_ecarts(): void
+    {
+        $produit = $this->campagne->produit;
+        $p = Producteur::factory()->create(['nom' => 'Kone Evolution']);
+        $c1 = Campagne::factory()->create(['produit_id' => $produit->id, 'debut' => '2030-12-01']);
+        $c2 = Campagne::factory()->create(['produit_id' => $produit->id, 'debut' => '2031-12-01']);
+        $this->saison($c1, $p, 500);
+        $this->saison($c2, $p, 400);
+
+        $this->actingAs(User::factory()->role(Role::Agent)->create());
+        $this->get(route('rendements.producteur', $p))->assertForbidden();
+
+        $this->actingAs(User::factory()->role(Role::Direction)->create());
+        $this->get(route('rendements.producteur', $p))->assertOk();
+        Livewire::test(EvolutionProducteur::class, ['producteur' => $p])
+            ->assertSee('Kone Evolution')->assertSee('première campagne')->assertSee('kg/ha');
     }
 }
