@@ -12,7 +12,9 @@ use App\Models\Magasin;
 use App\Models\Parcelle;
 use App\Models\Producteur;
 use App\Models\User;
+use App\Services\Geo\CarteSvg;
 use App\Services\Rendements;
+use Database\Factories\ParcelleFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -229,5 +231,84 @@ class RendementsTest extends TestCase
         Livewire::test(ClassementRendements::class)
             ->assertSee('Kone Classe')->assertSee('kg/ha')
             ->assertSee('Sans Contour')->assertSee('aucune parcelle financée avec contour relevé');
+    }
+
+    #[Test]
+    public function la_carte_classe_les_parcelles_par_cinquiemes(): void
+    {
+        $bas = Producteur::factory()->create();
+        $this->financer($bas, $this->hectare($bas));
+        $this->livrer($bas, 200_000);
+        $haut = Producteur::factory()->create();
+        $this->financer($haut, $this->hectare($haut));
+        $this->livrer($haut, 1_000_000);
+        // Financé mais rien livré : 0 kg/ha, un vrai rendement (le plus faible), pas « inconnu ».
+        $rien = Producteur::factory()->create();
+        $this->financer($rien, $this->hectare($rien));
+
+        $carte = Rendements::carte($this->campagne);
+        $classes = collect($carte['parcelles'])->mapWithKeys(fn ($p) => [$p['producteur'] => $p['classe']]);
+
+        $this->assertCount(3, $carte['parcelles']);
+        $this->assertSame(0, $classes[$rien->nom]);
+        $this->assertSame(1, $classes[$bas->nom]);
+        $this->assertSame(4, $classes[$haut->nom]);
+        $this->assertCount(6, $carte['bornes']);
+        $this->assertSame(0, $carte['bornes'][0]);
+    }
+
+    #[Test]
+    public function la_carte_ignore_les_parcelles_sans_contour_et_les_prets_d_une_autre_campagne(): void
+    {
+        $p = Producteur::factory()->create();
+        $this->financer($p, $this->hectare($p), Parcelle::factory()->create(['producteur_id' => $p->id, 'contour' => null]));
+        $this->livrer($p, 500_000);
+        $autre = Campagne::factory()->create();
+
+        $this->assertCount(1, Rendements::carte($this->campagne)['parcelles']);
+        $this->assertSame([], Rendements::carte($autre)['parcelles']);
+    }
+
+    #[Test]
+    public function un_seul_rendement_donne_une_seule_classe_du_milieu_et_pas_de_legende(): void
+    {
+        $p = Producteur::factory()->create();
+        $this->financer($p, $this->hectare($p));
+        $this->livrer($p, 500_000);
+
+        $carte = Rendements::carte($this->campagne);
+
+        $this->assertSame(2, $carte['parcelles'][0]['classe']);
+        $this->assertNull($carte['bornes']);
+    }
+
+    #[Test]
+    public function la_projection_est_commune_les_positions_relatives_sont_conservees(): void
+    {
+        $a = Parcelle::factory()->carre(100)->make()->contour;
+        $b = Parcelle::factory()->make(['contour' => ParcelleFactory::geometrieCarre(100, 9.45, -5.62)])->contour;
+
+        $dessin = CarteSvg::projeter(['a' => $a, 'b' => $b]);
+        $xA = (float) explode(',', explode(' ', $dessin['polygones']['a'][0])[0])[0];
+        $xB = (float) explode(',', explode(' ', $dessin['polygones']['b'][0])[0])[0];
+
+        $this->assertLessThan($xB, $xA); // b est plus à l'est
+        $this->assertLessThanOrEqual($dessin['largeur'], $xB + 1);
+        $this->assertSame([], CarteSvg::projeter([])['polygones']);
+    }
+
+    #[Test]
+    public function l_ecran_dessine_la_carte_avec_sa_legende(): void
+    {
+        $p = Producteur::factory()->create(['nom' => 'Kone Carte']);
+        $this->financer($p, $this->hectare($p));
+        $this->livrer($p, 800_000);
+        $q = Producteur::factory()->create(['nom' => 'Autre Carte']);
+        $this->financer($q, $this->hectare($q));
+        $this->livrer($q, 200_000);
+
+        $this->actingAs(User::factory()->role(Role::Direction)->create());
+        Livewire::test(ClassementRendements::class)
+            ->assertSeeHtml('<polygon')->assertSee('Carte des parcelles financées');
     }
 }

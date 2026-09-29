@@ -80,6 +80,55 @@ class Rendements
         ];
     }
 
+    /**
+     * Parcelles financées de la campagne qui ont un contour, chacune avec le rendement
+     * de son producteur : les kilos sont pesés par producteur, pas par parcelle, donc
+     * deux parcelles du même producteur portent le même chiffre. Sans rendement
+     * (`kg_par_ha` null), la parcelle est grise sur la carte, pas à zéro.
+     *
+     * `classe` : 0 (plus faible) à 4 (plus fort), par cinquièmes égaux de l'écart
+     * entre le plus faible et le plus fort rendement (entiers) ; null si pas de rendement.
+     *
+     * @return array{
+     *     parcelles: list<array{id: string, nom: string, producteur: string, geometrie: array{type: string, coordinates: array<mixed>}, kg_par_ha: int|null, classe: int|null}>,
+     *     bornes: list<int>|null
+     * }
+     */
+    public static function carte(Campagne $campagne): array
+    {
+        $rendements = self::classement($campagne)['classes']->mapWithKeys(fn (array $l) => [$l['producteur']->id => $l['kg_par_ha']]);
+        $min = $rendements->isEmpty() ? null : (int) $rendements->min();
+        $max = $rendements->isEmpty() ? null : (int) $rendements->max();
+
+        $ids = DB::table('pret_parcelle')
+            ->join('prets', 'prets.id', '=', 'pret_parcelle.pret_id')
+            ->where('prets.campagne_id', $campagne->id)
+            ->whereIn('prets.statut', [StatutPret::Valide->value, StatutPret::Decaisse->value, StatutPret::Solde->value])
+            ->pluck('pret_parcelle.parcelle_id')->unique()->all();
+
+        $parcelles = [];
+        foreach (Parcelle::query()->with('producteur')->whereIn('id', $ids)->whereNotNull('contour')->orderBy('nom')->get() as $parcelle) {
+            /** @var array{type: string, coordinates: array<mixed>} $geometrie */
+            $geometrie = $parcelle->contour;
+            $kg = $rendements->get($parcelle->producteur_id);
+            $parcelles[] = [
+                'id' => $parcelle->id,
+                'nom' => $parcelle->nom,
+                'producteur' => $parcelle->producteur->nom,
+                'geometrie' => $geometrie,
+                'kg_par_ha' => $kg,
+                'classe' => $kg === null || $min === null || $max === null ? null : ($max === $min ? 2 : min(4, intdiv(($kg - $min) * 5, $max - $min))),
+            ];
+        }
+
+        $bornes = null;
+        if ($min !== null && $max !== null && $max !== $min) {
+            $bornes = array_map(fn (int $i) => $min + intdiv(($max - $min) * $i, 5), range(0, 5));
+        }
+
+        return ['parcelles' => $parcelles, 'bornes' => $bornes];
+    }
+
     /** kg/ha = grammes ÷ 1000 ÷ (m² ÷ 10 000) = grammes × 10 ÷ m², arrondi au plus proche. */
     public static function kgParHa(int $grammes, int $surfaceM2): int
     {

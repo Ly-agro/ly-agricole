@@ -3,6 +3,7 @@
 namespace App\Livewire\Rendements;
 
 use App\Models\Campagne;
+use App\Services\Geo\CarteSvg;
 use App\Services\Indicateurs;
 use App\Services\Rendements;
 use Illuminate\Contracts\View\View;
@@ -28,7 +29,12 @@ class ClassementRendements extends Component
         $campagnes = $indicateurs->campagnes();
         $campagne = $campagnes->firstWhere('id', (int) $this->campagneId) ?? $indicateurs->campagneParDefaut($campagnes);
 
+        $carte = $campagne instanceof Campagne ? Rendements::carte($campagne) : null;
+        $dessin = $carte === null ? null : CarteSvg::projeter(array_column($carte['parcelles'], 'geometrie', 'id'));
+
         return view('livewire.rendements.classement-rendements', [
+            'carte' => $carte,
+            'dessin' => $dessin,
             'campagnes' => $campagnes,
             'campagne' => $campagne,
             'resultat' => $campagne instanceof Campagne ? Rendements::classement($campagne) : null,

@@ -5,6 +5,39 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Phase 2 : carte des parcelles par rendement — FINI, NON COMMITÉ
+
+> Suite de `4c2f383` (branche `phase-2-reventes`). Deuxième moitié du « carte des
+> parcelles colorée par rendement » du cahier §4.
+
+**Fait.** `Rendements::carte($campagne)` : parcelles financées avec contour, chacune
+avec le rendement de **son producteur** (les kilos sont pesés par producteur, pas par
+parcelle : deux parcelles du même producteur portent le même chiffre, dit sur l'écran),
+classée par cinquièmes égaux de l'écart min–max (entiers). `Geo\CarteSvg::projeter()` :
+projection SVG **commune** à toutes les parcelles, sans fond de carte ni réseau (comme
+`Contour::pointsSvg`, qui projette une parcelle seule). Carte + légende + infobulle
+(`<title>`) sous le classement de `/rendements`. Rien d'anacarde en dur : le produit
+vient de la campagne (précision du responsable projet : plusieurs produits selon la
+saison et le prix).
+
+**Choix à connaître.** Un producteur financé qui n'a rien livré a **0 kg/ha** (vrai
+rendement, classe la plus faible), pas « inconnu » ; le gris « pas de rendement » ne
+sert que si un producteur manquait au classement (cas quasi impossible : contour ⇒
+surface > 0).
+
+**Vérifié en l'exécutant.** 5 tests ajoutés : 381 → **386 tests** verts, Larastan 0
+erreur, Pint propre. Sur la vraie base MySQL (transaction annulée ensuite, comptes
+8/2/7 avant et après) : 3 producteurs fictifs à 200 / 600 / 1 000 kg/ha → page 200,
+3 polygones, couleurs clair / moyen / foncé, viewBox `0 0 600 202`, trois carrés côte à
+côte d'ouest en est avec les bons écarts. **Non vu dans un navigateur** (extension
+Chrome non connectée) : la lisibilité réelle (contraste, taille sur téléphone) reste à
+regarder.
+
+**Reste.** Évolution d'un producteur d'une campagne à l'autre ; comparaison des
+pratiques (dépend de la saisie des visites). Question 29 toujours ouverte.
+
+---
+
 ## 2026-09-29 — Phase 2 : comparaison des rendements — FINI, NON COMMITÉ
 
 > Branche `phase-2-reventes`, après `ad360cd`. Bloc « comparaison des rendements » du

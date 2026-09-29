@@ -60,6 +60,44 @@
             </table>
         </div>
 
+        @if ($carte !== null && $carte['parcelles'] !== [])
+            @php
+                // Du plus clair (rendement faible) au plus foncé (fort) ; gris = pas de rendement.
+                $couleurs = ['#d9f0d3', '#a6dba0', '#5aae61', '#1b7837', '#00441b'];
+            @endphp
+            <div class="rounded-xl border border-stone-200 bg-white p-5">
+                <h2 class="mb-3 font-semibold">Carte des parcelles financées</h2>
+                <svg viewBox="0 0 {{ $dessin['largeur'] }} {{ $dessin['hauteur'] }}" class="mx-auto max-h-[32rem] w-full rounded-lg bg-stone-50" role="img" aria-label="Parcelles colorées par rendement">
+                    @foreach ($carte['parcelles'] as $p)
+                        @foreach ($dessin['polygones'][$p['id']] as $points)
+                            <polygon points="{{ $points }}" fill="{{ $p['classe'] === null ? '#d6d3d1' : $couleurs[$p['classe']] }}" stroke="#57534e" stroke-width="0.8" stroke-linejoin="round">
+                                <title>{{ $p['nom'] }} — {{ $p['producteur'] }} : {{ $p['kg_par_ha'] === null ? 'pas de rendement' : Format::entier($p['kg_par_ha']).' kg/ha' }}</title>
+                            </polygon>
+                        @endforeach
+                    @endforeach
+                </svg>
+                <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-600">
+                    @if ($carte['bornes'] !== null)
+                        @foreach ($couleurs as $i => $couleur)
+                            <span class="inline-flex items-center gap-1.5">
+                                <span class="inline-block h-3 w-3 rounded-sm border border-stone-400" style="background: {{ $couleur }}"></span>
+                                {{ Format::entier($carte['bornes'][$i]) }} – {{ Format::entier($carte['bornes'][$i + 1]) }} kg/ha
+                            </span>
+                        @endforeach
+                    @endif
+                    @if (collect($carte['parcelles'])->contains(fn ($p) => $p['classe'] === null))
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="inline-block h-3 w-3 rounded-sm border border-stone-400" style="background: #d6d3d1"></span>
+                            pas de rendement
+                        </span>
+                    @endif
+                </div>
+                <p class="mt-2 text-xs text-stone-500">
+                    Les kilos sont pesés par producteur, pas par parcelle : chaque parcelle porte le rendement de son producteur.
+                </p>
+            </div>
+        @endif
+
         @if ($resultat['sansSurface']->isNotEmpty())
             <div class="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm">
                 <p class="font-medium text-amber-900">Sans rendement : aucune parcelle financée avec contour relevé</p>
