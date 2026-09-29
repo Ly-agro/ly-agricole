@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\Achat;
+use App\Models\Campagne;
 use App\Models\Depense;
 use App\Models\Pret;
 use App\Models\Vente;
+use App\Observers\DeclencheursCampagne;
 use App\Observers\DeclencheursNotifications;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,5 +22,6 @@ class NotificationsServiceProvider extends ServiceProvider
         foreach ([Achat::class, Depense::class, Pret::class, Vente::class] as $modele) {
             $modele::observe(DeclencheursNotifications::class);
         }
+        Campagne::observe(DeclencheursCampagne::class);
     }
 }

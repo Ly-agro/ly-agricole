@@ -5,6 +5,47 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Phase 2 : alertes quotidiennes et avis de campagne — FINI, branche `phase-2-alertes`
+
+> Session `ly-agricole-45` (B), branche `phase-2-alertes`, au-dessus de `phase-2-notifications`
+> **après fusion de `fusion-phase-2`** (commit `e851c4e` : 544 tests, conflits des fichiers
+> partagés résolus en gardant les deux côtés). Base `ly_agricole_b`. Bloc réclamé auprès
+> de la session A, qui a posé deux garde-fous : push générique, et alertes d'argent
+> seulement aux rôles qui voient déjà ces écrans.
+
+**Pourquoi.** Réponses du responsable projet : « tous les avis sont les bienvenus », à
+« toute personne ayant les permissions nécessaires » (question 52) ; imprimante : pas de
+modèle précis, Bluetooth basse énergie (question 50, déjà codé).
+
+**Fait.** `App\Services\Alertes` + commande `notifications:alertes` (planifiée à 7 h) :
+saisies à valider depuis plus de 48 h (un rappel par personne et par jour, sans ce que la
+personne a saisi elle-même) ; prêts en retard (définition de `FiabiliteProducteur`, sans
+nom ni montant) → `voir-prets` ; poste de budget dépassé → `voir-budget` (une fois par
+poste et montant prévu) ; écarts de poids et sauvegardes, repris du rapport « Alertes » de
+`Rapports` (semaine 10, non modifié) → `voir-rapports`. Table `alertes_envoyees` : une
+alerte ne part qu'une fois, même si la commande tourne deux fois en parallèle.
+`DeclencheursCampagne` : campagne ouverte, prix officiel annoncé ou changé →
+`saisir-achats`. **Push générique** pour tous les avis (`AvisLy::pourPush()`, texte
+« Ouvrir LY AGRICOLE pour voir le détail. » par défaut) : le détail reste dans
+l'application.
+
+**Vérifié.** 544 → **550 tests** verts ; Larastan 0 ; Pint propre. **En vrai** sur
+`ly_agricole_b` : migration, `notifications:alertes` → 3 alertes « sauvegardes » (copie
+hors site absente, restauration non vérifiée, archives non chiffrées) à la direction et
+au comptable, file traitée (18 envois, 0 échec), push parti vers le navigateur abonné ;
+relancée aussitôt → 0 partout. Attente, retard et budget à 0 sur ces données (achats en
+attente depuis moins de 48 h, aucune échéance dépassée, budget des prêts non dépassé) :
+ces cas sont couverts par les tests (`AlertesTest`).
+
+**Choix.** Pas d'avis à la **création** d'une campagne déjà ouverte : elle naît « en
+préparation » et c'est l'action « Ouvrir » qui prévient (sinon chaque campagne créée par
+un import ou un test envoyait un avis).
+
+**Reste.** Question 51 (projet Firebase pour les téléphones). Tâche planifiée du serveur
+(`schedule:run` chaque minute) à installer en production, comme pour les sauvegardes.
+
+---
+
 ## 2026-09-29 — Phase 2 : notifications push, tickets 58 mm, motif du budget — FINI, branche `phase-2-notifications`
 
 > Session `ly-agricole-45` (B), branche `phase-2-notifications` (au-dessus de `078bc8b`,

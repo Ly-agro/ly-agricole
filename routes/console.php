@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Alertes;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -14,6 +15,14 @@ Artisan::command('notifications:cles-vapid', function () {
     $this->comment('À mettre dans .env (la clé privée ne se partage pas), puis php artisan config:clear.');
 })->purpose('Générer les clés VAPID des notifications du bureau');
 
+// Alertes quotidiennes (saisies en attente, prêts en retard, budget, écarts, sauvegardes).
+// Une alerte ne part qu'une fois : relancer le même jour ne renvoie rien.
+Artisan::command('notifications:alertes', function () {
+    foreach (Alertes::executer() as $sorte => $nombre) {
+        $this->line(str_pad($sorte, 10).$nombre);
+    }
+})->purpose('Envoyer les alertes du jour à qui a les droits');
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
@@ -23,3 +32,5 @@ Artisan::command('inspire', function () {
 // * * * * * cd /chemin && php artisan schedule:run
 Schedule::command('ly:sauvegarder')->dailyAt('02:00')->withoutOverlapping();
 Schedule::command('ly:verifier-sauvegarde')->weeklyOn(0, '03:00')->withoutOverlapping();
+// Alertes : chaque matin, après la sauvegarde (son état fait partie des alertes).
+Schedule::command('notifications:alertes')->dailyAt('07:00')->withoutOverlapping();

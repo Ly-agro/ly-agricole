@@ -20,17 +20,21 @@ use Illuminate\Support\Facades\Notification;
 class Notifications
 {
     /**
+     * Le TITRE part aussi en push (écran verrouillé) : ni nom de producteur, ni montant.
+     * Le texte complet reste dans l'application ; `$textePush`, générique, le remplace sur
+     * l'appareil (par défaut : « Ouvrir LY AGRICOLE pour voir le détail. »).
+     *
      * @param  iterable<User>  $destinataires
      * @param  string  $categorie  a_valider | valide | refuse | alerte
      */
-    public static function envoyer(iterable $destinataires, string $titre, string $texte, ?string $url = null, string $categorie = 'alerte'): void
+    public static function envoyer(iterable $destinataires, string $titre, string $texte, ?string $url = null, string $categorie = 'alerte', ?string $textePush = null): void
     {
         $users = collect($destinataires)->filter(fn (User $u) => $u->actif)->unique('id')->values();
         if ($users->isEmpty()) {
             return;
         }
 
-        Notification::send($users, new AvisLy($titre, $texte, $url, $categorie));
+        Notification::send($users, new AvisLy($titre, $texte, $url, $categorie, $textePush));
     }
 
     /**

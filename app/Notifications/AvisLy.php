@@ -17,16 +17,29 @@ class AvisLy extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    /** Ce qu'affiche l'écran verrouillé quand l'avis n'a pas de texte « push » à lui. */
+    public const TEXTE_PUSH = 'Ouvrir LY AGRICOLE pour voir le détail.';
+
     /**
      * @param  string  $categorie  a_valider | valide | refuse | alerte
+     * @param  string|null  $textePush  texte GÉNÉRIQUE montré par le push (écran verrouillé) :
+     *                                  ni nom de producteur, ni montant, ni téléphone. Le texte
+     *                                  complet reste dans l'application.
      */
     public function __construct(
         public string $titre,
         public string $texte,
         public ?string $url = null,
         public string $categorie = 'alerte',
+        public ?string $textePush = null,
     ) {
         $this->afterCommit();
+    }
+
+    /** @return array{titre: string, texte: string, url: string|null, categorie: string} */
+    public function pourPush(): array
+    {
+        return ['titre' => $this->titre, 'texte' => $this->textePush ?? self::TEXTE_PUSH, 'url' => $this->url, 'categorie' => $this->categorie];
     }
 
     /** @return list<string> */

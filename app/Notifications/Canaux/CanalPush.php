@@ -32,7 +32,8 @@ abstract class CanalPush
         }
 
         try {
-            $resultats = $this->expediteur()->envoyer($abonnements->all(), $avis->toArray($notifiable));
+            // Texte générique : un push s'affiche sur l'écran verrouillé.
+            $resultats = $this->expediteur()->envoyer($abonnements->all(), $avis->pourPush());
         } catch (Throwable $e) {
             // Panne du serveur (OpenSSL mal configuré, Firebase injoignable…) : ce n'est pas
             // la faute des appareils, on ne les compte pas en échec. L'avis reste dans la
