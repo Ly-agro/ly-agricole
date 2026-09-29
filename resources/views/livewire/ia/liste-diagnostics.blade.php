@@ -50,6 +50,13 @@
                     @elseif ($d->motif)
                         <p class="text-sm text-stone-600">{{ $d->motif }}</p>
                     @endif
+                    @if ($d->annotation_classe && ! $d->statut->valide())
+                        <p class="text-sm text-stone-700">
+                            <span class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-900">Annotation provisoire ({{ $d->annotation_source }})</span>
+                            {{ $d->annotation_classe }}@if ($d->annotation_note) — {{ $d->annotation_note }}@endif
+                            <span class="block text-xs text-stone-500">Pas une validation : un agronome doit confirmer ou corriger.</span>
+                        </p>
+                    @endif
                     @if ($d->statut->valide())
                         <p class="text-sm">Retenu par l'agronome : <strong>{{ $d->classe_retenue }}</strong> — {{ $d->validateur?->nom }}, le {{ $d->valide_at?->format('d/m/Y') }}@if ($d->note_agronome) · {{ $d->note_agronome }}@endif</p>
                     @endif

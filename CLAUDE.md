@@ -65,6 +65,7 @@ php artisan queue:work                 # envoie les SMS et les notifications en 
 php artisan notifications:cles-vapid   # une fois : clés du Web Push à mettre dans .env (PUSH_VAPID_PUBLIQUE / _PRIVEE)
 php artisan notifications:alertes      # alertes du jour (planifiée à 7 h via schedule:run) ; relancée le même jour : rien ne repart
 php artisan ia:exporter-jeu <dossier>  # photos validées par un agronome → jeu d'entraînement (manifeste.csv, jeu de test fixe)
+php artisan ia:annoter [n° classe]     # sans agronome : lister / annoter PROVISOIREMENT une photo (pas une validation)
 php artisan ly:sauvegarder --verifier  # archive base + fichiers, puis VRAIE restauration comparée (docs/MISE_EN_PRODUCTION.md)
 ```
 

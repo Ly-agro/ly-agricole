@@ -5,6 +5,36 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — IA : VPS sans carte graphique, annotations provisoires — FINI, branche `phase-3-ia`
+
+> Réponses du responsable projet : agronome « pas pour l'instant » (53) ; serveur IA « non,
+> si possible sur un VPS » (54) ; données d'entraînement « en session Claude en attendant un
+> agronome » (55).
+
+**Fait.** Docker Compose **sans carte graphique par défaut** (VPS), fichier
+`docker-compose.gpu.yml` à ajouter sur une machine NVIDIA ; petit modèle par défaut
+(`qwen2.5:3b-instruct`), délai 300 s, écoute sur 127.0.0.1 si la plateforme est sur le même
+VPS. Guide §1 bis (VPS 8 vCPU / 16 Go, données envoyées au VPS : hébergeur, chiffrement,
+consentement ; entraînement sur une machine louée à l'heure). **Annotations
+provisoires** : colonnes `annotation_*` sur `diagnostics`, commande `ia:annoter` (liste
+les photos à annoter avec le chemin du fichier, sans nom de producteur ; annote), écran
+« Diagnostics IA » (pastille « Annotation provisoire »), export `--avec-provisoires`
+(colonne `source`, jamais au jeu de test).
+
+**Choix.** Une annotation faite en session Claude n'est **pas** une validation : Claude
+n'est pas agronome, une maladie mal nommée entraînerait un modèle faux. Elle ne change
+pas le statut, ne déclenche aucun conseil, et un agronome qui tranche la remplace.
+
+**Vérifié.** 560 → **561 tests** PHP, 15 Python ; Larastan 0 ; Pint propre. En vrai :
+migration sur `ly_agricole_b`, `php artisan ia:annoter` → « Aucune photo à annoter »
+(l'unique photo de démo a été validée pendant le parcours agronome, et c'est une image
+d'essai, pas une plante).
+
+**Reste.** Des photos réelles de visites à annoter ; VPS à louer ; licence CCMT et
+consentement pour l'entraînement.
+
+---
+
 ## 2026-09-29 — Phase 3 : socle IA (service ia/, référentiel, diagnostics) — FINI, branche `phase-3-ia`
 
 > Session `ly-agricole-45` (B), branche `phase-3-ia` depuis `phase-2-alertes` (`bb1c0a3`),

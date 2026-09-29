@@ -105,6 +105,35 @@ class Diagnostics
         return $d;
     }
 
+    /**
+     * Annotation PROVISOIRE, en attendant un agronome (réponse 55 : faite pendant les
+     * sessions Claude). Ce n'est pas une validation : le statut ne change pas, rien n'est
+     * conseillé, et elle n'entre dans un jeu d'entraînement que sur demande explicite
+     * (`ia:exporter-jeu --avec-provisoires`). Un diagnostic déjà tranché par un agronome ne
+     * reçoit plus d'annotation : sa réponse prime.
+     */
+    public static function annoterProvisoirement(Diagnostic $d, string $classe, string $source, ?string $note = null): Diagnostic
+    {
+        if ($d->statut->valide()) {
+            throw new OperationRefusee('Diagnostic déjà validé par un agronome : pas d\'annotation provisoire.');
+        }
+        if (! in_array($d->statut, [StatutDiagnostic::Propose, StatutDiagnostic::Incertain], true)) {
+            throw new OperationRefusee('Photo pas encore traitée par le service IA.');
+        }
+        if (trim($classe) === '' || trim($source) === '') {
+            throw new OperationRefusee('Classe et source de l\'annotation obligatoires.');
+        }
+
+        $d->update([
+            'annotation_classe' => mb_substr(trim($classe), 0, 255),
+            'annotation_source' => mb_substr(trim($source), 0, 30),
+            'annotation_note' => $note === null || trim($note) === '' ? null : trim($note),
+            'annotation_at' => now(),
+        ]);
+
+        return $d;
+    }
+
     /** Demande un brouillon de conseil (après validation seulement). */
     public static function demanderConseil(Diagnostic $d, User $agronome, string $observation): void
     {

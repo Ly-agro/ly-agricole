@@ -23,6 +23,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $motif
  * @property string|null $classe_retenue
  * @property string|null $note_agronome
+ * @property string|null $annotation_classe annotation PROVISOIRE (pas une validation)
+ * @property string|null $annotation_source ex. « claude »
+ * @property string|null $annotation_note
+ * @property Carbon|null $annotation_at
  * @property int|null $valide_par
  * @property Carbon|null $valide_at
  * @property string|null $conseil_statut en_attente | brouillon | rejete | erreur
@@ -39,7 +43,8 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable([
     'visite_id', 'photo_id', 'statut', 'classe_proposee', 'confiance_pour_mille', 'modele_vision', 'motif',
-    'classe_retenue', 'note_agronome', 'valide_par', 'valide_at', 'conseil_statut', 'conseil_texte',
+    'classe_retenue', 'note_agronome', 'annotation_classe', 'annotation_source', 'annotation_note', 'annotation_at',
+    'valide_par', 'valide_at', 'conseil_statut', 'conseil_texte',
     'conseil_fiches', 'conseil_motifs', 'conseil_modele', 'demande_par',
 ])]
 class Diagnostic extends Model
@@ -76,6 +81,7 @@ class Diagnostic extends Model
             'statut' => StatutDiagnostic::class,
             'confiance_pour_mille' => 'integer',
             'valide_at' => 'datetime',
+            'annotation_at' => 'datetime',
             'conseil_fiches' => 'array',
             'conseil_motifs' => 'array',
         ];

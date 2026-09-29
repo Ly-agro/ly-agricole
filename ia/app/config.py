@@ -30,8 +30,9 @@ def reglages() -> Reglages:
         # « ollama » en production ; « faux » pour les essais sans modèle (poste de dev).
         llm=_env("IA_LLM", "ollama") or "ollama",
         ollama_url=_env("OLLAMA_URL", "http://ollama:11434") or "",
-        ollama_modele=_env("OLLAMA_MODELE", "qwen2.5:7b-instruct") or "",
-        delai_secondes=int(_env("IA_DELAI_SECONDES", "180") or "180"),
+        # Petit modèle par défaut : VPS sans carte graphique (réponse 54).
+        ollama_modele=_env("OLLAMA_MODELE", "qwen2.5:3b-instruct") or "",
+        delai_secondes=int(_env("IA_DELAI_SECONDES", "300") or "300"),
         # Chemin d'un modèle de vision entraîné (ONNX). Absent : tout diagnostic est « incertain ».
         modele_vision=_env("IA_MODELE_VISION"),
         # Sous ce seuil, on ne devine pas (règle 3).

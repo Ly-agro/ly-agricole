@@ -227,6 +227,39 @@ class IaTest extends TestCase
     }
 
     #[Test]
+    public function une_annotation_provisoire_ne_valide_rien_et_ne_sort_que_sur_demande(): void
+    {
+        Diagnostics::demander($this->visite, $this->agent);
+        [$d1, $d2] = Diagnostic::query()->orderBy('id')->get()->all();
+
+        $this->artisan('ia:annoter')->expectsOutputToContain((string) $d1->id)->assertSuccessful();
+        $this->artisan('ia:annoter', ['diagnostic' => $d1->id, 'classe' => 'anthracnose', '--note' => 'taches brunes en bordure'])->assertSuccessful();
+
+        $d1->refresh();
+        $this->assertSame(StatutDiagnostic::Incertain, $d1->statut, 'une annotation n\'est pas une validation');
+        $this->assertSame('anthracnose', $d1->annotation_classe);
+        $this->assertSame('claude', $d1->annotation_source);
+        $this->assertNull($d1->valide_par);
+
+        // Un agronome tranche : sa réponse prime, plus d'annotation provisoire possible.
+        Diagnostics::valider($d2, $this->agronome, 'sain');
+        $this->artisan('ia:annoter', ['diagnostic' => $d2->id, 'classe' => 'anthracnose'])->assertFailed();
+
+        $dossier = storage_path('framework/testing/jeu-provisoire');
+        // Par défaut : seulement la validation de l'agronome.
+        $this->artisan('ia:exporter-jeu', ['dossier' => $dossier])->assertSuccessful();
+        $this->assertCount(2, array_filter(explode("\n", trim(File::get($dossier.'/manifeste.csv')))));
+        // Sur demande : l'annotation s'ajoute, marquée provisoire, jamais au jeu de test.
+        $this->artisan('ia:exporter-jeu', ['dossier' => $dossier, '--avec-provisoires' => true])->assertSuccessful();
+        $lignes = array_values(array_filter(explode("\n", trim(File::get($dossier.'/manifeste.csv')))));
+        $this->assertCount(3, $lignes);
+        $provisoire = array_values(array_filter($lignes, fn ($l) => str_contains($l, 'provisoire:claude')));
+        $this->assertCount(1, $provisoire);
+        $this->assertSame('entrainement', explode(';', $provisoire[0])[3]);
+        File::deleteDirectory($dossier);
+    }
+
+    #[Test]
     public function une_fiche_citee_mais_non_fournie_fait_rejeter_le_brouillon(): void
     {
         $this->fiche();
