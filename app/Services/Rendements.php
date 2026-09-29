@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  *   seulement : un producteur dont aucune parcelle financée n'a de contour n'a PAS de
  *   rendement (il est listé à part, jamais classé avec un rendement inventé).
  * - Kilos livrés : poids net des achats validés du producteur sur la campagne, prêt
- *   ou non (question ouverte n° 21 : ne compter que les kilos rendus en remboursement ?).
+ *   ou non (question ouverte n° 31 : ne compter que les kilos rendus en remboursement ?).
  */
 class Rendements
 {

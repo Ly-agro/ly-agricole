@@ -14,7 +14,9 @@
             {{-- Présentation : rien ici ne mène à un écran, uniquement du texte et l'identité. --}}
             <div class="hidden flex-col justify-between bg-emerald-900 p-10 text-white lg:flex xl:p-14">
                 <div>
-                    <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10 text-sm font-bold" aria-hidden="true">LY</span>
+                    <a href="{{ route('accueil') }}" class="inline-flex rounded-xl bg-white p-1.5" aria-label="Retour à l'accueil de LY AGRICOLE">
+                        <img src="{{ asset('images/logo-yl-agro.png') }}" alt="" width="56" height="56" class="h-14 w-14">
+                    </a>
                     <p class="mt-6 text-3xl font-semibold tracking-tight">LY AGRICOLE</p>
                     <p class="mt-1 text-sm text-emerald-200">Cultiver – Élever – Durer</p>
                 </div>

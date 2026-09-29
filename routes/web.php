@@ -35,6 +35,7 @@ use App\Livewire\Referentiels\Villages;
 use App\Livewire\Referentiels\Zones;
 use App\Livewire\Rendements\ClassementRendements;
 use App\Livewire\Rendements\EvolutionProducteur;
+use App\Livewire\Resultat\ResultatDeCampagne;
 use App\Livewire\Stock\FicheLot;
 use App\Livewire\Stock\ListeLots;
 use App\Livewire\TableauDeBord;
@@ -46,7 +47,10 @@ use App\Livewire\Ventes\FormulaireVente;
 use App\Livewire\Ventes\ListeVentes;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/tableau-de-bord');
+// Vitrine publique : on n'atterrit plus directement sur la connexion. Sans aucune donnée
+// de l'application, et sans mention de l'opération d'investissement (contrat art. 2.3 :
+// aucune publicité).
+Route::view('/', 'vitrine')->name('accueil');
 
 // Nommée `login` : c'est la route où Laravel renvoie un visiteur non connecté.
 Route::get('/connexion', Connexion::class)->middleware('guest')->name('login');
@@ -128,6 +132,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
     Route::get('/rendements', ClassementRendements::class)->middleware('can:voir-rendements')->name('rendements');
     Route::get('/rendements/producteurs/{producteur}', EvolutionProducteur::class)->middleware('can:voir-rendements')->name('rendements.producteur');
+    Route::get('/resultat', ResultatDeCampagne::class)->middleware('can:voir-resultat-campagne')->name('resultat');
     Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
 
     Route::prefix('prets')->name('prets')->group(function () {

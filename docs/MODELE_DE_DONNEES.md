@@ -85,7 +85,7 @@ flowchart TD
 | --- | --- | --- |
 | `apports` 🔒 | investisseur_id (nullable = apport de LY), campagne_id, montant_fcfa (**signé**), date_apport, motif, mouvement_id, annule_id, cree_par | contrat art. 5 (compte dédié) et art. 9 (apport de LY facultatif) ; un apport hors du compte dédié de la campagne est refusé |
 
-**Limite connue, volontaire.** `App\Services\Apports` ne calcule **aucun résultat net ni quote-part** (contrat art. 10 à 14) : le texte exact de ces articles n'est pas disponible (question 15 bis, `docs/QUESTIONS_OUVERTES.md`). `Apports::repartition()` donne seulement la part de chaque investisseur dans l'ensemble des apports d'investisseurs — un calcul objectif, pas le partage du résultat prévu par le contrat. Le portail investisseur (`/mon-investissement`) l'indique explicitement à l'écran.
+**Partage du résultat (contrat art. 10 à 14).** Aucune table : tout est recalculé. `App\Services\PartageResultat` (pur, entiers) applique l'art. 12 (40 % investisseurs / 60 % LY, quote-part au prorata investi), l'art. 13 (perte au prorata des apports, LY sur son apport propre, exception 13.4 = décision de la direction) et reprend les deux exemples de l'art. 14 en tests. `App\Services\ResultatCampagne` lit les registres : recettes = encaissements de ventes ; charges = achats validés + dépenses payées non exclues (10.3) ; valeur du stock invendu = donnée par la direction (11.3). Résultat **provisoire** : affiché à la direction et à la comptabilité seulement (`/resultat`), pas aux investisseurs (question 32).
 
 ## Trésorerie et dépenses
 

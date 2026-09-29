@@ -166,6 +166,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('gerer-apports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         // Rendements (cahier §4) : lecture des chiffres de tous les producteurs.
         Gate::define('voir-rendements', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Résultat net et partage (contrat art. 10 à 14) : direction et comptabilité, lecture.
+        Gate::define('voir-resultat-campagne', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
     }
 

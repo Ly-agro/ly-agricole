@@ -5,6 +5,50 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Vitrine publique, logo et partage du résultat (contrat art. 10 à 14) — FINI, NON COMMITÉ
+
+> Branche `phase-2-reventes`, après `bacfdf5`. Deux demandes du responsable projet : une
+> page d'accueil publique (« pour ne pas atterrir direct sur la connexion »), et le calcul
+> des articles 10 à 14 maintenant que le contrat est dans `docs/`.
+
+**Contrat.** `docs/CONTRAT_CAMPAGNE_LY_AGRICOLE (1).pdf` est bien le bon document : les
+articles 10 à 14 y sont complets, avec les deux exemples chiffrés de l'art. 14. Question
+15b **répondue**. (Le PDF contient le RIB de la société : ne jamais le recopier ailleurs.)
+
+**Vitrine.** `/` n'est plus une redirection : page publique (`resources/views/vitrine.blade.php`),
+logo `public/images/logo-yl-agro.png`, bouton « Se connecter » (ou « Mon espace » si déjà
+connecté). Le logo est aussi dans la barre latérale et sur la page de connexion. Contenu :
+uniquement ce que le projet établit (mission, vision, produits, traçabilité, siège). **Rien sur
+l'opération d'investissement** : art. 2.3 du contrat, « aucune publicité » ; un test le garde
+(mots interdits : investisseur, souscription, FCFA…). Pas de téléphone ni d'e-mail publiés : non
+fournis. « Élevage » et « pisciculture » y figurent sur la parole du responsable projet (question 28).
+
+**Partage du résultat.** `App\Services\PartageResultat` (pur, entiers) : art. 12 (40 % / 60 %,
+quote-part au prorata investi), art. 13 (perte au prorata des apports ; art. 13.4 faute de
+gestion = décision cochée par la direction, jamais déduite), art. 14 repris **tels quels** en
+tests. Arrondi (le contrat n'en dit rien) : part globale au plus proche, LY prend le reste,
+plus fort reste entre investisseurs ⇒ aucun franc créé ni perdu. `App\Services\ResultatCampagne` :
+recettes = encaissements de ventes ; charges = achats validés + dépenses payées non exclues
+(art. 10.3) ; valeur du stock invendu (11.3) donnée à la main, jamais devinée ; avances non
+remboursées et stock en information seulement. Écran `/resultat` (direction, comptable),
+**provisoire**, rien n'est enregistré ni montré aux investisseurs. Question 32.
+
+**Vérifié en l'exécutant.** 390 → **432 tests** (vitrine +2, partage 24, résultat 16), tous verts ;
+Larastan 0 erreur ; Pint propre ; `npm run build` OK. Sur la vraie base MySQL : `/` en HTTP → 200,
+logo 200, `/tableau-de-bord` anonyme → 302 vers la connexion ; `/resultat` en direction → 200 avec
+les vrais chiffres de la campagne 2026-2027. **Dans Chrome** : vitrine vue à l'écran (ordinateur).
+Pas vu : largeur téléphone, ni `/resultat` dans un navigateur.
+
+**Pas fait, volontairement.** Résultat visible des investisseurs et rapport final art. 18 (attendent
+la question 32) ; contrôles de l'art. 3 (minimum 500 000 FCFA, plafond 10 M, 10 investisseurs au
+plus, période de souscription) et échéances de l'art. 6 à 8 : jamais codés, à faire si voulu.
+
+**Fusion des branches.** Numérotation des questions : 29 (budget) et 30 (visites) sont réservées à
+`phase-2-visites`/budget ; ici rendement = 31, résultat = 32. `routes/web.php` et le menu seront à
+fusionner à la main (ajouts seulement).
+
+---
+
 ## 2026-09-29 — Phase 2 : évolution du rendement d'un producteur — FINI, NON COMMITÉ
 
 > Suite de `6487feb` (branche `phase-2-reventes`). Dernier élément « tableaux de bord
@@ -24,7 +68,7 @@ page 200, « première campagne » puis « +150 kg/ha ». Pas vu dans un navigat
 
 **Limite.** Coût : le classement de chaque campagne est recalculé pour trouver la
 ligne du producteur — sans importance à quelques campagnes, à revoir si elles se
-comptent par dizaines. Question 29 toujours ouverte.
+comptent par dizaines. Question 31 toujours ouverte.
 
 **Reste du bloc rendements.** Comparaison des pratiques des meilleurs et des moins bons :
 attend la saisie des visites et pratiques (module 2), pas encore codée.
@@ -60,7 +104,7 @@ Chrome non connectée) : la lisibilité réelle (contraste, taille sur télépho
 regarder.
 
 **Reste.** Évolution d'un producteur d'une campagne à l'autre ; comparaison des
-pratiques (dépend de la saisie des visites). Question 29 toujours ouverte.
+pratiques (dépend de la saisie des visites). Question 31 toujours ouverte.
 
 ---
 
@@ -89,7 +133,7 @@ classement rempli n'est vérifié que par les tests.
 
 **Reste.** Carte des parcelles colorée par rendement ; évolution d'un producteur d'une
 campagne à l'autre ; comparaison des **pratiques** (les pratiques ne sont pas encore
-saisies — visites, module 2). Question 29 ci-dessous.
+saisies — visites, module 2). Question 31 ci-dessous.
 
 ---
 
