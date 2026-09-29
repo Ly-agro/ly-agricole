@@ -5,6 +5,39 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Fusion des branches de la phase 1 et de la phase 2 — FINI, à pousser
+
+> Branche `fusion-phase-2`, créée depuis `origin/main` (`450446e`). Demande du responsable projet :
+> « fais la fusion, je vais faire le push ». Plan : `docs/PLAN_DE_FUSION.md`.
+
+**Fusionné, dans l'ordre :** `semaine-12` (semaines 6 à 12 : terrain, rapports de gestion,
+sauvegardes) → `phase-2-reventes` (A) → `phase-2-visites` au commit `078bc8b` (B : budget, visites).
+Conflits : uniquement ceux prévus (`routes/web.php` ; menu `layouts/app` ; `QUESTIONS_OUVERTES.md` et
+`RAPPORTS_DE_TRAVAIL.md`), tous résolus en gardant les deux côtés. **Numérotation des questions
+adoptée** : celle du fichier de réponses du responsable projet (28 activités, 29 budget, 30 visites,
+31 rendement, 32 résultat, 33 exports, 34 écart de poids, 35 fiabilité, 36 qui voit les rapports) ;
+les anciennes 28, 29, 30 de `semaine-12` sont devenues 33, 34, 36 (références corrigées).
+
+**Pas fusionné :** `phase-2-notifications` (notifications push, tickets 58 mm de B, en cours), et
+`main` local n'a pas été déplacé.
+
+**Vérifié en l'exécutant, sur l'arbre fusionné :**
+- `php artisan test` : **525 tests, tous verts** (462 côté A + 26 propres à `semaine-12` = 488 après la
+  2e fusion ; + les tests de B). Pint propre ; Larastan 0 erreur.
+- Terrain : vitest 29/29, `svelte-check` 0 erreur, `npm run build` OK ; base Dexie versions 1 à 3.
+- **Base de contrôle** `ly_agricole_fusion` (créée pour l'occasion, supprimée ensuite) : `migrate` complet
+  sans erreur, 0 migration en attente ; rendu de `/`, `/connexion`, `/tableau-de-bord`, `/resultat`,
+  `/rapport-campagne`, `/fiabilite`, `/rendements`, `/rapports`, `/budget`, `/visites`, `/apports`,
+  `/ventes`, `/prets`, `/producteurs` : tous en 200 pour la direction (`/mon-investissement` : 403, normal,
+  réservé à l'investisseur).
+- Pas vu dans un navigateur ; l'APK et le mode avion restent à tester sur un vrai téléphone.
+
+**À faire par le responsable projet :** pousser `fusion-phase-2` et ouvrir la pull request vers `main`
+(le dépôt fonctionne par PR). La base de dev `ly_agricole` n'a PAS les tables `lignes_budget`, `visites`,
+`visite_photo` : `php artisan migrate` avant d'utiliser ces écrans avec elle.
+
+---
+
 ## 2026-09-29 — Note de fiabilité du producteur — FINI
 
 > Branche `phase-2-reventes`, après `3e11c9a`. Bloc réclamé par A (`REPARTITION_DES_TACHES.md`).

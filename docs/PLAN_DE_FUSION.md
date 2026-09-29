@@ -88,3 +88,7 @@ version 4, jamais réutiliser ou modifier une version publiée.
 - **Pousser** les branches vers `origin` (aujourd'hui `origin/phase-2-reventes` est en retard de 7 commits) et passer par des PR.
 - Adopter la numérotation du fichier de réponses (section 4).
 - Le PDF du contrat (RIB) ne doit **jamais** entrer dans le dépôt : à exclure par `.gitignore` avant tout push.
+
+## 7. Résultat (2026-09-29)
+
+Fusion faite sur la branche `fusion-phase-2` (depuis `origin/main`) : `semaine-12`, puis `phase-2-reventes`, puis `phase-2-visites` (`078bc8b`). Conflits résolus comme prévu, numérotation des questions alignée sur le fichier de réponses. Détail et vérifications : `docs/RAPPORTS_DE_TRAVAIL.md`. Reste à fusionner plus tard : `phase-2-notifications` (B).
