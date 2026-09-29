@@ -5,6 +5,33 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Groupes et caution solidaire (repris de B) — FINI
+
+> Branche `phase-2-suite`, sur `phase-2-alertes`. Premier des cinq blocs repris de B.
+
+**Choix de conception.** Les groupes existaient déjà (`groupes_producteurs`, écran de gestion,
+`groupe_id` du producteur). Le cahier ne dit pas COMMENT le groupe se porte caution : rien n'est
+inventé. Nouveau paramètre à choix `regle_caution_solidaire` (`RegleCautionSolidaire` : aucune /
+avertir / bloquer), **désactivé tant que la direction n'a rien choisi** (les prêts ne changent pas).
+`App\Services\CautionSolidaire::controle()` : quand un AUTRE membre du groupe a un prêt en retard (même
+définition que la fiabilité), un prêt à un membre est signalé ou refusé (à la demande ET à la validation,
+puisque le retard peut apparaître entre les deux). Message **générique**, jamais le nom ni les montants
+d'un autre producteur ; le détail nominatif est réservé à la direction et à la comptabilité.
+Question ouverte n° 37.
+
+**Écrans.** `/fiabilite/groupes` (liste : membres, remis, restant dû, membres en retard) et
+`/fiabilite/groupes/{groupe}` (situation nominative, règle en vigueur), droit `voir-fiabilite` ;
+avertissement dans le formulaire de prêt de l'agent ; lien « Groupes » depuis `/fiabilite`. Aucune table
+nouvelle.
+
+**Vérifié en l'exécutant.** 14 tests (inactif par défaut, avertir, bloquer à la demande et à la
+validation, message sans nom, membre seul / autre groupe / propre retard, totaux, paramètre, droits, écrans).
+Pas vu dans un navigateur.
+
+**Reste.** Question 37 (responsabilité du groupe, limites, exceptions).
+
+---
+
 ## 2026-09-29 — Décisions des questions 32 et 35 : valorisation du stock et décision de plafond — FINI
 
 > Branche `phase-2-suite` (depuis `fusion-phase-2`). Le responsable projet a rempli les décisions des

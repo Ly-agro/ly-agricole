@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CleParametre;
+use App\Enums\RegleCautionSolidaire;
 use App\Enums\RegleValorisationNature;
 use App\Models\Concerns\Journalise;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -37,6 +38,14 @@ class Parametre extends Model
         $valeur = static::query()->where('cle', CleParametre::RegleRemboursementNature)->value('valeur');
 
         return RegleValorisationNature::tryFrom((string) $valeur);
+    }
+
+    /** Règle de caution solidaire choisie ; « aucune » tant que la direction n'a rien choisi. */
+    public static function regleCautionSolidaire(): RegleCautionSolidaire
+    {
+        $valeur = static::query()->where('cle', CleParametre::CautionSolidaire)->value('valeur');
+
+        return RegleCautionSolidaire::tryFrom((string) $valeur) ?? RegleCautionSolidaire::Aucune;
     }
 
     protected function casts(): array

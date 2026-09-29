@@ -9,10 +9,13 @@
                 Ce sont des repères : <strong class="font-medium">la direction décide</strong>.
             </p>
         </div>
-        <div class="text-sm">
+        <div class="flex flex-wrap items-end gap-3 text-sm">
+            <a href="{{ route('fiabilite.groupes') }}" class="rounded-md border border-emerald-700 px-3 py-1.5 font-medium text-emerald-800 hover:bg-emerald-50">Groupes</a>
+            <div>
             <label for="recherche" class="mb-1 block text-stone-600">Producteur</label>
             <input wire:model.live.debounce.300ms="recherche" id="recherche" type="search" placeholder="Nom, prénoms ou code"
                 class="rounded-md border border-stone-300 px-3 py-1.5 focus:border-emerald-600 focus:outline-none">
+            </div>
         </div>
     </div>
 

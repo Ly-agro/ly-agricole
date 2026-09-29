@@ -18,6 +18,9 @@
                         @endforeach
                     </select>
                     @error('producteurId') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    @if ($caution)
+                        <p class="mt-2 rounded-md border px-3 py-2 text-sm {{ $caution['niveau'] === 'blocage' ? 'border-red-200 bg-red-50 text-red-900' : 'border-amber-200 bg-amber-50 text-amber-900' }}">{{ $caution['message'] }}</p>
+                    @endif
                 </div>
                 <div>
                     <label for="campagneId" class="mb-1 block text-sm font-medium text-stone-700">Campagne</label>

@@ -72,6 +72,7 @@ class Prets
             }
 
             self::verifierPlafonds($producteur, $campagne, $montant, $parcelles->pluck('surface_m2')->all());
+            self::verifierCautionSolidaire($producteur);
 
             $seuil = Parametre::entier(CleParametre::SeuilValidationPret);
 
@@ -108,6 +109,8 @@ class Prets
     {
         return DB::transaction(function () use ($pret, $validateur) {
             $pret = self::relireDemande($pret, $validateur);
+            // Le retard d'un autre membre peut être apparu depuis la demande.
+            self::verifierCautionSolidaire($pret->producteur);
 
             if ($pret->validations()->where('user_id', $validateur->id)->exists()) {
                 throw new OperationRefusee('Vous avez déjà validé ce prêt : la seconde validation doit venir d\'une autre personne.');
@@ -207,6 +210,15 @@ class Prets
         if ($pret->statut === StatutPret::Valide && $pret->resteARemettre() === 0) {
             $pret->update(['statut' => StatutPret::Decaisse]);
             Remboursements::mettreAJourStatut($pret);
+        }
+    }
+
+    /** Caution solidaire du groupe (question 37) : refuse seulement si la direction a choisi « bloquer ». */
+    private static function verifierCautionSolidaire(Producteur $producteur): void
+    {
+        $controle = CautionSolidaire::controle($producteur);
+        if ($controle['niveau'] === CautionSolidaire::BLOCAGE) {
+            throw new OperationRefusee((string) $controle['message']);
         }
     }
 

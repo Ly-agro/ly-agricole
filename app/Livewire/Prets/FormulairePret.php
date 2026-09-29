@@ -11,6 +11,7 @@ use App\Models\Parametre;
 use App\Models\Parcelle;
 use App\Models\Producteur;
 use App\Models\User;
+use App\Services\CautionSolidaire;
 use App\Services\Prets;
 use App\Support\Format;
 use App\Support\Montant;
@@ -123,11 +124,20 @@ class FormulairePret extends Component
         $this->redirectRoute('prets.fiche', $pret);
     }
 
+    private function producteurChoisi(): ?Producteur
+    {
+        return Producteur::query()->find($this->producteurId);
+    }
+
     public function render(): View
     {
         $seuil = Parametre::entier(CleParametre::SeuilValidationPret);
 
+        // Caution solidaire du groupe (question 37) : message générique, jamais le nom d'un autre producteur.
+        $caution = $this->producteurId === '' ? null : ($this->producteurChoisi() === null ? null : CautionSolidaire::controle($this->producteurChoisi()));
+
         return view('livewire.prets.formulaire-pret', [
+            'caution' => $caution !== null && $caution['niveau'] !== CautionSolidaire::AUCUN ? $caution : null,
             'producteurs' => Producteur::query()->with('village')->where('actif', true)->orderBy('nom')->orderBy('prenoms')->get(),
             'parcelles' => $this->producteurId === ''
                 ? collect()
