@@ -9,6 +9,7 @@ use App\Http\Controllers\ProducteurController;
 use App\Livewire\Achats\FormulaireAchat;
 use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Auth\Connexion;
+use App\Livewire\Budget\SuiviBudget;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
 use App\Livewire\Intrants\StockIntrant;
@@ -125,6 +126,7 @@ Route::middleware('auth')->group(function () {
     // l'investisseur (deux écrans distincts : pas les mêmes droits ni la même vue).
     Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
     Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
+    Route::get('/budget', SuiviBudget::class)->middleware('can:voir-budget')->name('budget');
 
     Route::prefix('prets')->name('prets')->group(function () {
         Route::get('/', ListePrets::class)->middleware('can:voir-prets')->name('');

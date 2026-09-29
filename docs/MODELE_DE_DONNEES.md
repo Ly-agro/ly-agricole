@@ -96,6 +96,7 @@ flowchart TD
 | `categories_depense` | nom, code_syscohada, exclue_fonds_campagne, actif | art. 10.3 du contrat : refusée sur un compte de campagne et sur une dépense rattachée à une campagne |
 | `depenses` 📱 | id (UUID v7), categorie_id, compte_id, montant_fcfa, date_depense, beneficiaire, description, justificatif (disque privé, obligatoire), campagne_id, parcelle_id, statut (`a_valider`, `payee`, `refusee`, `annulee`), cree_par, valide_par, valide_at, motif_refus, mouvement_id | au-dessus du seuil — **ou seuil non défini** — validation par une autre personne, l'argent sort à la validation ; `lot_id`, `pret_id` viendront avec leurs tables |
 | ~~`avances_agents`~~ | — | **remplacée (2026-10-10)** : une avance est un virement de nature `avance_agent` vers la caisse de l'agent (compte avec titulaire) ; le **reste à justifier est le solde de sa caisse**, sans table à tenir d'accord |
+| `lignes_budget` | campagne_id, poste (`achats`, `prets`, `categorie`), categorie_id, montant_fcfa (prévu, ≥ 0), note, cree_par, modifie_par | budget de campagne (cahier §8), **pas un registre** : une ligne se modifie (journalisée), jamais sur une campagne clôturée ; un poste une fois par campagne ; catégorie exclue par l'art. 10.3 refusée. **Le réel n'est pas stocké** : `App\Services\Budgets::suivi()` le recalcule — dépenses payées rattachées à la campagne, argent payé sur les achats validés (pas la part retenue sur un prêt), argent décaissé sur les prêts (hors contre-passés ; les intrants remis sont déjà comptés à leur achat) |
 
 ## Transverse
 

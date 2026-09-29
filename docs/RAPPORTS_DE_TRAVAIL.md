@@ -5,7 +5,68 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
-## 2026-09-29 — Phase 2 : apports de campagne et portail investisseur — FINI, NON COMMITÉ
+## 2026-09-29 — Phase 2 : budget de campagne, prévu contre réel — FINI, branche `phase-2-budget`
+
+> Session `ly-agricole-45`, branche `phase-2-budget` (depuis `ad360cd`), dans un
+> **worktree séparé** `../ly-agricole-budget` : une autre session (`ly-agricole-05`)
+> codait les rendements au même moment dans `ly-agricole/`. Pour lancer ce worktree :
+> `vendor/` et `node_modules/` y ont été copiés, `.env` aussi, `npm run build` fait ;
+> servi sur le port **8001**.
+
+**Fichiers nouveaux.** `app/Enums/PosteBudget.php`, `app/Models/LigneBudget.php`,
+`app/Services/Budgets.php`, `database/migrations/2026_12_19_000001_create_lignes_budget_table.php`,
+`app/Livewire/Budget/SuiviBudget.php` + sa vue, `tests/Feature/Budget/{BudgetsTest,EcranBudgetTest}.php`
+(21 tests).
+
+**Fichiers modifiés (additifs).** `AppServiceProvider` (droits `voir-budget` : direction
+et comptable, `gerer-budget` : direction ; morph map `ligne_budget`), `routes/web.php`
+(+ `/budget`), menu (+ Budget sous Argent, icône `budget`), `MODELE_DE_DONNEES.md`,
+question ouverte n° 29.
+
+**Choix.** Le prévu est saisi par poste : chaque catégorie de dépense, plus « achats »
+et « prêts », qui ne passent pas par les dépenses. Le réel **n'est pas stocké** : il est
+recalculé depuis les registres, en **argent sorti** pour ne rien compter deux fois —
+dépenses payées rattachées à la campagne ; espèces payées sur les achats validés (la
+part retenue sur un prêt a déjà été comptée au décaissement) ; décaissements des prêts
+non contre-passés (les intrants remis à crédit sont déjà comptés à leur achat). Une
+catégorie dépensée sans budget apparaît en « Non prévu » ; ce qui attend une validation
+est montré à part. Une ligne se modifie (l'ancien montant reste au journal), jamais sur
+une campagne clôturée ; une catégorie exclue par l'art. 10.3 ne se budgète pas.
+
+**Vérifié.** `php artisan test` : 367 → **388 tests**, tous verts ; Larastan 0 erreur ;
+Pint propre ; `npm run build` OK ; migration appliquée sur la base MySQL partagée
+(table nouvelle seulement).
+**Dans Chrome** (localhost:8001, base MySQL partagée, compte direction) : sans budget,
+les réels affichés recoupent la base à la main (SQL) — achats validés 85 000 FCFA payés
+en espèces (valeur 255 000, dont 170 000 retenus sur des prêts : pas comptés deux fois),
+159 340 FCFA d'achats à valider en attente, 21 630 000 FCFA décaissés sur les prêts ;
+les dépenses existantes, sans campagne, n'y sont pas. Prêts prévus à 20 000 000 →
+« 108,1 % », « Dépassé de 1 630 000 FCFA » en rouge ; « Modifier » reprend montant et
+note ; passé à 22 000 000 → « 98,3 % », reste 370 000 FCFA ; une seule ligne en base,
+journal « 20000000 → 22000000 ». **Pas fait dans Chrome** : la vue du comptable (lecture
+seule) et le refus pour l'agent — la déconnexion n'a pas abouti (menu du profil
+inaccessible, une extension d'émulation de téléphone s'est ouverte par-dessus) ; ces
+droits sont couverts par `EcranBudgetTest`.
+
+**Corrigé après Chrome.** « Réel » n'est plus en rouge quand rien n'est prévu ; le
+message « Budget enregistré. » disparaît quand on rouvre le formulaire.
+
+**Surprises.** `php artisan serve` répond lentement ici (22 s pour la connexion) : un
+clic sans effet visible est souvent une requête en cours, pas un bug. Dans le worktree,
+`vendor/bin/pint` échoue (conflit d'archive phar avec la copie de `ly-agricole/`) : le
+lancer depuis `ly-agricole/` sur les fichiers du worktree.
+
+**Précision du responsable projet** (pendant la session) : l'anacarde n'est pas seul,
+plusieurs produits entrent selon la période et le prix. Le budget est déjà par campagne,
+donc par produit ; plusieurs campagnes ouvertes en même temps ont chacune le leur. Un
+budget **global toutes campagnes** (ou par période) n'existe pas : ajouté à la question
+29.
+
+**Reste.** Vue comptable dans Chrome ; question 29 ; fusion avec `phase-2-reventes` (conflit attendu dans `QUESTIONS_OUVERTES.md` : garder la 28 et la 29).
+
+---
+
+## 2026-09-29 — Phase 2 : apports de campagne et portail investisseur — FINI, commit `ad360cd`
 
 > Session `ly-agricole-fb`, branche `phase-2-reventes` (suite du commit `a3dc68f`,
 > poussé sur `origin`). Deuxième bloc de la phase 2, après les reventes.
@@ -71,7 +132,7 @@ pour le rapport de campagne final (art. 18).
 
 ---
 
-## 2026-09-29 — Phase 2 : reventes, encaissements, marge par lot — FINI, NON COMMITÉ
+## 2026-09-29 — Phase 2 : reventes, encaissements, marge par lot — FINI, commit `a3dc68f`
 
 > Session `ly-agricole-fb`, branche `phase-2-reventes` (depuis `66f10d2`, avant les
 > semaines 6 à 10 de `ly-agricole-f9`, restées sur ses propres branches). À la demande
