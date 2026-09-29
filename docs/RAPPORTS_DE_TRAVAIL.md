@@ -5,7 +5,36 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
-## 2026-09-29 — Phase 2 : apports de campagne et portail investisseur — FINI, NON COMMITÉ
+## 2026-09-29 — Phase 2 : comparaison des rendements — FINI, NON COMMITÉ
+
+> Branche `phase-2-reventes`, après `ad360cd`. Bloc « comparaison des rendements » du
+> plan de phase 2 (cahier §3 et §4). Ne dépend d'aucune question ouverte bloquante.
+
+**Fait.** `App\Services\Rendements::classement($campagne)` (lecture seule, entiers) :
+kg/ha par producteur = poids net des achats **validés** de la campagne ÷ hectares
+des parcelles des prêts accordés (validé, décaissé, soldé), chaque parcelle comptée
+une fois ; classement, 20 % meilleurs / 20 % moins bons (à partir de 5 producteurs),
+moyenne pondérée par la surface. Un producteur sans contour relevé n'a **pas** de
+rendement : listé à part, jamais classé. Écran `/rendements` (`ClassementRendements`),
+droit `voir-rendements` (direction, comptable), lien « Rendements » sous Terrain,
+`Format::entier()`. Fichiers : `app/Services/Rendements.php`,
+`app/Livewire/Rendements/`, vue `rendements/classement-rendements`,
+`tests/Feature/Rendements/RendementsTest.php` (14 tests).
+
+**Vérifié en l'exécutant.** `php artisan test` : 367 → **381 tests**, tous verts ;
+Larastan 0 erreur ; Pint propre. Sur la vraie base MySQL, requête HTTP via le noyau
+Laravel : `/rendements` → 302 pour un anonyme, 200 pour la direction, page rendue.
+**Non vérifié dans Chrome** (extension non connectée) ; et la base de dev n'a aucune
+parcelle rattachée à un prêt, donc l'écran n'a été vu **que vide** en réel — le
+classement rempli n'est vérifié que par les tests.
+
+**Reste.** Carte des parcelles colorée par rendement ; évolution d'un producteur d'une
+campagne à l'autre ; comparaison des **pratiques** (les pratiques ne sont pas encore
+saisies — visites, module 2). Question 29 ci-dessous.
+
+---
+
+## 2026-09-29 — Phase 2 : apports de campagne et portail investisseur — FINI, commit `ad360cd`
 
 > Session `ly-agricole-fb`, branche `phase-2-reventes` (suite du commit `a3dc68f`,
 > poussé sur `origin`). Deuxième bloc de la phase 2, après les reventes.
@@ -71,7 +100,7 @@ pour le rapport de campagne final (art. 18).
 
 ---
 
-## 2026-09-29 — Phase 2 : reventes, encaissements, marge par lot — FINI, NON COMMITÉ
+## 2026-09-29 — Phase 2 : reventes, encaissements, marge par lot — FINI, commit `a3dc68f`
 
 > Session `ly-agricole-fb`, branche `phase-2-reventes` (depuis `66f10d2`, avant les
 > semaines 6 à 10 de `ly-agricole-f9`, restées sur ses propres branches). À la demande

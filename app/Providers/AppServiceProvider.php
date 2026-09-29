@@ -164,6 +164,8 @@ class AppServiceProvider extends ServiceProvider
         // l'investisseur (cahier §2 : « consulte sa quote-part », en attendant le
         // calcul exact — voir App\Services\Apports).
         Gate::define('gerer-apports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Rendements (cahier §4) : lecture des chiffres de tous les producteurs.
+        Gate::define('voir-rendements', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
     }
 
