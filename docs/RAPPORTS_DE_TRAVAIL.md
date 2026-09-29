@@ -5,6 +5,32 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Appareils et jetons (question 25, repris de B) — FINI
+
+> Branche `phase-2-suite`. Troisième des cinq blocs repris de B.
+
+**Décision du responsable projet (question 25).** Pas d'expiration automatique des jetons ; un compte
+désactivé ne peut plus envoyer ; prévoir la liste des appareils, la dernière synchronisation et la
+désactivation à distance d'un téléphone perdu.
+
+**Fait.** `App\Services\Appareils` : liste des jetons Sanctum (un appareil = un jeton « LY Terrain
+xxxxxxxx »), rattaché à sa **dernière synchronisation** par la fin de l'identifiant de l'appareil (même
+utilisateur seulement) ; `revoquer()` (un appareil) et `revoquerTous()` (tous ceux d'un utilisateur),
+avec **motif obligatoire** et une ligne au journal (`ActionJournal::RevocationAppareil` : qui, quand,
+quel appareil, pourquoi). Écran `/appareils`, droit `gerer-appareils` (**direction et administrateur** ;
+pas le comptable ni l'agent). Aucune migration. Côté téléphone, seul le message de session expirée
+mentionne désormais « appareil coupé par le bureau ».
+
+**Vérifié en l'exécutant.** 14 tests, dont le point crucial : **le jeton d'un appareil coupé est refusé
+(401) à la requête suivante** sur `/api/referentiels` et `/api/sync`, alors que les autres appareils du
+même utilisateur et ceux des autres continuent de marcher ; journal ; motif et droits ; liste ; écran.
+Ce que le téléphone perdu n'avait pas encore envoyé reste sur lui, inatteignable pour le bureau.
+
+**Reste.** Aucune alerte « appareil sans synchronisation depuis N jours » (aucun seuil fixé, pas de seuil
+inventé) ; à voir avec B, dont les alertes sont le bon endroit.
+
+---
+
 ## 2026-09-29 — Balance Bluetooth (repris de B) — FINI, NON VÉRIFIÉ SUR MATÉRIEL
 
 > Branche `phase-2-suite`. Deuxième des cinq blocs repris de B.

@@ -185,6 +185,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('voir-fiabilite', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         // Décisions de la direction seule (questions 32 et 35) : valorisation du stock invendu
         // (contrat art. 11.3) et plafond de prêt d'un producteur. La comptabilité lit, ne décide pas.
+        // Téléphones de l'appli terrain (question 25) : liste, dernière synchronisation, couper un
+        // téléphone perdu. Sécurité des comptes : direction et administrateur.
+        Gate::define('gerer-appareils', fn (User $user) => $user->aLeRole(Role::Direction, Role::Admin));
         Gate::define('valoriser-stock', fn (User $user) => $user->aLeRole(Role::Direction));
         Gate::define('decider-plafond', fn (User $user) => $user->aLeRole(Role::Direction));
         Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));

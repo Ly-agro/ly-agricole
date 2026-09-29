@@ -18,7 +18,7 @@ export class HorsReseau extends Error {
 
 export class SessionExpiree extends Error {
     constructor() {
-        super('Session expirée ou compte désactivé : se reconnecter.');
+        super('Session expirée, compte désactivé ou appareil coupé par le bureau : se reconnecter.');
     }
 }
 

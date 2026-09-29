@@ -116,7 +116,7 @@
                     </div>
                 @endcanany
 
-                @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie', 'gerer-intrants', 'voir-journal', 'gerer-utilisateurs'])
+                @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie', 'gerer-intrants', 'voir-journal', 'gerer-utilisateurs', 'gerer-appareils'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Administration</p>
                         <div class="space-y-1">
@@ -128,6 +128,9 @@
                             @endcan
                             @can('gerer-utilisateurs')
                                 <x-nav-lien route="utilisateurs" motif="utilisateurs" icone="utilisateurs">Utilisateurs</x-nav-lien>
+                            @endcan
+                            @can('gerer-appareils')
+                                <x-nav-lien route="appareils" motif="appareils" icone="appareils">Appareils</x-nav-lien>
                             @endcan
                         </div>
                     </div>
