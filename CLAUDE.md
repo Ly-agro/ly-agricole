@@ -62,6 +62,7 @@ vendor/bin/phpstan analyse --memory-limit=1G   # Larastan niveau 6 (phpstan.neon
 npm run build                          # Vite + Tailwind 4 (config dans resources/css/app.css)
 php artisan serve                      # http://127.0.0.1:8000
 php artisan queue:work                 # envoie les SMS en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
+php artisan ly:sauvegarder --verifier  # archive base + fichiers, puis VRAIE restauration comparée (docs/MISE_EN_PRODUCTION.md)
 ```
 
 Appli terrain (`terrain/`, semaine 8) — Node 26, npm :

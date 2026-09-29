@@ -5,6 +5,58 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Semaine 12 (préparation) : sauvegardes vérifiées par restauration, procédure de mise en production — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, worktree `ly-agricole-phase1`, branche `semaine-12` (depuis
+> `semaine-10`). Semaine 11 (pilote) non commencée : il faut un téléphone (question 26,
+> en suspens). La mise en ligne réelle attend l'hébergement (question 10) et le domaine
+> (question 18).
+
+**Fait.**
+
+- `App\Services\Sauvegardes` + commandes `ly:sauvegarder [--verifier]` et
+  `ly:verifier-sauvegarde [archive]` : archive datée = `base.sql` (mysqldump
+  `--single-transaction`, mot de passe par `MYSQL_PWD`, pas en ligne de commande) +
+  fichiers privés + `manifest.json` (lignes par table, **sommes des registres**, SHA-256
+  de chaque fichier). Empreinte prise avant et après le dump : si la base a bougé,
+  nouvel essai (3 au plus). Chiffrement AES-256 si `SAUVEGARDE_MOT_DE_PASSE`.
+  Conservation 30 jours, les 7 dernières toujours gardées.
+- Vérification : refus d'une archive altérée (SHA-256) **avant** toute restauration ;
+  restauration réelle dans `ly_agricole_verif` (refus si c'est le nom de la base de
+  production) ; comparaison des comptes et des sommes ; chaque fichier cité par la base
+  (justificatifs, accords, photos) doit être dans l'archive ; base jetable supprimée.
+  Résultat dans `storage/sauvegardes/derniere-verification.json`.
+- Planification : sauvegarde chaque nuit 02:00, restauration vérifiée chaque dimanche
+  03:00. **Rapports → Alertes** : « Sauvegarde non vérifiée » (jamais, ou plus de
+  8 jours) et « Sauvegarde en échec ».
+- `docs/MISE_EN_PRODUCTION.md` : serveur, installation, `.env` de production, processus
+  permanents (file, planificateur), sauvegarde et **restauration pas à pas**, appli
+  terrain, comptes réels, gel. `.env.example` : clés `SAUVEGARDE_*`. Archives exclues
+  de git (données personnelles).
+
+**Vérifié en l'exécutant.**
+
+- 340 tests (330 → 340 : 10 sauvegardes, sur sqlite avec un faux mysqldump / import ;
+  archive, chiffrement, SHA, comptes, sommes, fichiers cités, conservation réels),
+  Larastan 0, Pint propre.
+- **Vraie sauvegarde et vraie restauration sur MySQL** (base de dev `ly_agricole`,
+  fichiers privés de dev copiés dans le worktree) : `ly:sauvegarder --verifier` ⇒
+  archive de 99 Ko, « Restauration vérifiée : 290 lignes, 22 fichiers : identiques » ;
+  `ly_agricole_verif` bien supprimée ; production intacte (19 mouvements de trésorerie).
+- **Contre-épreuve** : archive sabotée (l'INSERT de `remboursements` retiré du dump,
+  SHA recalculé pour tromper le contrôle d'intégrité) ⇒ « remboursements = 0, attendu
+  1 ; remboursements_fcfa = 0, attendu 170000 », code retour 1. La restauration attrape
+  ce que l'empreinte de fichier ne voit pas.
+- **Défaut trouvé en vrai et corrigé** : sur MySQL, `getTableListing()` sans schéma
+  liste les tables de **toutes** les bases du serveur (ici un autre projet XAMPP :
+  `acquisition_opportunities`) ; limité à la base courante.
+
+**Reste.** Semaine 11 (pilote, téléphone) ; mise en ligne réelle (questions 10, 18) ;
+copie hors site des sauvegardes (avec la question 10) ; choisir et garder hors serveur
+le mot de passe des archives.
+
+---
+
 ## 2026-09-29 — Semaine 10 (en avance) : rapports de la direction et exports — FINI, COMMITÉ
 
 > Session `ly-agricole-f9`, **worktree `C:\xampp\htdocs\ly-agricole-phase1`**, branche

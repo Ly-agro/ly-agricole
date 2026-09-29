@@ -241,6 +241,16 @@ class Rapports
             $lignes[] = ['Photo de pesée attendue', $a->reference, 'La photo n\'est pas encore arrivée du téléphone.', $a->date_achat];
         }
 
+        // Une sauvegarde jamais restaurée n'est pas une sauvegarde (vérification hebdomadaire).
+        $verification = app(Sauvegardes::class)->derniereVerification();
+        if ($verification === null) {
+            $lignes[] = ['Sauvegarde non vérifiée', '—', 'Aucune restauration de sauvegarde vérifiée : lancer « php artisan ly:sauvegarder --verifier ».', null];
+        } elseif (! $verification['ok']) {
+            $lignes[] = ['Sauvegarde en échec', $verification['archive'], implode(' ', array_slice($verification['erreurs'], 0, 2)), Carbon::parse($verification['verifie_at'])];
+        } elseif (Carbon::parse($verification['verifie_at'])->lt($aujourdhui->copy()->subDays(8))) {
+            $lignes[] = ['Sauvegarde non vérifiée', $verification['archive'], 'Dernière restauration vérifiée il y a plus de 8 jours.', Carbon::parse($verification['verifie_at'])];
+        }
+
         $seuil = Parametre::entier(CleParametre::SeuilAlerteEcartPoids);
         foreach ($this->lignesEcarts() as $l) {
             // [.., 8 => écart (g), 9 => écart ‰ des achats]
