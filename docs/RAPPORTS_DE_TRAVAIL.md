@@ -5,6 +5,37 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Balance Bluetooth (repris de B) — FINI, NON VÉRIFIÉ SUR MATÉRIEL
+
+> Branche `phase-2-suite`. Deuxième des cinq blocs repris de B.
+
+**Ce qui est fait.** Côté téléphone, `terrain/src/lib/balance.ts` : lecture des trames texte des
+indicateurs de pesage courants (« ST,GS,+ 12.50kg », « 12,5 kg », sans unité = unité choisie),
+profil Bluetooth standard « Weight Scale » (0x181D / 0x2A9D, 5 g l'unité), deux services série usuels,
+découpage en trames, **attente d'un poids stable** (ST de la balance, sinon 5 lectures identiques ;
+jamais « stable » à vide), conversion en **grammes entiers** (jamais de flottant ; plus de décimales
+que l'unité ⇒ refusé ; négatif ⇒ refusé), source du poids. Réutilise la méthode de B
+(`imprimante.ts` : plugin `@capacitor-community/bluetooth-le`, Web Bluetooth dans Chrome). Composant
+`PeseeBalance.svelte` dans le formulaire d'achat : poids en direct, boutons « → Poids brut » et
+« → Tare » actifs seulement quand le poids est stable ; un poids tapé à la main reste possible.
+**Source du poids** : `balance` seulement si le champ vaut exactement ce que la balance a donné.
+Côté serveur : colonne `achats.poids_source` (nullable, enum `SourcePoids`), reçue par `/api/sync`
+(valeur inconnue ⇒ opération rejetée avec motif), affichée dans la liste des achats. **Trace, pas
+un blocage** ; pas de nouveau contrôle.
+
+**Non vérifié.** Aucune balance ni téléphone ici : le modèle de balance et son format sont inconnus
+(question ouverte n° 38). Le Bluetooth classique (SPP) n'est pas géré. Table locale : aucune (Dexie
+reste en version 3, la version 4 est libre).
+
+**Vérifié en l'exécutant.** Terrain : **68 tests** vitest (dont 32 nouveaux : trames, stabilité,
+profil standard, source), `svelte-check` 0 erreur, `npm run build` OK ; il a fallu `npm install` dans
+`terrain/` (les plugins Bluetooth et push de B n'y étaient pas). PHP : 7 tests (source gardée, non
+inventée, refusée si inconnue, sync, liste). Pas vu sur un téléphone.
+
+**Reste.** Question 38 : essai sur la vraie balance avant le pilote.
+
+---
+
 ## 2026-09-29 — Groupes et caution solidaire (repris de B) — FINI
 
 > Branche `phase-2-suite`, sur `phase-2-alertes`. Premier des cinq blocs repris de B.

@@ -56,7 +56,12 @@
                         <td class="whitespace-nowrap px-4 py-3 font-mono text-xs">{{ $a->reference }}</td>
                         <td class="whitespace-nowrap px-4 py-3">{{ $a->date_achat->format('d/m/Y H:i') }}</td>
                         <td class="px-4 py-3">{{ $a->nomFournisseur() }} <span class="text-xs text-stone-400">({{ $a->fournisseur_type->libelle() }})</span></td>
-                        <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ \App\Support\Format::kg($a->poids_net_g) }}</td>
+                        <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                            {{ \App\Support\Format::kg($a->poids_net_g) }}
+                            @if ($a->poids_source)
+                                <span class="block text-xs {{ $a->poids_source === \App\Enums\SourcePoids::Manuel ? 'text-amber-700' : 'text-emerald-700' }}">{{ $a->poids_source === \App\Enums\SourcePoids::Manuel ? 'à la main' : 'balance' }}</span>
+                            @endif
+                        </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ \App\Support\Format::fcfa($a->prix_kg_fcfa) }}</td>
                         <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">{{ \App\Support\Format::fcfa($a->montant_fcfa) }}</td>
                         <td class="whitespace-nowrap px-4 py-3">

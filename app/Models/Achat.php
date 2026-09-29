@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SourcePoids;
 use App\Enums\StatutAchat;
 use App\Enums\TypeFournisseur;
 use App\Models\Concerns\Journalise;
@@ -28,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property int $poids_brut_g
  * @property int $tare_g
  * @property int $poids_net_g
+ * @property SourcePoids|null $poids_source balance Bluetooth ou saisie à la main ; null = avant cette fonction
  * @property int|null $humidite_pour_mille
  * @property int|null $kor_centieme_lbs
  * @property int|null $grainage_noix_kg
@@ -56,7 +58,7 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable([
     'id', 'campagne_id', 'lot_id', 'fournisseur_type', 'producteur_id', 'pisteur_id', 'fournisseur_nom',
-    'point_collecte_id', 'date_achat', 'lat', 'lng', 'poids_brut_g', 'tare_g', 'poids_net_g', 'humidite_pour_mille',
+    'point_collecte_id', 'date_achat', 'lat', 'lng', 'poids_brut_g', 'tare_g', 'poids_net_g', 'poids_source', 'humidite_pour_mille',
     'kor_centieme_lbs', 'grainage_noix_kg', 'prix_kg_fcfa', 'montant_fcfa', 'pret_id', 'grammes_rembourses',
     'montant_especes_fcfa', 'compte_id', 'mouvement_id', 'photo_pesee', 'statut', 'cree_par', 'valide_par',
     'valide_at', 'motif_refus',
@@ -147,6 +149,7 @@ class Achat extends Model
             'poids_brut_g' => 'integer',
             'tare_g' => 'integer',
             'poids_net_g' => 'integer',
+            'poids_source' => SourcePoids::class,
             'humidite_pour_mille' => 'integer',
             'kor_centieme_lbs' => 'integer',
             'grainage_noix_kg' => 'integer',

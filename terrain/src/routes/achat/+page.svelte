@@ -4,6 +4,8 @@
     import { db, type Operation, type Producteur } from '$lib/db';
     import { depuisSaisie, fcfa, fcfaDepuisSaisie, grammesPourSolder, kg, montantAchat } from '$lib/mesure';
     import ChoixProducteur from '$lib/ChoixProducteur.svelte';
+    import { grammesEnKgTexte, sourcePoids } from '$lib/balance';
+    import PeseeBalance from '$lib/PeseeBalance.svelte';
     import PrisePhoto from '$lib/PrisePhoto.svelte';
     import { mettreEnFile } from '$lib/synchro';
 
@@ -32,6 +34,8 @@
     let pointId = $state<number | null>(null);
     let brut = $state('');
     let tare = $state('0');
+    /** Poids brut (g) pris sur la balance ; le champ ne compte comme « balance » que s'il n'a pas été retouché. */
+    let brutPris = $state<number | null>(null);
     let humidite = $state('');
     let prix = $state('');
     let pretId = $state('');
@@ -111,6 +115,7 @@
             point_collecte_id: pointId,
             date_achat: new Date().toISOString(),
             poids_brut_g: apercu.brut,
+            poids_source: sourcePoids(brut, brutPris),
             tare_g: apercu.tare,
             humidite_pour_mille: humiditePourMille,
             prix_kg_fcfa: apercu.prix,
@@ -122,6 +127,7 @@
         succes = `Achat enregistré sur le téléphone : ${producteur.nom} ${producteur.prenoms}, ${kg(apercu.net)}, payer ${fcfa(apercu.especes)}. Il partira au prochain envoi.`;
         producteur = null;
         brut = humidite = kilosRetenus = '';
+        brutPris = null;
         photoPesee = null;
         tare = '0';
         window.scrollTo(0, 0);
@@ -172,6 +178,11 @@
         <label class="block"><span class="text-sm text-stone-600">Prix (FCFA / kg)</span>
             <input bind:value={prix} inputmode="numeric" required class={champ} /></label>
     </fieldset>
+
+    <PeseeBalance
+        onbrut={(g) => { brut = grammesEnKgTexte(g); brutPris = g; }}
+        ontare={(g) => { tare = grammesEnKgTexte(g); }}
+    />
 
     {#if prets.length > 0}
         <fieldset class="space-y-3 rounded-lg bg-amber-50 p-4 shadow-sm">

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\CleParametre;
+use App\Enums\SourcePoids;
 use App\Enums\StatutAchat;
 use App\Enums\StatutCampagne;
 use App\Enums\StatutLot;
@@ -39,7 +40,7 @@ class Achats
     public const GRAMMES_MAX = 100_000_000; // 100 t en une pesée : borne de bon sens.
 
     /**
-     * @param  array{campagne_id: int, lot_id: int, fournisseur_type: TypeFournisseur, producteur_id?: ?string, pisteur_id?: ?int, fournisseur_nom?: ?string, point_collecte_id?: ?int, date_achat: Carbon, poids_brut_g: int, tare_g: int, humidite_pour_mille?: ?int, kor_centieme_lbs?: ?int, grainage_noix_kg?: ?int, prix_kg_fcfa: int, pret_id?: ?string, grammes_rembourses?: int, compte_id: int, id?: string, photo_pesee?: ?string}  $donnees
+     * @param  array{campagne_id: int, lot_id: int, fournisseur_type: TypeFournisseur, producteur_id?: ?string, pisteur_id?: ?int, fournisseur_nom?: ?string, point_collecte_id?: ?int, date_achat: Carbon, poids_brut_g: int, tare_g: int, humidite_pour_mille?: ?int, kor_centieme_lbs?: ?int, grainage_noix_kg?: ?int, prix_kg_fcfa: int, poids_source?: SourcePoids|string|null, pret_id?: ?string, grammes_rembourses?: int, compte_id: int, id?: string, photo_pesee?: ?string}  $donnees
      */
     public static function enregistrer(array $donnees, User $auteur): Achat
     {
@@ -68,6 +69,12 @@ class Achats
             // Pesée, en grammes (D4).
             $brut = $donnees['poids_brut_g'];
             $tare = $donnees['tare_g'];
+            // Trace, pas un contrôle : balance Bluetooth ou saisie à la main (null = non transmis).
+            $source = $donnees['poids_source'] ?? null;
+            if ($source !== null && ! $source instanceof SourcePoids) {
+                $source = SourcePoids::tryFrom((string) $source)
+                    ?? throw new OperationRefusee('Source du poids inconnue : « balance » ou « manuel ».');
+            }
             $net = $brut - $tare;
             if ($brut <= 0 || $tare < 0 || $net <= 0 || $brut > self::GRAMMES_MAX) {
                 throw new OperationRefusee('Pesée incohérente : le poids net (brut − tare) doit être supérieur à zéro.');
@@ -125,6 +132,7 @@ class Achats
                 'poids_brut_g' => $brut,
                 'tare_g' => $tare,
                 'poids_net_g' => $net,
+                'poids_source' => $source,
                 'humidite_pour_mille' => $donnees['humidite_pour_mille'] ?? null,
                 'kor_centieme_lbs' => $donnees['kor_centieme_lbs'] ?? null,
                 'grainage_noix_kg' => $donnees['grainage_noix_kg'] ?? null,

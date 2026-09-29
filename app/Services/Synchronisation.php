@@ -6,6 +6,7 @@ use App\Enums\ActionJournal;
 use App\Enums\OperateurMobileMoney;
 use App\Enums\PratiqueCulturale;
 use App\Enums\Sexe;
+use App\Enums\SourcePoids;
 use App\Enums\TypeFournisseur;
 use App\Enums\TypePiece;
 use App\Exceptions\OperationRefusee;
@@ -275,6 +276,7 @@ class Synchronisation
             'prix_kg_fcfa' => ['required', 'integer:strict'],
             'pret_id' => ['nullable', 'uuid'],
             'photo_pesee' => ['nullable', 'uuid'],
+            'poids_source' => ['nullable', Rule::enum(SourcePoids::class)],
             'grammes_rembourses' => ['nullable', 'integer:strict'],
         ]);
         $v->validate();
@@ -291,6 +293,7 @@ class Synchronisation
             'point_collecte_id' => $d['point_collecte_id'] ?? null,
             'date_achat' => Carbon::parse($d['date_achat']),
             'poids_brut_g' => $d['poids_brut_g'],
+            'poids_source' => $d['poids_source'] ?? null,
             'tare_g' => $d['tare_g'],
             'humidite_pour_mille' => $d['humidite_pour_mille'] ?? null,
             'kor_centieme_lbs' => $d['kor_centieme_lbs'] ?? null,
