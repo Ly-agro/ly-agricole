@@ -54,6 +54,13 @@
             .v-bandeau-piste { display: flex; width: max-content; animation: v-defile 32s linear infinite; }
             .v-bandeau:hover .v-bandeau-piste { animation-play-state: paused; }
 
+            /* Bouton flottant « haut de page » */
+            .v-haut { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 50; display: flex; height: 3rem; width: 3rem; align-items: center; justify-content: center; border-radius: 9999px; background: var(--vert); color: #f3ebdc; box-shadow: 0 10px 24px -8px rgba(18, 53, 36, .7); opacity: 0; visibility: hidden; transform: translateY(16px) scale(.9); transition: opacity .3s ease, transform .3s ease, visibility .3s, background-color .25s ease; }
+            .v-haut.est-visible { opacity: 1; visibility: visible; transform: none; }
+            .v-haut:hover { background: var(--vert-vif); transform: translateY(-3px); }
+            .v-haut:focus-visible { outline: 3px solid var(--or); outline-offset: 3px; }
+            @media (max-width: 640px) { .v-haut { right: 1rem; bottom: 1rem; } }
+
             /* Vagues */
             .v-vague { display: block; width: 100%; height: 3.5rem; }
 
@@ -303,9 +310,13 @@
         <footer style="background: #2a1f16; color: #e8dcc8;">
             <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm sm:px-6">
                 <p>© {{ date('Y') }} LUNA YEO AGRICOLE SARL — LY AGRICOLE. Cultiver – Élever – Durer.</p>
-                <a href="#contenu" class="underline transition-colors hover:text-amber-300">Haut de page ↑</a>
             </div>
         </footer>
+
+        {{-- Bouton flottant : apparaît après un peu de défilement, revient tout en haut. --}}
+        <a href="#contenu" id="haut" aria-label="Retour en haut de la page" class="v-haut">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+        </a>
 
         @verbatim
         <script>
@@ -314,7 +325,11 @@
 
                 // En-tête : se resserre quand on défile.
                 var entete = document.getElementById('entete');
-                function defile() { entete.classList.toggle('est-defile', window.scrollY > 24); }
+                var haut = document.getElementById('haut');
+                function defile() {
+                    entete.classList.toggle('est-defile', window.scrollY > 24);
+                    haut.classList.toggle('est-visible', window.scrollY > 500);
+                }
                 defile();
                 window.addEventListener('scroll', defile, { passive: true });
 
