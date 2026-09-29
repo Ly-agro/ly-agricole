@@ -12,6 +12,8 @@ use App\Livewire\Auth\Connexion;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
 use App\Livewire\Intrants\StockIntrant;
+use App\Livewire\Investisseurs\GestionApports;
+use App\Livewire\Investisseurs\PortailInvestisseur;
 use App\Livewire\Journal\ConsultationJournal;
 use App\Livewire\Prets\FichePret;
 use App\Livewire\Prets\FormulairePret;
@@ -118,6 +120,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/', Comptes::class)->name('');
         Route::get('/comptes/{compte}', ReleveCompte::class)->name('.releve');
     });
+
+    // Apports de campagne (direction, comptabilité) et portail en lecture seule de
+    // l'investisseur (deux écrans distincts : pas les mêmes droits ni la même vue).
+    Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
+    Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
 
     Route::prefix('prets')->name('prets')->group(function () {
         Route::get('/', ListePrets::class)->middleware('can:voir-prets')->name('');

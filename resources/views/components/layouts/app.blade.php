@@ -49,7 +49,7 @@
                     </div>
                 @endcanany
 
-                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'saisir-depenses', 'valider-depenses'])
+                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'saisir-depenses', 'valider-depenses'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Argent</p>
                         <div class="space-y-1">
@@ -62,12 +62,24 @@
                             @can('gerer-tresorerie')
                                 <x-nav-lien route="tresorerie" motif="tresorerie*" icone="tresorerie">Trésorerie</x-nav-lien>
                             @endcan
+                            @can('gerer-apports')
+                                <x-nav-lien route="apports" motif="apports" icone="apports">Apports</x-nav-lien>
+                            @endcan
                             @canany(['saisir-depenses', 'valider-depenses'])
                                 <x-nav-lien route="depenses" motif="depenses*" icone="depenses">Dépenses</x-nav-lien>
                             @endcanany
                         </div>
                     </div>
                 @endcanany
+
+                @can('voir-portail-investisseur')
+                    <div>
+                        <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Investisseur</p>
+                        <div class="space-y-1">
+                            <x-nav-lien route="mon-investissement" motif="mon-investissement" icone="apports">Mon investissement</x-nav-lien>
+                        </div>
+                    </div>
+                @endcan
 
                 @canany(['gerer-intrants', 'gerer-stock'])
                     <div>

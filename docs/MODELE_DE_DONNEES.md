@@ -79,6 +79,14 @@ flowchart TD
 
 **Limite connue.** La marge par lot (`App\Services\Ventes::margeLot()`) ne compte que les achats et les ventes : les frais de transport, taxes et commissions à la revente ne sont pas rattachés au lot (pas de `lot_id` sur `depenses`). La marge affichée est donc une borne haute, et l'écran le dit.
 
+## Apports de campagne (phase 2, ajoutée le 2026-12-12)
+
+| Table | Colonnes principales | Remarques |
+| --- | --- | --- |
+| `apports` 🔒 | investisseur_id (nullable = apport de LY), campagne_id, montant_fcfa (**signé**), date_apport, motif, mouvement_id, annule_id, cree_par | contrat art. 5 (compte dédié) et art. 9 (apport de LY facultatif) ; un apport hors du compte dédié de la campagne est refusé |
+
+**Limite connue, volontaire.** `App\Services\Apports` ne calcule **aucun résultat net ni quote-part** (contrat art. 10 à 14) : le texte exact de ces articles n'est pas disponible (question 15 bis, `docs/QUESTIONS_OUVERTES.md`). `Apports::repartition()` donne seulement la part de chaque investisseur dans l'ensemble des apports d'investisseurs — un calcul objectif, pas le partage du résultat prévu par le contrat. Le portail investisseur (`/mon-investissement`) l'indique explicitement à l'écran.
+
 ## Trésorerie et dépenses
 
 | Table | Colonnes principales | Remarques |

@@ -5,6 +5,72 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Phase 2 : apports de campagne et portail investisseur — FINI, NON COMMITÉ
+
+> Session `ly-agricole-fb`, branche `phase-2-reventes` (suite du commit `a3dc68f`,
+> poussé sur `origin`). Deuxième bloc de la phase 2, après les reventes.
+
+**Pourquoi ce périmètre.** Le bloc naturel suivant était le portail investisseurs et le
+calcul du résultat/quotes-parts (contrat art. 10 à 14). **Le texte exact de ces
+articles n'est pas disponible** (demandé au responsable projet, réponse : « j'ai pas
+les articles ») : coder un partage financier destiné aux investisseurs à partir d'un
+souvenir approximatif (« 40 % / 60 % ») aurait été irresponsable. Le périmètre a donc
+été réduit à ce qui ne dépend pas du texte du contrat : tracer les apports et donner à
+chaque investisseur sa part de l'ensemble des apports — objectif, calculable, sans
+supposer la formule de partage. Noté en question ouverte n° 15 bis.
+
+**Fichiers nouveaux.** `app/Models/Apport.php`, `app/Services/Apports.php`,
+`database/migrations/2026_12_12_000001_create_apports_table.php`,
+`app/Livewire/Investisseurs/{GestionApports,PortailInvestisseur}.php` + leurs vues,
+`tests/Feature/Investisseurs/{ApportsTest,EcransApportsTest}.php` (21 tests).
+
+**Fichiers modifiés (additifs).** `NatureMouvement` (+ `ApportCampagne`),
+`Tresorerie::enregistrerApport()` (mirroir de `encaisserVente()`, garde de
+contre-passation), `AppServiceProvider` (droits `gerer-apports`,
+`voir-portail-investisseur` ; morph map), `routes/web.php` (+ `/apports`,
+`/mon-investissement`), menu latéral (+ lien Apports sous Argent ; section
+« Investisseur » à part, avec « Mon investissement », pour le rôle `Investisseur` qui
+n'avait jusqu'ici **aucun écran**).
+
+**Modèle.** `apports` 🔒 (montant **signé**, contre-passable) impose le **compte dédié
+de la campagne** (art. 5) : un apport sur un autre compte est refusé. `investisseur_id`
+nullable = apport de LY elle-même (art. 9, facultatif). Piège technique rencontré :
+l'enregistrement en une transaction demande de créer le mouvement de trésorerie
+**avant** la ligne immuable (elle ne peut pas être mise à jour après coup pour y ajouter
+`mouvement_id`) ; comme l'apport n'existe pas encore à ce moment, le mouvement prend la
+**campagne** comme source (elle existe déjà), pas l'apport — différent du schéma des
+achats/ventes/remboursements, qui utilisent l'entité déjà mutable comme source.
+
+**Ce que `Apports::repartition()` donne, et ce qu'il ne donne PAS.** Pour chaque
+investisseur d'une campagne : son apport net et sa part en millièmes de l'ensemble des
+apports **d'investisseurs** (l'apport de LY n'entre pas dans ce total). Ce n'est PAS une
+quote-part du résultat : les deux écrans (gestion des apports, portail investisseur)
+l'affichent en toutes lettres pour ne rien laisser croire de plus que ce qui est garanti.
+
+**Portail investisseur.** Premier écran du rôle `Investisseur` (créé en semaine 1, resté
+sans aucun écran jusqu'ici). Lecture seule, un investisseur ne voit que ses propres
+apports (`investisseur_id = auth()->id()`), jamais ceux des autres ni les données
+personnelles des producteurs.
+
+**Vérifié.** `php artisan test` : 346 tests avant ce bloc → **367 tests** (346 + 21 :
+`ApportsTest` 9, `EcransApportsTest` 12), tous verts ; Larastan 0 erreur sur tout le
+projet (un faux positif Larastan croisé en route : `nullsafe.neverNull` sur un
+paramètre pourtant `?User` — contourné avec un `===  null ? ... : ...` explicite plutôt
+qu'un `?->`/`??`, sans changer le comportement) ; Pint propre ; `npm run build` OK.
+**Dans Chrome**, sur la vraie base MySQL partagée : compte « Fonds campagne Anacarde
+2026-2027 » créé (dédié, type banque), apport de 3 000 000 FCFA enregistré pour
+l'investisseur de démo par la direction, répartition affichée (100 %, un seul
+investisseur), connexion avec le compte investisseur → menu réduit à « Mon
+investissement » seul, apport et part affichés, aucune donnée d'un autre investisseur
+visible (il n'y en avait qu'un, donc pas testé à plusieurs — à refaire avec un second
+investisseur si on veut vérifier l'isolation pour de vrai).
+
+**Reste.** Commit. Le calcul du résultat net et des quotes-parts (art. 10 à 14) reste
+entièrement à faire, dès que le texte du contrat sera fourni — c'est la pièce qui manque
+pour le rapport de campagne final (art. 18).
+
+---
+
 ## 2026-09-29 — Phase 2 : reventes, encaissements, marge par lot — FINI, NON COMMITÉ
 
 > Session `ly-agricole-fb`, branche `phase-2-reventes` (depuis `66f10d2`, avant les

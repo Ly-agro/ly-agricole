@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Enums\ActionJournal;
 use App\Enums\Role;
 use App\Models\Achat;
+use App\Models\Apport;
 use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
@@ -101,6 +102,7 @@ class AppServiceProvider extends ServiceProvider
             'remboursement' => Remboursement::class,
             'vente' => Vente::class,
             'encaissement' => Encaissement::class,
+            'apport' => Apport::class,
         ]);
     }
 
@@ -157,6 +159,12 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('saisir-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         Gate::define('valider-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         Gate::define('encaisser-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Apports de campagne (contrat art. 5, 9) et portail en lecture seule de
+        // l'investisseur (cahier §2 : « consulte sa quote-part », en attendant le
+        // calcul exact — voir App\Services\Apports).
+        Gate::define('gerer-apports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
     }
 
     private function journaliserLesConnexions(): void
