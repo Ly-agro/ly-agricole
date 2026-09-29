@@ -103,8 +103,20 @@ export async function connecter(base: BaseTerrain, serveur: string, email: strin
     return r.utilisateur;
 }
 
+/** Déclare au bureau le jeton Firebase du téléphone (notifications) ; gardé pour le retirer. */
+export async function declarerJetonPush(base: BaseTerrain, jeton: string, appareil: string, f: Fetch = fetch): Promise<void> {
+    await appeler(base, '/push', { method: 'POST', body: JSON.stringify({ jeton, appareil }) }, f);
+    await regler(base, 'jeton_push', jeton);
+}
+
 export async function deconnecter(base: BaseTerrain, f: Fetch = fetch): Promise<void> {
     try {
+        // Un téléphone déconnecté ne doit plus recevoir les avis de cet utilisateur.
+        const jetonPush = await reglage<string>(base, 'jeton_push');
+        if (jetonPush) {
+            await appeler(base, '/push', { method: 'DELETE', body: JSON.stringify({ jeton: jetonPush }) }, f);
+            await base.reglages.delete('jeton_push');
+        }
         await appeler(base, '/deconnexion', { method: 'POST' }, f);
     } catch {
         // Hors réseau : le jeton est oublié ici ; le bureau peut désactiver le compte.

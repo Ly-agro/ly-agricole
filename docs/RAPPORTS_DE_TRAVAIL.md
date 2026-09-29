@@ -5,7 +5,77 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
-## 2026-09-29 — Phase 2 : visites de parcelle — FINI, NON COMMITÉ
+## 2026-09-29 — Phase 2 : notifications push, tickets 58 mm, motif du budget — FINI, branche `phase-2-notifications`
+
+> Session `ly-agricole-45` (B), branche `phase-2-notifications` (au-dessus de `078bc8b`,
+> visites), worktree `../ly-agricole-budget`, **base `ly_agricole_b`** (copie de
+> `ly_agricole` : une base par session, voir `docs/REPARTITION_DES_TACHES.md`). Blocs
+> demandés par le responsable projet (hors cahier) et réclamés auprès de la session A
+> avant la première ligne.
+
+**Notifications.** `App\Services\Notifications::envoyer()` (seul point d'entrée, ouvert
+aux autres blocs), notification `AvisLy` (liste dans l'application + push, en file, après
+le commit), canaux `WebPushCanal` (navigateurs du bureau, VAPID, `minishlink/web-push` 11)
+et `FcmCanal` (appli terrain, Firebase HTTP v1, pilote `journal` par défaut). Déclencheurs
+par observateur en lecture seule (`DeclencheursNotifications`) : achat, dépense, prêt,
+vente « à valider » → ceux qui valident, sauf l'auteur ; validé / refusé → l'auteur
+(motif compris). Bureau : cloche avec compteur dans l'en-tête, page `/notifications`
+(filtres toutes / non lues / à valider, regroupées par jour, couleur par sorte d'avis),
+activation sur l'appareil (service worker `public/sw-ly.js`). Téléphone : `/api/push`
+(jeton Firebase déclaré à la connexion, retiré à la déconnexion), `terrain/src/lib/push.ts`.
+Commande `notifications:cles-vapid`. Tables `notifications`, `abonnements_push`.
+
+**Tickets 58 mm.** Bureau : `App\Support\Ticket58` (32 colonnes), `App\Services\Tickets`
+(bon d'achat, reçu de remise argent / intrants : mêmes informations que les PDF, que je
+n'ai pas modifiés), page `/tickets/...` à imprimer avec le pilote de l'imprimante, liens
+« Ticket 58 mm » à côté des PDF. Terrain : `ticket.ts` (même mise en page), `escpos.ts`
+(ESC/POS, table PC437 : accents du français gardés), `imprimante.ts` (Bluetooth basse
+énergie : plugin Capacitor sur Android, Web Bluetooth dans Chrome), bon de pesée
+**provisoire** imprimable juste après l'achat, réimpression depuis « À envoyer », choix de
+l'imprimante et essai sur l'accueil. Phomemo M832 : A4, PDF existants via son pilote.
+
+**Budget.** Motif facultatif d'une modification (`lignes_budget.motif_modification`),
+entré au journal avec l'ancien et le nouveau montant (réponse 29 du questionnaire).
+
+**Vérifié.** PHP : 404 → **423 tests** verts (budget +1, notifications 13, tickets 5) ;
+Larastan 0 ; Pint propre ; terrain : 29 → **36 tests vitest**, svelte-check 0, build OK.
+**Dans Chrome** (localhost:8001, base `ly_agricole_b`) : compte comptable → `/notifications`
+→ « Activer » (clic et autorisation par l'utilisateur) → abonnement enregistré ; achat
+envoyé par l'agent via `/api/connexion` + `/api/sync` (même chemin que le téléphone) →
+worker de file : 4 envois `AvisLy`, 0 échec ; avis « Achat ACH-000008 à valider » pour
+comptable et direction, **rien pour l'agent auteur** ; push accepté par le service de
+Chrome (`dernier_envoi_at` rempli, 0 échec) et **notification Windows affichée**
+(confirmé par l'utilisateur). Validation par le comptable dans la liste des achats →
+l'agent reçoit « Achat ACH-000008 validé ». Ticket 58 mm d'ACH-000007 affiché à la bonne
+largeur (35 kg × 425 = 14 875 FCFA, « en attente de validation » en tête) ; ticket de
+remise : restant dû ; 7 liens « Ticket 58 mm » dans la liste des achats. Appli terrain :
+bloc « Imprimante 58 mm » sur l'accueil ; « Réimprimer » sans imprimante → « Choisir
+d'abord l'imprimante ».
+
+**Pas vérifié.** Impression Bluetooth sur une vraie imprimante (aucune sous la main,
+question 50) ; notifications sur le téléphone (ni projet Firebase ni APK, questions 26 et
+51) ; Phomemo M832.
+
+**Surprises.**
+1. **OpenSSL de XAMPP sans `openssl.cnf`** : impossible de créer une clé EC — donc ni
+   clés VAPID, ni **aucun envoi Web Push**, sans message visible. Seule la variable
+   d'environnement du processus corrige (`OPENSSL_CONF`), ni `putenv()` ni l'option
+   `config`. Noté dans CLAUDE.md ; le canal n'accuse plus les appareils d'une panne du
+   serveur (sinon ils étaient tous oubliés au bout de 5 avis) — test ajouté.
+2. La pastille de la cloche était décalée : CSS construite avant l'ajout de la cloche
+   (classes absentes) et lien « en ligne » contenant un bloc. `npm run build` et
+   `inline-flex`.
+3. Le bouton « Valider » de la liste des achats ouvre une confirmation du navigateur
+   (`wire:confirm`) : elle a bloqué l'onglet piloté ; l'utilisateur a répondu.
+4. `sed` a encore mangé des antislashs (`\s` dans une expression régulière de test) :
+   corrigé à l'outil d'édition.
+
+**Reste.** Question 51 (projet
+Firebase). Réponses 50 (BLE, pas de modèle précis) et 52 (tous les avis, à qui a les droits) : bloc « alertes » à suivre. Fusion : après `fusion-phase-2` de la session A.
+
+---
+
+## 2026-09-29 — Phase 2 : visites de parcelle — FINI, commit `078bc8b`
 
 > Session `ly-agricole-45`, branche `phase-2-visites` (depuis `92dbebd`), worktree
 > `../ly-agricole-budget`. **Travail en double** : la session `ly-agricole-05` codait

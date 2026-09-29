@@ -6,6 +6,7 @@ use App\Http\Controllers\DepenseController;
 use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
 use App\Http\Controllers\ProducteurController;
+use App\Http\Controllers\TicketController;
 use App\Livewire\Achats\FormulaireAchat;
 use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Auth\Connexion;
@@ -16,6 +17,7 @@ use App\Livewire\Intrants\StockIntrant;
 use App\Livewire\Investisseurs\GestionApports;
 use App\Livewire\Investisseurs\PortailInvestisseur;
 use App\Livewire\Journal\ConsultationJournal;
+use App\Livewire\Notifications\ListeNotifications;
 use App\Livewire\Prets\FichePret;
 use App\Livewire\Prets\FormulairePret;
 use App\Livewire\Prets\ListePrets;
@@ -128,6 +130,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
     Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
     Route::get('/visites', ListeVisites::class)->middleware('can:voir-visites')->name('visites');
+    // Avis de chacun (tout utilisateur connecté, les siens seulement).
+    Route::get('/notifications', ListeNotifications::class)->name('notifications');
+    // Tickets 58 mm (imprimante thermique) ; droits vérifiés dans le contrôleur.
+    Route::get('/tickets/achats/{achat}', [TicketController::class, 'achat'])->name('tickets.achat');
+    Route::get('/tickets/prets/{pret}/{type}/{id}', [TicketController::class, 'remise'])
+        ->whereIn('type', ['argent', 'intrants'])->whereNumber('id')->name('tickets.remise');
     Route::get('/budget', SuiviBudget::class)->middleware('can:voir-budget')->name('budget');
 
     Route::prefix('prets')->name('prets')->group(function () {

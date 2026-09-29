@@ -1,6 +1,7 @@
 <script lang="ts">
     import { liveQuery } from 'dexie';
-    import { db, type Producteur } from '$lib/db';
+    import BoutonImprimer from '$lib/BoutonImprimer.svelte';
+    import { db, type Operation, type Producteur } from '$lib/db';
     import { depuisSaisie, fcfa, fcfaDepuisSaisie, grammesPourSolder, kg, montantAchat } from '$lib/mesure';
     import ChoixProducteur from '$lib/ChoixProducteur.svelte';
     import PrisePhoto from '$lib/PrisePhoto.svelte';
@@ -37,6 +38,8 @@
     let kilosRetenus = $state('');
     let erreur = $state('');
     let succes = $state('');
+    /** Dernier achat enregistré : son bon de pesée peut être imprimé tout de suite. */
+    let dernier = $state<Operation | null>(null);
 
     // $derived ne suit pas un liveQuery recréé : on relit les prêts à chaque changement.
     let prets = $state<{ id: string; reference: string; restant_du_fcfa: number }[]>([]);
@@ -99,7 +102,7 @@
         if (officiel && apercu.prix < officiel) return (erreur = `Prix inférieur au prix officiel (${fcfa(officiel)}/kg) : le bureau le refusera.`);
         if (apercu.pret && apercu.retenus <= 0) return (erreur = 'Kilos retenus pour le prêt : au moins 1 g, ou choisir « aucun prêt ».');
 
-        await mettreEnFile(db, 'achat', {
+        dernier = await mettreEnFile(db, 'achat', {
             campagne_id: lot.campagne_id,
             lot_id: lot.id,
             compte_id: compteId,
@@ -131,6 +134,7 @@
     <h1 class="text-lg font-semibold">Achat bord-champ</h1>
 
     {#if succes}<p class="rounded-md bg-emerald-50 p-3 text-sm text-emerald-900">{succes}</p>{/if}
+    {#if dernier}<BoutonImprimer operation={dernier} />{/if}
 
     <ChoixProducteur bind:producteur />
 

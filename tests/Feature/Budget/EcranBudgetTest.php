@@ -11,6 +11,7 @@ use App\Livewire\Budget\SuiviBudget;
 use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
+use App\Models\JournalActivite;
 use App\Models\LigneBudget;
 use App\Models\Parametre;
 use App\Models\User;
@@ -100,6 +101,30 @@ class EcranBudgetTest extends TestCase
             ->assertHasNoErrors();
 
         $this->assertSame(18_000_000, LigneBudget::query()->sole()->montant_fcfa);
+    }
+
+    #[Test]
+    public function le_motif_d_une_modification_entre_au_journal(): void
+    {
+        Budgets::definir($this->campagne, PosteBudget::Achats, null, 17_000_000, $this->direction);
+        $this->actingAs($this->direction);
+
+        Livewire::test(SuiviBudget::class)
+            ->call('ouvrir')
+            ->assertSet('modification', false)
+            ->set('poste', 'achats')
+            ->assertSet('modification', true)
+            ->set('montant', '19 000 000')
+            ->set('motif', 'Prix bord-champ relevé à 450 F/kg')
+            ->call('enregistrer')
+            ->assertHasNoErrors();
+
+        $ligne = LigneBudget::query()->sole();
+        $journal = JournalActivite::query()->where('objet_type', 'ligne_budget')->where('objet_id', (string) $ligne->id)
+            ->where('action', 'modification')->sole();
+        $this->assertSame(17_000_000, (int) $journal->avant['montant_fcfa']);
+        $this->assertSame(19_000_000, (int) $journal->apres['montant_fcfa']);
+        $this->assertSame('Prix bord-champ relevé à 450 F/kg', $journal->apres['motif_modification']);
     }
 
     #[Test]
