@@ -61,7 +61,28 @@ vendor/bin/pint                        # style
 vendor/bin/phpstan analyse --memory-limit=1G   # Larastan niveau 6 (phpstan.neon), plusieurs minutes ici
 npm run build                          # Vite + Tailwind 4 (config dans resources/css/app.css)
 php artisan serve                      # http://127.0.0.1:8000
+php artisan queue:work                 # envoie les SMS en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
+php artisan ly:sauvegarder --verifier  # archive base + fichiers, puis VRAIE restauration comparée (docs/MISE_EN_PRODUCTION.md)
 ```
+
+Appli terrain (`terrain/`, semaine 8) — Node 26, npm :
+
+```bash
+cd terrain
+npm install                            # lent ici : en tâche de fond
+npm test                               # vitest (mesures en entiers, file d'envoi avec fake-indexeddb)
+npm run check                          # svelte-check (TypeScript 6 : svelte-check refuse le 7)
+npm run build                          # statique dans build/
+npx vite preview --port 4173           # http://localhost:4173 (l'API reste sur localhost:8000)
+npx cap sync android                   # copie build/ ; build HTTPS seulement (D11) — LY_TERRAIN_DEV=1 pour un serveur http local
+```
+
+Construire l'APK demande Android Studio (JDK + SDK), **absents de ce poste** au
+2026-09-28 : ouvrir `terrain/android` dans Android Studio sur un poste équipé.
+
+API de l'appli terrain (semaine 7) : `POST /api/connexion` (jeton Sanctum par appareil),
+`GET /api/referentiels?depuis=…`, `POST /api/sync` (idempotent par UUID) — contrat
+dans le skill `ly-agricole-terrain-hors-ligne`.
 
 Installé le 2026-09-28 : Laravel 13.33, Livewire 3.8.9 (sans starter kit),
 Tailwind 4.3, PHPUnit 12.5, Larastan 3.12. Base MySQL `ly_agricole` (root, sans mot
@@ -151,5 +172,23 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
   l'argent ») n'est pas échappé : `assertSee` échoue et, pire, **`assertDontSee` passe
   toujours**. Pour un texte du gabarit avec apostrophe : `assertSeeHtml` /
   `assertDontSeeHtml`.
+- **`Queue::fake()` ignore `afterCommit`** : il enregistre le job même si la
+  transaction est annulée. Pour tester « rien ne part avant le commit », garder la file
+  `sync` des tests et un faux `EnvoyeurSms` (voir `ConfirmationsSmsTest`).
+- **`php -r` + `preg_replace` qui échoue = fichier vidé** : `preg_replace` rend `null`
+  et `file_put_contents($f, null)` écrit 0 octet, sans erreur fatale (vu le 2026-09-28).
+  Pour du code PHP, l'outil d'édition ; sinon vérifier le retour avant d'écrire.
 - **`assertSessionHas` ne voit pas un message flash Livewire** : vérifier ce que la vue
   affiche (`assertSee`).
+- **Blade : une directive collée à un mot n'est pas compilée** (« en cours@if (…) ») ;
+  son `@endif` l'est, d'où une `ParseError` « unexpected endif ». Mettre la directive
+  sur sa propre ligne.
+- **Worktree git : ne pas relier `vendor` par une jonction.** L'autoloader de Composer
+  charge alors les classes `App\` du dossier d'origine, pas celles du worktree : les
+  tests passent sur le mauvais code (vu le 2026-09-29). Copier `vendor` (robocopy,
+  ~110 Mo), donner au worktree son propre `public/build` (`npm run build`) et son
+  `APP_URL`. Et **lancer PHP avec `-d opcache.enable_cli=0`** dans le worktree :
+  l'opcache CLI ressert sinon l'`autoload.php` de l'autre dossier (« Cannot declare
+  class ComposerAutoloaderInit… »). Servir le worktree depuis `public/` :
+  `php -d opcache.enable=0 -S localhost:8001 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`
+  (le redémarrer après un `npm run build` : le manifeste Vite reste en mémoire).

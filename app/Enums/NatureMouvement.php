@@ -14,6 +14,8 @@ enum NatureMouvement: string
     case AvanceAgent = 'avance_agent';
     case Depense = 'depense';
     case DecaissementPret = 'decaissement_pret';
+    case AchatBordChamp = 'achat_bord_champ';
+    case RemboursementPret = 'remboursement_pret';
     case ContrePassation = 'contre_passation';
 
     public function libelle(): string
@@ -25,6 +27,8 @@ enum NatureMouvement: string
             self::AvanceAgent => 'Avance à un agent',
             self::Depense => 'Dépense',
             self::DecaissementPret => 'Décaissement de prêt',
+            self::AchatBordChamp => 'Achat bord-champ',
+            self::RemboursementPret => 'Remboursement de prêt',
             self::ContrePassation => 'Contre-passation',
         };
     }

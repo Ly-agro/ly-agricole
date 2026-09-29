@@ -86,6 +86,9 @@
                                     <span class="text-amber-700">Non relevée</span>
                                 @else
                                     {{ \App\Support\Format::hectares($parcelle->surface_m2) }}
+                                    @if ($parcelle->contour_origine === 'gps')
+                                        <span class="block text-xs text-stone-500">relevé GPS en marchant</span>
+                                    @endif
                                 @endif
                             </td>
                             <td class="px-4 py-3">{{ $parcelle->annee_plantation ?? '—' }}</td>

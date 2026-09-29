@@ -84,13 +84,26 @@ class Pret extends Model
         return $this->montant_fcfa - $this->montantRemis();
     }
 
+    /** Σ remboursements (les contre-passations sont en négatif et se compensent). */
+    public function montantRembourse(): int
+    {
+        return (int) $this->remboursements()->sum('montant_fcfa');
+    }
+
     /**
-     * Restant dû = ce qui a été remis − remboursements (semaine 6). Pas d'intérêt
-     * (question 4) : on ne doit que ce qu'on a reçu.
+     * Restant dû = ce qui a été remis − remboursements. Pas d'intérêt (question 4) :
+     * on ne doit que ce qu'on a reçu. Jamais négatif (invariant 1) : le service refuse
+     * un remboursement qui le dépasserait.
      */
     public function restantDu(): int
     {
-        return $this->montantRemis();
+        return $this->montantRemis() - $this->montantRembourse();
+    }
+
+    /** @return HasMany<Remboursement, $this> */
+    public function remboursements(): HasMany
+    {
+        return $this->hasMany(Remboursement::class);
     }
 
     /** Surface relevée des parcelles financées (m²) ; null si aucune n'est relevée. */

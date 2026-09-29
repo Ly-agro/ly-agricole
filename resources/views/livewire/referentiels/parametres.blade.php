@@ -24,9 +24,19 @@
                     <form wire:submit="enregistrer" class="flex flex-wrap items-start gap-2">
                         <div>
                             <div class="flex items-center gap-2">
-                                <input wire:model="valeur" type="number" step="1" min="0" id="valeur-{{ $cle->value }}"
-                                    class="w-40 rounded-md border border-stone-300 px-3 py-1.5 text-right focus:border-emerald-600 focus:outline-none">
-                                <span class="text-sm text-stone-600">{{ $cle->unite() }}</span>
+                                @if ($cle->estUnChoix())
+                                    <select wire:model="valeur" id="valeur-{{ $cle->value }}"
+                                        class="rounded-md border border-stone-300 px-3 py-1.5 focus:border-emerald-600 focus:outline-none">
+                                        <option value="">— Non défini —</option>
+                                        @foreach ($cle->options() as $valeurOption => $libelleOption)
+                                            <option value="{{ $valeurOption }}">{{ $libelleOption }}</option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <input wire:model="valeur" type="number" step="1" min="0" id="valeur-{{ $cle->value }}"
+                                        class="w-40 rounded-md border border-stone-300 px-3 py-1.5 text-right focus:border-emerald-600 focus:outline-none">
+                                    <span class="text-sm text-stone-600">{{ $cle->unite() }}</span>
+                                @endif
                             </div>
                             @error('valeur') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
                         </div>
@@ -36,7 +46,13 @@
                 @else
                     <div class="flex items-center gap-4">
                         <span @class(['font-medium', 'text-amber-700' => $actuelle === null])>
-                            {{ $actuelle === null ? 'Non défini' : str_replace(' FCFA', ' '.$cle->unite(), \App\Support\Format::fcfa((int) $actuelle)) }}
+                            @if ($actuelle === null)
+                                Non défini
+                            @elseif ($cle->estUnChoix())
+                                {{ $cle->options()[$actuelle] ?? $actuelle }}
+                            @else
+                                {{ str_replace(' FCFA', ' '.$cle->unite(), \App\Support\Format::fcfa((int) $actuelle)) }}
+                            @endif
                         </span>
                         <button type="button" wire:click="modifier('{{ $cle->value }}')"
                             class="rounded-md px-3 py-1 text-sm text-emerald-800 hover:bg-emerald-50">Modifier</button>

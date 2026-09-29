@@ -14,7 +14,7 @@ class AccesReferentielsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const SIMPLES = ['zones', 'villages', 'produits', 'magasins', 'points-collecte'];
+    private const SIMPLES = ['zones', 'villages', 'produits', 'magasins', 'points-collecte', 'pisteurs'];
 
     /**
      * Matrice proposée (question ouverte n° 19) : ce test la fige ; la changer = le

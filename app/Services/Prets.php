@@ -195,6 +195,7 @@ class Prets
             ]);
 
             self::marquerSiToutRemis($pret);
+            ConfirmationsSms::pourDecaissement($decaissement);
 
             return $decaissement;
         });
@@ -205,6 +206,7 @@ class Prets
     {
         if ($pret->statut === StatutPret::Valide && $pret->resteARemettre() === 0) {
             $pret->update(['statut' => StatutPret::Decaisse]);
+            Remboursements::mettreAJourStatut($pret);
         }
     }
 

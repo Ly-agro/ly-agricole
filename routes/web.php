@@ -1,9 +1,14 @@
 <?php
 
+use App\Http\Controllers\AchatController;
 use App\Http\Controllers\Auth\DeconnexionController;
 use App\Http\Controllers\DepenseController;
+use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
 use App\Http\Controllers\ProducteurController;
+use App\Http\Controllers\RapportController;
+use App\Livewire\Achats\FormulaireAchat;
+use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Auth\Connexion;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
@@ -22,10 +27,13 @@ use App\Livewire\Referentiels\EcranReferentiel;
 use App\Livewire\Referentiels\Intrants as IntrantsReferentiel;
 use App\Livewire\Referentiels\Magasins;
 use App\Livewire\Referentiels\Parametres;
+use App\Livewire\Referentiels\Pisteurs;
 use App\Livewire\Referentiels\PointsCollecte;
 use App\Livewire\Referentiels\Produits;
 use App\Livewire\Referentiels\Villages;
 use App\Livewire\Referentiels\Zones;
+use App\Livewire\Stock\FicheLot;
+use App\Livewire\Stock\ListeLots;
 use App\Livewire\TableauDeBord;
 use App\Livewire\Tresorerie\Comptes;
 use App\Livewire\Tresorerie\ReleveCompte;
@@ -43,6 +51,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/utilisateurs', GestionUtilisateurs::class)
         ->middleware('can:gerer-utilisateurs')
         ->name('utilisateurs');
+
+    // Rapports de la direction et exports (semaine 10).
+    Route::get('/rapports', [RapportController::class, 'index'])->middleware('can:voir-rapports')->name('rapports');
+    Route::get('/rapports/{rapport}', [RapportController::class, 'afficher'])->middleware('can:voir-rapports')
+        ->whereIn('rapport', array_keys(RapportController::RAPPORTS))->name('rapports.voir');
 
     Route::get('/journal', ConsultationJournal::class)
         ->middleware('can:voir-journal')
@@ -79,6 +92,22 @@ Route::middleware('auth')->group(function () {
         Route::get('/parametres', Parametres::class)->middleware('can:gerer-parametres')->name('parametres');
         Route::get('/categories-depense', CategoriesDepense::class)->middleware('can:gerer-tresorerie')->name('categories-depense');
         Route::get('/intrants', IntrantsReferentiel::class)->middleware('can:gerer-intrants')->name('intrants');
+        Route::get('/pisteurs', Pisteurs::class)->middleware('can:gerer-referentiels')->name('pisteurs');
+    });
+
+    // Achats : la liste vérifie elle-même le droit (saisir OU valider).
+    Route::prefix('achats')->name('achats')->group(function () {
+        Route::get('/', ListeAchats::class)->name('');
+        Route::get('/nouveau', FormulaireAchat::class)->middleware('can:saisir-achats')->name('.nouveau');
+        Route::get('/{achat}/bon', [AchatController::class, 'bon'])->name('.bon');
+    });
+
+    // Photos du terrain (pesée, justificatifs) : le contrôleur vérifie le droit.
+    Route::get('/photos-terrain/{photo}', [PhotoTerrainController::class, 'afficher'])->name('photos-terrain');
+
+    Route::prefix('lots')->name('lots')->middleware('can:gerer-stock')->group(function () {
+        Route::get('/', ListeLots::class)->name('');
+        Route::get('/{lot}', FicheLot::class)->name('.fiche');
     });
 
     Route::prefix('tresorerie')->name('tresorerie')->middleware('can:gerer-tresorerie')->group(function () {
