@@ -52,7 +52,7 @@
                     </div>
                 @endcanany
 
-                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'voir-resultat-campagne', 'saisir-depenses', 'valider-depenses'])
+                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'voir-resultat-campagne', 'voir-rapport-campagne', 'saisir-depenses', 'valider-depenses'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Argent</p>
                         <div class="space-y-1">
@@ -67,6 +67,9 @@
                             @endcan
                             @can('gerer-apports')
                                 <x-nav-lien route="apports" motif="apports" icone="apports">Apports</x-nav-lien>
+                            @endcan
+                            @can('voir-rapport-campagne')
+                                <x-nav-lien route="rapport-campagne" motif="rapport-campagne*" icone="rapport">Rapport de campagne</x-nav-lien>
                             @endcan
                             @can('voir-resultat-campagne')
                                 <x-nav-lien route="resultat" motif="resultat" icone="resultat">Résultat</x-nav-lien>

@@ -18,6 +18,7 @@
         // Argent qui entre dans la campagne : flèche vers un bac, sens inverse de « ventes ».
         'apports' => 'M4 8.5V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3.5M7 13.5 12 18.5l5-5M12 17.5v-11',
         'referentiels' => 'M4 6h16M4 12h16M4 18h10',
+        'rapport' => 'M7 3h7l5 5v13H7V3ZM14 3v5h5M10 13h6M10 17h6',
         'resultat' => 'M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5',
         'rendements' => 'M4 20h16M6 20V12M12 20V5M18 20v-6',
         'journal' => 'M8 4h9a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM6 8H4m2 4H4m2 4H4M10 9h6M10 13h6',

@@ -326,16 +326,16 @@ class RendementsTest extends TestCase
     {
         $produit = $this->campagne->produit;
         $p = Producteur::factory()->create();
-        $c1 = Campagne::factory()->create(['produit_id' => $produit->id, 'code' => '2030-2031', 'debut' => '2030-12-01']);
-        $c2 = Campagne::factory()->create(['produit_id' => $produit->id, 'code' => '2031-2032', 'debut' => '2031-12-01']);
-        $c3 = Campagne::factory()->create(['produit_id' => $produit->id, 'code' => '2032-2033', 'debut' => '2032-12-01']);
+        $c1 = Campagne::factory()->create(['produit_id' => $produit->id, 'code' => '1990-1991', 'debut' => '1990-12-01']);
+        $c2 = Campagne::factory()->create(['produit_id' => $produit->id, 'code' => '1991-1992', 'debut' => '1991-12-01']);
+        $c3 = Campagne::factory()->create(['produit_id' => $produit->id, 'code' => '1992-1993', 'debut' => '1992-12-01']);
         $this->saison($c2, $p, 800);
         $this->saison($c1, $p, 500);
         $this->saison($c3, $p, 700);
 
         $evolution = Rendements::evolution($p);
 
-        $this->assertSame(['2030-2031', '2031-2032', '2032-2033'], array_map(fn ($l) => $l['campagne']->code, $evolution));
+        $this->assertSame(['1990-1991', '1991-1992', '1992-1993'], array_map(fn ($l) => $l['campagne']->code, $evolution));
         $this->assertNull($evolution[0]['ecart_kg_par_ha']);
         $this->assertEqualsWithDelta(300, $evolution[1]['ecart_kg_par_ha'], 6);
         $this->assertEqualsWithDelta(-100, $evolution[2]['ecart_kg_par_ha'], 6);
@@ -346,8 +346,8 @@ class RendementsTest extends TestCase
     public function deux_produits_ne_se_comparent_pas(): void
     {
         $p = Producteur::factory()->create();
-        $anacarde = Campagne::factory()->create(['code' => '2030-2031', 'debut' => '2030-12-01']);
-        $tomate = Campagne::factory()->create(['code' => '2031-2032', 'debut' => '2031-12-01']);
+        $anacarde = Campagne::factory()->create(['code' => '1990-1991', 'debut' => '1990-12-01']);
+        $tomate = Campagne::factory()->create(['code' => '1991-1992', 'debut' => '1991-12-01']);
         $this->assertNotSame($anacarde->produit_id, $tomate->produit_id);
         $this->saison($anacarde, $p, 500);
         $this->saison($tomate, $p, 5000);
@@ -375,8 +375,8 @@ class RendementsTest extends TestCase
     {
         $produit = $this->campagne->produit;
         $p = Producteur::factory()->create(['nom' => 'Kone Evolution']);
-        $c1 = Campagne::factory()->create(['produit_id' => $produit->id, 'debut' => '2030-12-01']);
-        $c2 = Campagne::factory()->create(['produit_id' => $produit->id, 'debut' => '2031-12-01']);
+        $c1 = Campagne::factory()->create(['produit_id' => $produit->id, 'debut' => '1990-12-01']);
+        $c2 = Campagne::factory()->create(['produit_id' => $produit->id, 'debut' => '1991-12-01']);
         $this->saison($c1, $p, 500);
         $this->saison($c2, $p, 400);
 

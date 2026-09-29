@@ -6,6 +6,7 @@ use App\Http\Controllers\DepenseController;
 use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
 use App\Http\Controllers\ProducteurController;
+use App\Http\Controllers\RapportCampagneController;
 use App\Livewire\Achats\FormulaireAchat;
 use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Auth\Connexion;
@@ -22,6 +23,7 @@ use App\Livewire\Producteurs\FormulaireParcelle;
 use App\Livewire\Producteurs\FormulaireProducteur;
 use App\Livewire\Producteurs\Groupes;
 use App\Livewire\Producteurs\ListeProducteurs;
+use App\Livewire\RapportCampagne\PointEtape;
 use App\Livewire\Referentiels\Campagnes;
 use App\Livewire\Referentiels\CategoriesDepense;
 use App\Livewire\Referentiels\EcranReferentiel;
@@ -132,6 +134,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
     Route::get('/rendements', ClassementRendements::class)->middleware('can:voir-rendements')->name('rendements');
     Route::get('/rendements/producteurs/{producteur}', EvolutionProducteur::class)->middleware('can:voir-rendements')->name('rendements.producteur');
+    Route::get('/rapport-campagne', PointEtape::class)->middleware('can:voir-rapport-campagne')->name('rapport-campagne');
+    Route::post('/rapport-campagne/point-etape', [RapportCampagneController::class, 'pointEtape'])->middleware('can:voir-rapport-campagne')->name('rapport-campagne.point-etape');
     Route::get('/resultat', ResultatDeCampagne::class)->middleware('can:voir-resultat-campagne')->name('resultat');
     Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
 

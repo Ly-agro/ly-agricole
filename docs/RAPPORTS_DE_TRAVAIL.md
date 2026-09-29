@@ -5,6 +5,38 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Rapport de campagne : point d'étape (contrat art. 18.1) — FINI, NON COMMITÉ
+
+> Branche `phase-2-reventes`, après `a5f6cdc`. Bloc réclamé par A dans
+> `docs/REPARTITION_DES_TACHES.md`.
+
+**Fait.** `App\Services\RapportCampagne::pointEtape()` relit les registres (fonds collectés et
+apport de LY, kilos achetés / vendus / en stock, achats et charges par catégorie, avances versées
+et non remboursées, ventes facturées / encaissées / reste, solde des comptes de la campagne) et
+`pointEtapePdf()` en fait un PDF A4 d'**une page**. Les « principaux événements » sont un texte
+libre de la direction (3 000 caractères), jamais rempli automatiquement. La note ne contient
+**ni résultat net, ni quote-part, ni nom de producteur** (test) : le contrat ne les demande pas à
+l'art. 18.1, et un résultat provisoire lu comme définitif tromperait les investisseurs. Écran
+`/rapport-campagne` (aperçu + formulaire POST → PDF), droit `voir-rapport-campagne` (direction,
+comptable), lien « Rapport de campagne » sous Argent. Noms distincts de `/rapports`, `voir-rapports`
+et `resources/views/rapports/` de la branche `semaine-10` (fusion sans collision).
+
+**Vérifié en l'exécutant.** 12 tests ajoutés : 432 → **444** ; Larastan 0 erreur ; Pint propre.
+Vrai PDF généré avec les données MySQL de dev : `%PDF`, 1 page (comptée), **vu dans Chrome**
+(première version, en-tête, sections 1 à 3) ; deux défauts corrigés après coup (accord « 1 vente
+validée » ; signature qui débordait sur une 2e page). Après ces corrections, la relecture dans
+Chrome a échoué (rendu figé, poste court en mémoire) : la page unique n'est vérifiée que par le
+compte de pages.
+
+**Instabilité corrigée (mon erreur).** `RendementsTest` échouait de temps en temps : ses codes de
+campagne explicites (2030-2031…) pouvaient coïncider avec ceux, aléatoires (2030 à 2099), de la
+fabrique. Codes déplacés en 1990-1993 ; 3 exécutions de suite au vert.
+
+**Reste.** Rapport final (art. 18.2) : attend la question 32. Les exports PDF/Excel sont déjà dans
+`semaine-10` (répartition mise à jour).
+
+---
+
 ## 2026-09-29 — Vitrine publique, logo et partage du résultat (contrat art. 10 à 14) — FINI, NON COMMITÉ
 
 > Branche `phase-2-reventes`, après `bacfdf5`. Deux demandes du responsable projet : une

@@ -36,8 +36,9 @@ Un bloc a **un seul** propriétaire. Il est seul à écrire dans ses fichiers.
 | Budget de campagne | B | fini |
 | Visites de parcelle et photos | B | en cours |
 | **Vue investisseur du résultat** | A | attend la question 32 |
-| **Rapport PDF du contrat (art. 18)** : point d'étape, rapport final | A | à faire |
-| **Exports CSV / XLSX / PDF** (question 33) | A | à faire |
+| **Rapport PDF du contrat (art. 18)** : point d'étape (18.1) | A | fini, non commité |
+| Rapport final (art. 18.2) | A | attend la question 32 |
+| ~~Exports CSV / XLSX / PDF (question 33)~~ | — | **déjà fait** : la branche `semaine-10` (phase 1, pas encore fusionnée) a les rapports de gestion avec exports PDF et Excel (`Rapports`, `RapportController`, `/rapports`). À vérifier à la fusion ; rien à coder ici |
 | **Note de fiabilité** (producteur, d'après prêts et livraisons) | A | à faire |
 | **Ventes en devises** | A | à faire |
 | **API Mobile Money** | A | à faire |
@@ -100,3 +101,4 @@ en collision si la règle 5 est suivie.
 
 **Base de données (règle 4)** : B passe sur `ly_agricole_b` (copie de `ly_agricole` par
 `mysqldump`, lecture seule sur l'originale) ; A garde `ly_agricole`. Annoncé le 2026-09-29.
+| 2026-09-29 | A | Rapport de campagne, art. 18 (point d'étape) | `phase-2-reventes` — préfixe `/rapport-campagne`, vues `rapport-campagne/`, droit `voir-rapport-campagne`, pour ne pas heurter `/rapports` de `semaine-10` |
