@@ -5,11 +5,13 @@ namespace App\Providers;
 use App\Enums\ActionJournal;
 use App\Enums\Role;
 use App\Models\Achat;
+use App\Models\Apport;
 use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\Decaissement;
 use App\Models\Depense;
+use App\Models\Encaissement;
 use App\Models\GroupeProducteur;
 use App\Models\Intrant;
 use App\Models\Lot;
@@ -27,6 +29,7 @@ use App\Models\Produit;
 use App\Models\Remboursement;
 use App\Models\User;
 use App\Models\ValidationPret;
+use App\Models\Vente;
 use App\Models\Village;
 use App\Models\Zone;
 use App\Services\Journal;
@@ -97,6 +100,9 @@ class AppServiceProvider extends ServiceProvider
             'achat' => Achat::class,
             'mouvement_stock' => MouvementStock::class,
             'remboursement' => Remboursement::class,
+            'vente' => Vente::class,
+            'encaissement' => Encaissement::class,
+            'apport' => Apport::class,
         ]);
     }
 
@@ -148,6 +154,28 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('gerer-stock', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         // Remboursement d'un prêt en espèces : encaissé par la comptabilité.
         Gate::define('encaisser-remboursements', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Reventes (cahier §7) : négociées au bureau, pas sur le terrain — contrairement
+        // aux achats, pas de droit agent ici. Encaissement : même droit que la trésorerie.
+        Gate::define('voir-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('saisir-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('valider-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('encaisser-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Apports de campagne (contrat art. 5, 9) et portail en lecture seule de
+        // l'investisseur (cahier §2 : « consulte sa quote-part », en attendant le
+        // calcul exact — voir App\Services\Apports).
+        Gate::define('gerer-apports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Rendements (cahier §4) : lecture des chiffres de tous les producteurs.
+        Gate::define('voir-rendements', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Résultat net et partage (contrat art. 10 à 14) : direction et comptabilité, lecture.
+        Gate::define('voir-resultat-campagne', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Rapports du contrat (art. 18), distincts de `voir-rapports` (rapports de gestion, semaine 10).
+        Gate::define('voir-rapport-campagne', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Fiabilité des producteurs (cahier §10) : historique de remboursement de personnes réelles,
+        // réservé à ceux qui décident des prêts.
+        Gate::define('voir-fiabilite', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
     }
 
     private function journaliserLesConnexions(): void

@@ -6,13 +6,18 @@ use App\Http\Controllers\DepenseController;
 use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
 use App\Http\Controllers\ProducteurController;
+use App\Http\Controllers\RapportCampagneController;
 use App\Http\Controllers\RapportController;
 use App\Livewire\Achats\FormulaireAchat;
 use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Auth\Connexion;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
+use App\Livewire\Fiabilite\FicheFiabilite;
+use App\Livewire\Fiabilite\ListeFiabilite;
 use App\Livewire\Intrants\StockIntrant;
+use App\Livewire\Investisseurs\GestionApports;
+use App\Livewire\Investisseurs\PortailInvestisseur;
 use App\Livewire\Journal\ConsultationJournal;
 use App\Livewire\Prets\FichePret;
 use App\Livewire\Prets\FormulairePret;
@@ -21,6 +26,7 @@ use App\Livewire\Producteurs\FormulaireParcelle;
 use App\Livewire\Producteurs\FormulaireProducteur;
 use App\Livewire\Producteurs\Groupes;
 use App\Livewire\Producteurs\ListeProducteurs;
+use App\Livewire\RapportCampagne\PointEtape;
 use App\Livewire\Referentiels\Campagnes;
 use App\Livewire\Referentiels\CategoriesDepense;
 use App\Livewire\Referentiels\EcranReferentiel;
@@ -32,15 +38,24 @@ use App\Livewire\Referentiels\PointsCollecte;
 use App\Livewire\Referentiels\Produits;
 use App\Livewire\Referentiels\Villages;
 use App\Livewire\Referentiels\Zones;
+use App\Livewire\Rendements\ClassementRendements;
+use App\Livewire\Rendements\EvolutionProducteur;
+use App\Livewire\Resultat\ResultatDeCampagne;
 use App\Livewire\Stock\FicheLot;
 use App\Livewire\Stock\ListeLots;
 use App\Livewire\TableauDeBord;
 use App\Livewire\Tresorerie\Comptes;
 use App\Livewire\Tresorerie\ReleveCompte;
 use App\Livewire\Utilisateurs\GestionUtilisateurs;
+use App\Livewire\Ventes\FicheVente;
+use App\Livewire\Ventes\FormulaireVente;
+use App\Livewire\Ventes\ListeVentes;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/tableau-de-bord');
+// Vitrine publique : on n'atterrit plus directement sur la connexion. Sans aucune donnée
+// de l'application, et sans mention de l'opération d'investissement (contrat art. 2.3 :
+// aucune publicité).
+Route::view('/', 'vitrine')->name('accueil');
 
 // Nommée `login` : c'est la route où Laravel renvoie un visiteur non connecté.
 Route::get('/connexion', Connexion::class)->middleware('guest')->name('login');
@@ -105,6 +120,13 @@ Route::middleware('auth')->group(function () {
     // Photos du terrain (pesée, justificatifs) : le contrôleur vérifie le droit.
     Route::get('/photos-terrain/{photo}', [PhotoTerrainController::class, 'afficher'])->name('photos-terrain');
 
+    // Ventes : négociées au bureau (direction, comptabilité) ; l'encaissement est séparé.
+    Route::prefix('ventes')->name('ventes')->group(function () {
+        Route::get('/', ListeVentes::class)->middleware('can:voir-ventes')->name('');
+        Route::get('/nouvelle', FormulaireVente::class)->middleware('can:saisir-ventes')->name('.nouvelle');
+        Route::get('/{vente}', FicheVente::class)->middleware('can:voir-ventes')->name('.fiche');
+    });
+
     Route::prefix('lots')->name('lots')->middleware('can:gerer-stock')->group(function () {
         Route::get('/', ListeLots::class)->name('');
         Route::get('/{lot}', FicheLot::class)->name('.fiche');
@@ -114,6 +136,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/', Comptes::class)->name('');
         Route::get('/comptes/{compte}', ReleveCompte::class)->name('.releve');
     });
+
+    // Apports de campagne (direction, comptabilité) et portail en lecture seule de
+    // l'investisseur (deux écrans distincts : pas les mêmes droits ni la même vue).
+    Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
+    Route::get('/rendements', ClassementRendements::class)->middleware('can:voir-rendements')->name('rendements');
+    Route::get('/rendements/producteurs/{producteur}', EvolutionProducteur::class)->middleware('can:voir-rendements')->name('rendements.producteur');
+    Route::get('/fiabilite', ListeFiabilite::class)->middleware('can:voir-fiabilite')->name('fiabilite');
+    Route::get('/fiabilite/{producteur}', FicheFiabilite::class)->middleware('can:voir-fiabilite')->name('fiabilite.fiche');
+    Route::get('/rapport-campagne', PointEtape::class)->middleware('can:voir-rapport-campagne')->name('rapport-campagne');
+    Route::post('/rapport-campagne/point-etape', [RapportCampagneController::class, 'pointEtape'])->middleware('can:voir-rapport-campagne')->name('rapport-campagne.point-etape');
+    Route::get('/resultat', ResultatDeCampagne::class)->middleware('can:voir-resultat-campagne')->name('resultat');
+    Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
 
     Route::prefix('prets')->name('prets')->group(function () {
         Route::get('/', ListePrets::class)->middleware('can:voir-prets')->name('');

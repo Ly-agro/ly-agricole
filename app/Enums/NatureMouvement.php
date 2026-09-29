@@ -16,6 +16,9 @@ enum NatureMouvement: string
     case DecaissementPret = 'decaissement_pret';
     case AchatBordChamp = 'achat_bord_champ';
     case RemboursementPret = 'remboursement_pret';
+    case EncaissementVente = 'encaissement_vente';
+    /** Apport d'un investisseur ou de LY, tracé par campagne (contrat art. 5 et 9). */
+    case ApportCampagne = 'apport_campagne';
     case ContrePassation = 'contre_passation';
 
     public function libelle(): string
@@ -29,6 +32,8 @@ enum NatureMouvement: string
             self::DecaissementPret => 'Décaissement de prêt',
             self::AchatBordChamp => 'Achat bord-champ',
             self::RemboursementPret => 'Remboursement de prêt',
+            self::EncaissementVente => 'Encaissement de vente',
+            self::ApportCampagne => 'Apport de campagne',
             self::ContrePassation => 'Contre-passation',
         };
     }

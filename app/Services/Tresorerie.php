@@ -8,11 +8,13 @@ use App\Enums\StatutDepense;
 use App\Enums\StatutPret;
 use App\Exceptions\OperationRefusee;
 use App\Models\Achat;
+use App\Models\Campagne;
 use App\Models\CompteTresorerie;
 use App\Models\Depense;
 use App\Models\MouvementTresorerie;
 use App\Models\Pret;
 use App\Models\User;
+use App\Models\Vente;
 use App\Support\Format;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -150,6 +152,35 @@ class Tresorerie
     }
 
     /**
+     * Apport de campagne (investisseur ou LY) : appelé par App\Services\Apports, qui
+     * crée ensuite la ligne immuable avec le mouvement déjà en main (la source est la
+     * campagne, seule chose qui existe déjà avant l'apport lui-même).
+     */
+    public static function enregistrerApport(Campagne $campagne, ?User $investisseur, CompteTresorerie $compte, int $montant, Carbon $date, User $auteur): MouvementTresorerie
+    {
+        return DB::transaction(function () use ($campagne, $investisseur, $compte, $montant, $date, $auteur) {
+            $comptes = self::verrouiller([$compte->id]);
+            $nomApporteur = $investisseur === null ? 'LY AGRICOLE (apport propre)' : $investisseur->nom;
+            $libelle = 'Apport campagne '.$campagne->code.' — '.$nomApporteur;
+
+            return self::ecrire($comptes[$compte->id], SensMouvement::Entree, $montant, NatureMouvement::ApportCampagne, $date, $libelle, $auteur, source: $campagne);
+        });
+    }
+
+    /** Encaissement d'une vente, en argent : appelé par App\Services\Encaissements. */
+    public static function encaisserVente(Vente $vente, CompteTresorerie $compte, int $montant, Carbon $date, User $auteur, ?string $reference): MouvementTresorerie
+    {
+        return DB::transaction(function () use ($vente, $compte, $montant, $date, $auteur, $reference) {
+            $comptes = self::verrouiller([$compte->id]);
+
+            return self::ecrire(
+                $comptes[$compte->id], SensMouvement::Entree, $montant, NatureMouvement::EncaissementVente,
+                $date, "Encaissement vente {$vente->reference} — {$vente->acheteur_nom}", $auteur, reference: $reference, source: $vente,
+            );
+        });
+    }
+
+    /**
      * Annule un mouvement par un mouvement inverse (motif obligatoire). Un virement est
      * annulé sur ses deux jambes ; une dépense payée passe « annulée ».
      *
@@ -163,9 +194,16 @@ class Tresorerie
         }
         // Ces mouvements vont avec un autre registre (remboursement, achat) : ils se
         // corrigent ensemble, depuis l'écran d'origine, jamais seuls depuis la trésorerie.
-        if (! $depuisOrigine && in_array($mouvement->nature, [NatureMouvement::RemboursementPret, NatureMouvement::AchatBordChamp], true)) {
-            throw new OperationRefusee('Ce mouvement se corrige depuis '
-                .($mouvement->nature === NatureMouvement::AchatBordChamp ? 'l\'achat' : 'le prêt (remboursement)').', pas depuis la trésorerie.');
+        if (! $depuisOrigine && in_array($mouvement->nature, [
+            NatureMouvement::RemboursementPret, NatureMouvement::AchatBordChamp,
+            NatureMouvement::EncaissementVente, NatureMouvement::ApportCampagne,
+        ], true)) {
+            throw new OperationRefusee('Ce mouvement se corrige depuis '.match ($mouvement->nature) {
+                NatureMouvement::AchatBordChamp => 'l\'achat',
+                NatureMouvement::EncaissementVente => 'la vente (encaissement)',
+                NatureMouvement::ApportCampagne => 'l\'apport',
+                default => 'le prêt (remboursement)',
+            }.', pas depuis la trésorerie.');
         }
 
         return DB::transaction(function () use ($mouvement, $motif, $auteur, $date) {

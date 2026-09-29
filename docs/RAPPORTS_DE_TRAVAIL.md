@@ -5,6 +5,330 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Note de fiabilité du producteur — FINI
+
+> Branche `phase-2-reventes`, après `3e11c9a`. Bloc réclamé par A (`REPARTITION_DES_TACHES.md`).
+
+**Choix de conception.** Le cahier (§10) dit seulement « propose un plafond pour la campagne
+suivante ; la direction décide ». Comme il s'agit de personnes réelles et qu'aucune règle n'est
+donnée, **aucun score n'est inventé** : ni note, ni « bon » ou « mauvais » payeur, ni coefficient.
+`App\Services\FiabiliteProducteur::fiche()` donne l'**historique objectif** des prêts versés (remis,
+remboursé en ‰ entier, soldé à temps ou avec X jours de retard, en cours, en retard) et un plafond
+**proposé** par une règle prudente : le plus gros prêt soldé à l'échéance ou avant, borné par le
+plafond par producteur des Paramètres ; rien sans historique, sans prêt soldé à temps, ou si un prêt
+est en retard ; jamais d'augmentation. La direction reste seule à décider (aucune action sur l'écran).
+Les remboursements contre-passés ne comptent pas. Question ouverte n° 35.
+
+**Écrans.** `/fiabilite` (producteurs ayant reçu un prêt, recherche, pagination) et
+`/fiabilite/{producteur}` (synthèse, plafond proposé et sa raison, prêts, lien vers l'évolution du
+rendement). Droit `voir-fiabilite` : **direction et comptable seulement** (jamais l'agent ni l'investisseur).
+Ni `ProducteurController` ni la fiche producteur ne sont touchés (fichiers de B).
+
+**Vérifié en l'exécutant.** 18 tests (soldé à temps, plus gros prêt, retard, soldé en retard, contre-
+passation, plafond des Paramètres, droits, écrans) au vert du premier coup. Sur la vraie base MySQL :
+`/fiabilite` 200 avec 7 producteurs (aucun plafond proposé : aucun prêt soldé en dev), fiche 200.
+Pas vu dans un navigateur.
+
+**Reste.** Question 35 (règle de progression, qui voit, information du producteur).
+
+---
+
+## 2026-09-29 — Rapport de campagne : point d'étape (contrat art. 18.1) — FINI, commité
+
+> Branche `phase-2-reventes`, après `a5f6cdc`. Bloc réclamé par A dans
+> `docs/REPARTITION_DES_TACHES.md`.
+
+**Fait.** `App\Services\RapportCampagne::pointEtape()` relit les registres (fonds collectés et
+apport de LY, kilos achetés / vendus / en stock, achats et charges par catégorie, avances versées
+et non remboursées, ventes facturées / encaissées / reste, solde des comptes de la campagne) et
+`pointEtapePdf()` en fait un PDF A4 d'**une page**. Les « principaux événements » sont un texte
+libre de la direction (3 000 caractères), jamais rempli automatiquement. La note ne contient
+**ni résultat net, ni quote-part, ni nom de producteur** (test) : le contrat ne les demande pas à
+l'art. 18.1, et un résultat provisoire lu comme définitif tromperait les investisseurs. Écran
+`/rapport-campagne` (aperçu + formulaire POST → PDF), droit `voir-rapport-campagne` (direction,
+comptable), lien « Rapport de campagne » sous Argent. Noms distincts de `/rapports`, `voir-rapports`
+et `resources/views/rapports/` de la branche `semaine-10` (fusion sans collision).
+
+**Vérifié en l'exécutant.** 12 tests ajoutés : 432 → **444** ; Larastan 0 erreur ; Pint propre.
+Vrai PDF généré avec les données MySQL de dev : `%PDF`, 1 page (comptée), **vu dans Chrome**
+(première version, en-tête, sections 1 à 3) ; deux défauts corrigés après coup (accord « 1 vente
+validée » ; signature qui débordait sur une 2e page). Après ces corrections, la relecture dans
+Chrome a échoué (rendu figé, poste court en mémoire) : la page unique n'est vérifiée que par le
+compte de pages.
+
+**Instabilité corrigée (mon erreur).** `RendementsTest` échouait de temps en temps : ses codes de
+campagne explicites (2030-2031…) pouvaient coïncider avec ceux, aléatoires (2030 à 2099), de la
+fabrique. Codes déplacés en 1990-1993 ; 3 exécutions de suite au vert.
+
+**Reste.** Rapport final (art. 18.2) : attend la question 32. Les exports PDF/Excel sont déjà dans
+`semaine-10` (répartition mise à jour).
+
+---
+
+## 2026-09-29 — Vitrine publique, logo et partage du résultat (contrat art. 10 à 14) — FINI, commité
+
+> Branche `phase-2-reventes`, après `bacfdf5`. Deux demandes du responsable projet : une
+> page d'accueil publique (« pour ne pas atterrir direct sur la connexion »), et le calcul
+> des articles 10 à 14 maintenant que le contrat est dans `docs/`.
+
+**Contrat.** `docs/CONTRAT_CAMPAGNE_LY_AGRICOLE (1).pdf` est bien le bon document : les
+articles 10 à 14 y sont complets, avec les deux exemples chiffrés de l'art. 14. Question
+15b **répondue**. (Le PDF contient le RIB de la société : ne jamais le recopier ailleurs.)
+
+**Vitrine.** `/` n'est plus une redirection : page publique (`resources/views/vitrine.blade.php`),
+logo `public/images/logo-yl-agro.png`, bouton « Se connecter » (ou « Mon espace » si déjà
+connecté). Le logo est aussi dans la barre latérale et sur la page de connexion. Contenu :
+uniquement ce que le projet établit (mission, vision, produits, traçabilité, siège). **Rien sur
+l'opération d'investissement** : art. 2.3 du contrat, « aucune publicité » ; un test le garde
+(mots interdits : investisseur, souscription, FCFA…). Pas de téléphone ni d'e-mail publiés : non
+fournis. « Élevage » et « pisciculture » y figurent sur la parole du responsable projet (question 28).
+
+**Partage du résultat.** `App\Services\PartageResultat` (pur, entiers) : art. 12 (40 % / 60 %,
+quote-part au prorata investi), art. 13 (perte au prorata des apports ; art. 13.4 faute de
+gestion = décision cochée par la direction, jamais déduite), art. 14 repris **tels quels** en
+tests. Arrondi (le contrat n'en dit rien) : part globale au plus proche, LY prend le reste,
+plus fort reste entre investisseurs ⇒ aucun franc créé ni perdu. `App\Services\ResultatCampagne` :
+recettes = encaissements de ventes ; charges = achats validés + dépenses payées non exclues
+(art. 10.3) ; valeur du stock invendu (11.3) donnée à la main, jamais devinée ; avances non
+remboursées et stock en information seulement. Écran `/resultat` (direction, comptable),
+**provisoire**, rien n'est enregistré ni montré aux investisseurs. Question 32.
+
+**Vérifié en l'exécutant.** 390 → **432 tests** (vitrine +2, partage 24, résultat 16), tous verts ;
+Larastan 0 erreur ; Pint propre ; `npm run build` OK. Sur la vraie base MySQL : `/` en HTTP → 200,
+logo 200, `/tableau-de-bord` anonyme → 302 vers la connexion ; `/resultat` en direction → 200 avec
+les vrais chiffres de la campagne 2026-2027. **Dans Chrome** : vitrine vue à l'écran (ordinateur).
+Pas vu : largeur téléphone, ni `/resultat` dans un navigateur.
+
+**Pas fait, volontairement.** Résultat visible des investisseurs et rapport final art. 18 (attendent
+la question 32) ; contrôles de l'art. 3 (minimum 500 000 FCFA, plafond 10 M, 10 investisseurs au
+plus, période de souscription) et échéances de l'art. 6 à 8 : jamais codés, à faire si voulu.
+
+**Fusion des branches.** Numérotation des questions : 29 (budget) et 30 (visites) sont réservées à
+`phase-2-visites`/budget ; ici rendement = 31, résultat = 32. `routes/web.php` et le menu seront à
+fusionner à la main (ajouts seulement).
+
+---
+
+## 2026-09-29 — Phase 2 : évolution du rendement d'un producteur — FINI, commité
+
+> Suite de `6487feb` (branche `phase-2-reventes`). Dernier élément « tableaux de bord
+> de rendement » du cahier §4 réalisable sans les visites.
+
+**Fait.** `Rendements::evolution($producteur)` : une ligne par campagne où il a un
+rendement, de la plus ancienne à la plus récente ; l'écart (kg/ha, entier) se mesure à
+la campagne précédente **du même produit** — un produit ne se compare pas à un autre,
+et la première campagne d'un produit n'a pas d'écart. Page `/rendements/producteurs/{producteur}`
+(`EvolutionProducteur`, même droit `voir-rendements`), atteinte par le nom du producteur
+dans le classement. Aucune table nouvelle : tout est recalculé.
+
+**Vérifié en l'exécutant.** 4 tests ajoutés : 386 → **390 tests** verts, Larastan 0
+erreur, Pint propre. Sur la vraie base MySQL (transaction annulée, comptes 8/1/7 avant
+et après) : producteur fictif à 500 puis 650 kg/ha sur deux campagnes du même produit →
+page 200, « première campagne » puis « +150 kg/ha ». Pas vu dans un navigateur.
+
+**Limite.** Coût : le classement de chaque campagne est recalculé pour trouver la
+ligne du producteur — sans importance à quelques campagnes, à revoir si elles se
+comptent par dizaines. Question 31 toujours ouverte.
+
+**Reste du bloc rendements.** Comparaison des pratiques des meilleurs et des moins bons :
+attend la saisie des visites et pratiques (module 2), pas encore codée.
+
+---
+
+## 2026-09-29 — Phase 2 : carte des parcelles par rendement — FINI, commité
+
+> Suite de `4c2f383` (branche `phase-2-reventes`). Deuxième moitié du « carte des
+> parcelles colorée par rendement » du cahier §4.
+
+**Fait.** `Rendements::carte($campagne)` : parcelles financées avec contour, chacune
+avec le rendement de **son producteur** (les kilos sont pesés par producteur, pas par
+parcelle : deux parcelles du même producteur portent le même chiffre, dit sur l'écran),
+classée par cinquièmes égaux de l'écart min–max (entiers). `Geo\CarteSvg::projeter()` :
+projection SVG **commune** à toutes les parcelles, sans fond de carte ni réseau (comme
+`Contour::pointsSvg`, qui projette une parcelle seule). Carte + légende + infobulle
+(`<title>`) sous le classement de `/rendements`. Rien d'anacarde en dur : le produit
+vient de la campagne (précision du responsable projet : plusieurs produits selon la
+saison et le prix).
+
+**Choix à connaître.** Un producteur financé qui n'a rien livré a **0 kg/ha** (vrai
+rendement, classe la plus faible), pas « inconnu » ; le gris « pas de rendement » ne
+sert que si un producteur manquait au classement (cas quasi impossible : contour ⇒
+surface > 0).
+
+**Vérifié en l'exécutant.** 5 tests ajoutés : 381 → **386 tests** verts, Larastan 0
+erreur, Pint propre. Sur la vraie base MySQL (transaction annulée ensuite, comptes
+8/2/7 avant et après) : 3 producteurs fictifs à 200 / 600 / 1 000 kg/ha → page 200,
+3 polygones, couleurs clair / moyen / foncé, viewBox `0 0 600 202`, trois carrés côte à
+côte d'ouest en est avec les bons écarts. **Non vu dans un navigateur** (extension
+Chrome non connectée) : la lisibilité réelle (contraste, taille sur téléphone) reste à
+regarder.
+
+**Reste.** Évolution d'un producteur d'une campagne à l'autre ; comparaison des
+pratiques (dépend de la saisie des visites). Question 31 toujours ouverte.
+
+---
+
+## 2026-09-29 — Phase 2 : comparaison des rendements — FINI, commité
+
+> Branche `phase-2-reventes`, après `ad360cd`. Bloc « comparaison des rendements » du
+> plan de phase 2 (cahier §3 et §4). Ne dépend d'aucune question ouverte bloquante.
+
+**Fait.** `App\Services\Rendements::classement($campagne)` (lecture seule, entiers) :
+kg/ha par producteur = poids net des achats **validés** de la campagne ÷ hectares
+des parcelles des prêts accordés (validé, décaissé, soldé), chaque parcelle comptée
+une fois ; classement, 20 % meilleurs / 20 % moins bons (à partir de 5 producteurs),
+moyenne pondérée par la surface. Un producteur sans contour relevé n'a **pas** de
+rendement : listé à part, jamais classé. Écran `/rendements` (`ClassementRendements`),
+droit `voir-rendements` (direction, comptable), lien « Rendements » sous Terrain,
+`Format::entier()`. Fichiers : `app/Services/Rendements.php`,
+`app/Livewire/Rendements/`, vue `rendements/classement-rendements`,
+`tests/Feature/Rendements/RendementsTest.php` (14 tests).
+
+**Vérifié en l'exécutant.** `php artisan test` : 367 → **381 tests**, tous verts ;
+Larastan 0 erreur ; Pint propre. Sur la vraie base MySQL, requête HTTP via le noyau
+Laravel : `/rendements` → 302 pour un anonyme, 200 pour la direction, page rendue.
+**Non vérifié dans Chrome** (extension non connectée) ; et la base de dev n'a aucune
+parcelle rattachée à un prêt, donc l'écran n'a été vu **que vide** en réel — le
+classement rempli n'est vérifié que par les tests.
+
+**Reste.** Carte des parcelles colorée par rendement ; évolution d'un producteur d'une
+campagne à l'autre ; comparaison des **pratiques** (les pratiques ne sont pas encore
+saisies — visites, module 2). Question 31 ci-dessous.
+
+---
+
+## 2026-09-29 — Phase 2 : apports de campagne et portail investisseur — FINI, commit `ad360cd`
+
+> Session `ly-agricole-fb`, branche `phase-2-reventes` (suite du commit `a3dc68f`,
+> poussé sur `origin`). Deuxième bloc de la phase 2, après les reventes.
+
+**Pourquoi ce périmètre.** Le bloc naturel suivant était le portail investisseurs et le
+calcul du résultat/quotes-parts (contrat art. 10 à 14). **Le texte exact de ces
+articles n'est pas disponible** (demandé au responsable projet, réponse : « j'ai pas
+les articles ») : coder un partage financier destiné aux investisseurs à partir d'un
+souvenir approximatif (« 40 % / 60 % ») aurait été irresponsable. Le périmètre a donc
+été réduit à ce qui ne dépend pas du texte du contrat : tracer les apports et donner à
+chaque investisseur sa part de l'ensemble des apports — objectif, calculable, sans
+supposer la formule de partage. Noté en question ouverte n° 15 bis.
+
+**Fichiers nouveaux.** `app/Models/Apport.php`, `app/Services/Apports.php`,
+`database/migrations/2026_12_12_000001_create_apports_table.php`,
+`app/Livewire/Investisseurs/{GestionApports,PortailInvestisseur}.php` + leurs vues,
+`tests/Feature/Investisseurs/{ApportsTest,EcransApportsTest}.php` (21 tests).
+
+**Fichiers modifiés (additifs).** `NatureMouvement` (+ `ApportCampagne`),
+`Tresorerie::enregistrerApport()` (mirroir de `encaisserVente()`, garde de
+contre-passation), `AppServiceProvider` (droits `gerer-apports`,
+`voir-portail-investisseur` ; morph map), `routes/web.php` (+ `/apports`,
+`/mon-investissement`), menu latéral (+ lien Apports sous Argent ; section
+« Investisseur » à part, avec « Mon investissement », pour le rôle `Investisseur` qui
+n'avait jusqu'ici **aucun écran**).
+
+**Modèle.** `apports` 🔒 (montant **signé**, contre-passable) impose le **compte dédié
+de la campagne** (art. 5) : un apport sur un autre compte est refusé. `investisseur_id`
+nullable = apport de LY elle-même (art. 9, facultatif). Piège technique rencontré :
+l'enregistrement en une transaction demande de créer le mouvement de trésorerie
+**avant** la ligne immuable (elle ne peut pas être mise à jour après coup pour y ajouter
+`mouvement_id`) ; comme l'apport n'existe pas encore à ce moment, le mouvement prend la
+**campagne** comme source (elle existe déjà), pas l'apport — différent du schéma des
+achats/ventes/remboursements, qui utilisent l'entité déjà mutable comme source.
+
+**Ce que `Apports::repartition()` donne, et ce qu'il ne donne PAS.** Pour chaque
+investisseur d'une campagne : son apport net et sa part en millièmes de l'ensemble des
+apports **d'investisseurs** (l'apport de LY n'entre pas dans ce total). Ce n'est PAS une
+quote-part du résultat : les deux écrans (gestion des apports, portail investisseur)
+l'affichent en toutes lettres pour ne rien laisser croire de plus que ce qui est garanti.
+
+**Portail investisseur.** Premier écran du rôle `Investisseur` (créé en semaine 1, resté
+sans aucun écran jusqu'ici). Lecture seule, un investisseur ne voit que ses propres
+apports (`investisseur_id = auth()->id()`), jamais ceux des autres ni les données
+personnelles des producteurs.
+
+**Vérifié.** `php artisan test` : 346 tests avant ce bloc → **367 tests** (346 + 21 :
+`ApportsTest` 9, `EcransApportsTest` 12), tous verts ; Larastan 0 erreur sur tout le
+projet (un faux positif Larastan croisé en route : `nullsafe.neverNull` sur un
+paramètre pourtant `?User` — contourné avec un `===  null ? ... : ...` explicite plutôt
+qu'un `?->`/`??`, sans changer le comportement) ; Pint propre ; `npm run build` OK.
+**Dans Chrome**, sur la vraie base MySQL partagée : compte « Fonds campagne Anacarde
+2026-2027 » créé (dédié, type banque), apport de 3 000 000 FCFA enregistré pour
+l'investisseur de démo par la direction, répartition affichée (100 %, un seul
+investisseur), connexion avec le compte investisseur → menu réduit à « Mon
+investissement » seul, apport et part affichés, aucune donnée d'un autre investisseur
+visible (il n'y en avait qu'un, donc pas testé à plusieurs — à refaire avec un second
+investisseur si on veut vérifier l'isolation pour de vrai).
+
+**Reste.** Commit. Le calcul du résultat net et des quotes-parts (art. 10 à 14) reste
+entièrement à faire, dès que le texte du contrat sera fourni — c'est la pièce qui manque
+pour le rapport de campagne final (art. 18).
+
+---
+
+## 2026-09-29 — Phase 2 : reventes, encaissements, marge par lot — FINI, commit `a3dc68f`
+
+> Session `ly-agricole-fb`, branche `phase-2-reventes` (depuis `66f10d2`, avant les
+> semaines 6 à 10 de `ly-agricole-f9`, restées sur ses propres branches). À la demande
+> de l'utilisateur : « laisse l'autre s'occuper de la phase 1, toi fais la phase 2 ».
+> Premier bloc choisi : reventes et marge par lot (cahier §7, module 5, stade Revente +
+> Encaissement).
+
+**Fichiers nouveaux.** `app/Enums/{TypeAcheteur,StatutVente}.php`,
+`app/Models/{Vente,Encaissement}.php`, `app/Services/{Ventes,Encaissements}.php`,
+`database/migrations/2026_12_05_000001_create_ventes_tables.php`,
+`app/Livewire/Ventes/{ListeVentes,FormulaireVente,FicheVente}.php` + leurs vues,
+`tests/Feature/Ventes/{VentesTest,EcransVentesTest}.php` (23 tests).
+
+**Fichiers modifiés (peu, tous additifs).** `StatutLot` (+ `Vendu`),
+`TypeMouvementStock` (+ `SortieVente`), `NatureMouvement` (+ `EncaissementVente`),
+`CleParametre` (+ `SeuilValidationVente`), `Lot` (relations `achats()`/`ventes()`),
+`Stock::sortieVente()` (mirroir de `entreeAchat()`, garde de contre-passation),
+`Tresorerie::encaisserVente()` (mirroir de `encaisserRemboursement()`),
+`AppServiceProvider` (droits `voir/saisir/valider-ventes`, `encaisser-ventes` ; morph
+map), `routes/web.php` (+ `/ventes`), menu latéral (+ lien Ventes, sous Argent).
+
+**Modèle.** `ventes` (statut `a_valider`/`valide`/`refuse`, comme les achats) et
+`encaissements` 🔒 (montant **signé**, une contre-passation est négative) sont deux
+tables séparées, comme le cahier le prévoit déjà (stade Revente ≠ stade Encaissement) :
+la question 15 (acheteur, paiement à la livraison ou à terme) reste ouverte, mais le
+modèle n'a pas besoin de trancher — une vente peut être encaissée en une fois, en
+plusieurs, ou pas encore ; le reste à encaisser est sur sa fiche. `mouvements_stock`
+gagne une colonne `vente_id` (nullable, ajoutée après coup par migration : la table est
+de la semaine 6). Un lot dont le stock (tous magasins) tombe à 0 après une vente passe
+automatiquement `vendu`.
+
+**Marge par lot** (`Ventes::margeLot()`) = revenu des ventes validées − coût des achats
+validés. **Limite documentée** (dans le modèle de données et à l'écran) : les frais de
+transport, taxes et commissions à la revente ne sont pas rattachés au lot (pas de
+`lot_id` sur `depenses`) — la marge affichée est une borne haute, pas le résultat net
+exact du contrat (art. 10 à 14, qui restent à coder pour le rapport de campagne).
+
+**Vérifié.** `php artisan test` : 323 tests avant ce module → **346 tests** (323 + 23 :
+`VentesTest` 12, `EcransVentesTest` 11), tous verts ; Larastan 0 erreur sur tout le
+projet ; Pint propre ; `npm run build` OK.
+**Dans Chrome**, sur la vraie base MySQL partagée : vente VTE-000001 de 400 kg sur
+LOT-00001 (600 → 200 kg), créée en comptable (« à valider »), validée en direction
+(séparation des tâches respectée), encaissement partiel de 200 000 FCFA sur la caisse
+centrale, contre-passé (motif obligatoire) → reste à encaisser revenu à 360 000 FCFA ;
+marge du lot affichée (105 000 FCFA, frais non compris, l'écran le précise).
+
+**Piège rencontré.** Le bouton « Valider » d'une vente porte un `wire:confirm` (boîte de
+dialogue native) : un clic direct bloque l'automatisation du navigateur. Contournement
+en Chrome : appeler la méthode Livewire par JS (`Livewire.find(id).call(...)`) plutôt
+que de cliquer le bouton. Sans rapport avec le code : quelques captures d'écran ont
+expiré (30 s) juste après un clic réel, alors que la page répondait normalement en JS —
+lenteur ponctuelle de l'outil de capture, pas un blocage de l'application.
+
+**Coordination.** `ly-agricole-f9` fait la phase 1 (semaines 6 à 10, branches
+`semaine-6` à `semaine-10`, worktree séparé `ly-agricole-phase1`) ; je n'ai touché à
+aucun de ses fichiers. Elle confirme que `sortie_vente` est bien exclu de son calcul
+d'écart de poids (semaine 10) et n'est pas compté comme une anomalie.
+
+**Reste.** Commit (proposé : un commit sur `phase-2-reventes`, à faire pointer sur
+`main` ou à fusionner avec les branches `semaine-*` selon ce que décide l'utilisateur —
+les deux travaux sont indépendants en fichiers mais partagent le même schéma de base).
+Écran dédié « Reventes » sur la fiche du lot (`FicheLot`, propriété de la session f9) :
+pas fait, pour ne pas toucher à son fichier sans coordination — la marge est visible
+depuis la fiche de la vente à la place.
+
 ## 2026-09-29 — Semaine 12 (suite) : copie hors site et mot de passe des archives — FINI, COMMITÉ
 
 > Même worktree, branche `semaine-12`. Demande de l'utilisateur : « fais copie des …
@@ -121,11 +445,11 @@ le mot de passe des archives.
   (prêts échus, prêts / achats / dépenses à valider, photos de pesée attendues, écarts).
 - Chaque rapport en **PDF** (dompdf, A4 portrait ou paysage, sous-ensemble de police)
   et en fichier pour **Excel** (CSV `;`, UTF-8 avec BOM, nombres bruts additionnables,
-  kilos à virgule) — question 28.
+  kilos à virgule) — question 33.
 - `App\Support\Tableau` : un seul format de tableau (valeurs brutes FCFA / grammes /
   ‰ / dates) rendu à l'écran, en PDF et en CSV ; mise en forme en entiers.
 - Paramètre `SeuilAlerteEcartPoids` (‰) : non défini ⇒ tout écart est signalé
-  (question 29). Aucune table : tout est recalculé à partir des registres.
+  (question 34). Aucune table : tout est recalculé à partir des registres.
 
 **Vérifié en l'exécutant.**
 
@@ -157,7 +481,7 @@ le mot de passe des archives.
 **Données de dev** : aucune ajoutée par cette semaine (lecture seule).
 
 **Reste.** Semaine 11 (pilote terrain : dépend du téléphone, question 26 en suspens) ;
-semaine 12 (mise en production, sauvegardes testées par restauration) ; questions 28 à 30.
+semaine 12 (mise en production, sauvegardes testées par restauration) ; questions 33, 34 et 36 (anciens 28, 29, 30 de cette branche).
 
 ---
 
@@ -431,7 +755,7 @@ semaines 8-9) ; SMS de confirmation au producteur (semaine 7).
 
 ---
 
-## 2026-09-28 — Tableau de bord branché sur la semaine 6 (achats, stock, remboursements) — FINI, NON COMMITÉ
+## 2026-09-28 — Tableau de bord branché sur la semaine 6 (achats, stock, remboursements) — FINI, commité
 
 > Session `ly-agricole-fb`, à la demande de `f9` (qui a écrit la semaine 6 : ne pas la
 > retoucher). Je n'ai modifié **que** le tableau de bord ; à commiter **après** le

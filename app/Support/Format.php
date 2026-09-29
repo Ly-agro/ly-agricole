@@ -12,6 +12,12 @@ class Format
     /** Espace fine insécable, séparateur des milliers en français. */
     private const MILLIERS = "\u{202F}";
 
+    /** Entier avec séparateur des milliers, sans unité. */
+    public static function entier(int $n): string
+    {
+        return number_format($n, 0, ',', self::MILLIERS);
+    }
+
     public static function fcfa(?int $montant): string
     {
         return $montant === null ? '—' : number_format($montant, 0, ',', self::MILLIERS).' FCFA';

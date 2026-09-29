@@ -12,8 +12,16 @@
         // Balance (achats pesés) et sacs empilés (lots).
         'achats' => 'M12 4v16M8 20h8M5 7h14M5 7l-2.5 6a2.5 2.5 0 0 0 5 0L5 7Zm14 0-2.5 6a2.5 2.5 0 0 0 5 0L19 7Z',
         'lots' => 'M7 10c-2 0-3 1.5-3 4.5S5 20 8 20h8c3 0 4-2.5 4-5.5S19 10 17 10M9 10l-1-3h8l-1 3M9 10h6',
+        // Sortie du lot vers l'acheteur : flèche qui sort d'un bac.
+        'ventes' => 'M4 15.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3.5M7 9.5 12 4.5 17 9.5M12 5.5v11',
         'depenses' => 'M6 3h12v18l-3-2-3 2-3-2-3 2V3ZM9 8h6M9 12h6',
+        // Argent qui entre dans la campagne : flèche vers un bac, sens inverse de « ventes ».
+        'apports' => 'M4 8.5V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3.5M7 13.5 12 18.5l5-5M12 17.5v-11',
         'referentiels' => 'M4 6h16M4 12h16M4 18h10',
+        'fiabilite' => 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3ZM9 12l2 2 4-4',
+        'rapport' => 'M7 3h7l5 5v13H7V3ZM14 3v5h5M10 13h6M10 17h6',
+        'resultat' => 'M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5',
+        'rendements' => 'M4 20h16M6 20V12M12 20V5M18 20v-6',
         'journal' => 'M8 4h9a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM6 8H4m2 4H4m2 4H4M10 9h6M10 13h6',
         'utilisateurs' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0',
         // Barres (rapports).

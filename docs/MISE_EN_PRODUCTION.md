@@ -152,7 +152,7 @@ de vrai ci-dessous.
 - Désactiver les comptes de démonstration (`*@ly-agricole.test`).
 - À définir par la direction avant le premier achat : seuils de validation, règle de
   valorisation des kilos (question 3), prix officiel de la campagne, seuil d'alerte
-  d'écart de poids (question 29).
+  d'écart de poids (question 34).
 
 ## 8. Gel
 
