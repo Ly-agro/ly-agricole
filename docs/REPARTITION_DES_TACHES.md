@@ -98,8 +98,11 @@ en collision si la règle 5 est suivie.
 | 2026-09-29 | B | Visites de parcelle et photos | `phase-2-visites` |
 | 2026-09-29 | B | Notifications push (bureau, agents, alertes direction) | `phase-2-visites` (à confirmer) |
 | 2026-09-29 | B | Impression de reçus 58 mm | `phase-2-visites` (à confirmer) |
+| 2026-09-29 | B | **Alertes** : commande quotidienne `notifications:alertes` + table `alertes_envoyees` (validations en attente > 48 h, prêts en retard, budget dépassé, campagne ouverte / prix officiel, écart de poids). Lecture seule sur les données de A ; le prêt en retard réutilise la définition de `FiabiliteProducteur` | `phase-2-notifications` |
 
 **Base de données (règle 4)** : B passe sur `ly_agricole_b` (copie de `ly_agricole` par
 `mysqldump`, lecture seule sur l'originale) ; A garde `ly_agricole`. Annoncé le 2026-09-29.
 | 2026-09-29 | A | Rapport de campagne, art. 18 (point d'étape) | `phase-2-reventes` — préfixe `/rapport-campagne`, vues `rapport-campagne/`, droit `voir-rapport-campagne`, pour ne pas heurter `/rapports` de `semaine-10` |
 | 2026-09-29 | A | Note de fiabilité du producteur | `phase-2-reventes` — `/fiabilite`, service `FiabiliteProducteur`, droit `voir-fiabilite` |
+
+**Branches (2026-09-29).** `fusion-phase-2` = `semaine-12` + A + B (budget, visites) : à pousser et fusionner dans `main` **sans y ajouter de commit**. Le travail suivant de A part de là, sur `phase-2-suite`. B a `phase-2-notifications` (`b23c849`) ; elle y fusionne `fusion-phase-2` pour ne résoudre les conflits qu'une fois. Ordre des PR : `fusion-phase-2`, puis `phase-2-notifications`.
