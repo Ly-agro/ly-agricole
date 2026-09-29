@@ -33,6 +33,9 @@
             <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Menu principal">
                 <div class="space-y-1">
                     <x-nav-lien route="tableau-de-bord" motif="tableau-de-bord" icone="accueil">Tableau de bord</x-nav-lien>
+                    @can('voir-rapports')
+                        <x-nav-lien route="rapports" motif="rapports*" icone="rapports">Rapports</x-nav-lien>
+                    @endcan
                 </div>
 
                 @canany(['voir-producteurs', 'saisir-achats', 'valider-achats'])

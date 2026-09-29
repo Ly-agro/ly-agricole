@@ -110,6 +110,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('gerer-utilisateurs', fn (User $user) => $user->aLeRole(Role::Admin));
         Gate::define('voir-journal', fn (User $user) => $user->aLeRole(Role::Admin, Role::Direction));
+        // Rapports de la direction (restant dû, stock, caisses, écarts, alertes) et exports.
+        Gate::define('voir-rapports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
 
         // Zones, villages, produits, magasins, points de collecte.
         Gate::define('gerer-referentiels', fn (User $user) => $user->aLeRole(Role::Admin, Role::Direction));

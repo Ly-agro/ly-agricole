@@ -16,6 +16,8 @@
         'referentiels' => 'M4 6h16M4 12h16M4 18h10',
         'journal' => 'M8 4h9a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM6 8H4m2 4H4m2 4H4M10 9h6M10 13h6',
         'utilisateurs' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0',
+        // Barres (rapports).
+        'rapports' => 'M4 20h16M7 16v-5M12 16V6M17 16v-8',
     ];
 @endphp
 

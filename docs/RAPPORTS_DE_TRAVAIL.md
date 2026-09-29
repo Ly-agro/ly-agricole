@@ -5,6 +5,64 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Semaine 10 (en avance) : rapports de la direction et exports — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, **worktree `C:\xampp\htdocs\ly-agricole-phase1`**, branche
+> `semaine-10` (depuis `semaine-9`, 6ecd725). L'autre session (`ly-agricole-fb`) fait la
+> phase 2 (reventes, marge) dans le dossier principal, branche `phase-2-reventes` :
+> accord pour ne pas toucher à `Indicateurs.php` / `TableauDeBord.php` (les siens) ;
+> ses migrations seront datées après 2026-12-05.
+
+**Fait.**
+
+- Section **Rapports** (droit `voir-rapports` : direction, comptable ; lien dans le
+  menu) : page de synthèse avec les trois questions — **combien reste dû, combien en
+  stock (par produit), combien en caisse** — et cinq rapports : portefeuille de prêts
+  (remis, remboursé, restant dû, échus, filtre par campagne), stock par lot et magasin,
+  caisses et comptes (solde, dernier mouvement), **écarts de poids** par lot, alertes
+  (prêts échus, prêts / achats / dépenses à valider, photos de pesée attendues, écarts).
+- Chaque rapport en **PDF** (dompdf, A4 portrait ou paysage, sous-ensemble de police)
+  et en fichier pour **Excel** (CSV `;`, UTF-8 avec BOM, nombres bruts additionnables,
+  kilos à virgule) — question 28.
+- `App\Support\Tableau` : un seul format de tableau (valeurs brutes FCFA / grammes /
+  ‰ / dates) rendu à l'écran, en PDF et en CSV ; mise en forme en entiers.
+- Paramètre `SeuilAlerteEcartPoids` (‰) : non défini ⇒ tout écart est signalé
+  (question 29). Aucune table : tout est recalculé à partir des registres.
+
+**Vérifié en l'exécutant.**
+
+- 330 tests (323 → 330 : 7 rapports), Larastan 0, Pint propre — **dans le worktree,
+  sur son propre code** (voir « Surpris »).
+- Chrome, `localhost:8001` (code du worktree, MySQL partagée) : synthèse **21 830 000
+  FCFA restant dû, 600 kg d'anacarde, 3 270 000 FCFA en caisse** — les trois recalculés
+  à la main en SQL (décaissements non contre-passés + intrants − remboursements ; Σ
+  grammes ; Σ entrées − sorties des comptes actifs) : **identiques**. Alertes : 5 achats
+  à valider (ceux de la semaine 8) + un écart. PDF du portefeuille (8 prêts, total
+  21 830 000) et des caisses ouverts dans Chrome.
+- **Défaut trouvé en vrai et corrigé** : l'autre session a enregistré dans la base de dev
+  une vente de 400 kg (`sortie_vente`, phase 2) ; mon premier calcul (écart = stock −
+  achats) la comptait comme **−400 kg d'écart (−66,6 %)**. Écart désormais = pertes +
+  inventaires + corrections ; les ventes ont leur colonne. Test ajouté. À l'écran après
+  correction : 600 kg achetés, −400 kg vendus, stock 200 kg, écart 0.
+- En-têtes des colonnes chiffrées du PDF alignés à droite (règle CSS trop faible).
+
+**Surpris.**
+
+- **Les worktrees des semaines précédentes vérifiaient peut-être le mauvais code** :
+  avec `vendor` en jonction, l'autoloader charge `App\` depuis le dossier d'origine.
+  Ici le premier passage « 323 verts » testait le code du dossier principal. Corrigé
+  (vendor copié, opcache CLI coupé) ; piège ajouté à `CLAUDE.md`. Les commits des
+  semaines 5 et 6 ont depuis été couverts par les suites complètes des semaines
+  suivantes sur leur propre dossier.
+- Blade ne compile pas `mot@if` ; le `@endif` si.
+
+**Données de dev** : aucune ajoutée par cette semaine (lecture seule).
+
+**Reste.** Semaine 11 (pilote terrain : dépend du téléphone, question 26 en suspens) ;
+semaine 12 (mise en production, sauvegardes testées par restauration) ; questions 28 à 30.
+
+---
+
 ## 2026-09-28 — Semaine 9 (en avance) : parcelle au GPS, photos, dépense terrain, rejets — FINI, COMMITÉ
 
 > Session `ly-agricole-f9`, branche `semaine-9` (depuis `semaine-8`). Décisions de

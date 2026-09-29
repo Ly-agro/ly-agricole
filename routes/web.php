@@ -6,6 +6,7 @@ use App\Http\Controllers\DepenseController;
 use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
 use App\Http\Controllers\ProducteurController;
+use App\Http\Controllers\RapportController;
 use App\Livewire\Achats\FormulaireAchat;
 use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Auth\Connexion;
@@ -50,6 +51,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/utilisateurs', GestionUtilisateurs::class)
         ->middleware('can:gerer-utilisateurs')
         ->name('utilisateurs');
+
+    // Rapports de la direction et exports (semaine 10).
+    Route::get('/rapports', [RapportController::class, 'index'])->middleware('can:voir-rapports')->name('rapports');
+    Route::get('/rapports/{rapport}', [RapportController::class, 'afficher'])->middleware('can:voir-rapports')
+        ->whereIn('rapport', array_keys(RapportController::RAPPORTS))->name('rapports.voir');
 
     Route::get('/journal', ConsultationJournal::class)
         ->middleware('can:voir-journal')

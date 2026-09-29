@@ -179,3 +179,15 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
   Pour du code PHP, l'outil d'édition ; sinon vérifier le retour avant d'écrire.
 - **`assertSessionHas` ne voit pas un message flash Livewire** : vérifier ce que la vue
   affiche (`assertSee`).
+- **Blade : une directive collée à un mot n'est pas compilée** (« en cours@if (…) ») ;
+  son `@endif` l'est, d'où une `ParseError` « unexpected endif ». Mettre la directive
+  sur sa propre ligne.
+- **Worktree git : ne pas relier `vendor` par une jonction.** L'autoloader de Composer
+  charge alors les classes `App\` du dossier d'origine, pas celles du worktree : les
+  tests passent sur le mauvais code (vu le 2026-09-29). Copier `vendor` (robocopy,
+  ~110 Mo), donner au worktree son propre `public/build` (`npm run build`) et son
+  `APP_URL`. Et **lancer PHP avec `-d opcache.enable_cli=0`** dans le worktree :
+  l'opcache CLI ressert sinon l'`autoload.php` de l'autre dossier (« Cannot declare
+  class ComposerAutoloaderInit… »). Servir le worktree depuis `public/` :
+  `php -d opcache.enable=0 -S localhost:8001 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`
+  (le redémarrer après un `npm run build` : le manifeste Vite reste en mémoire).

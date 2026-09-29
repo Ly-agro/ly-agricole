@@ -89,7 +89,12 @@ flowchart TD
 | `photos_terrain` | **id** (UUID v7 du téléphone), user_id, appareil_id, chemin (disque privé), mime, taille_octets, prise_at, lat, lng, recu_at | reçues par `POST /api/photos`, **à part** des opérations, idempotent ; référencées par `achats.photo_pesee` (peut arriver après l'achat) et comme justificatif d'une dépense terrain (doit arriver avant : l'appli l'envoie d'abord) |
 | `operations_recues` | **uuid** (clé primaire = UUID du téléphone = id de ce qui est créé), type (`producteur`, `achat`, `parcelle`, `depense`), synchronisation_id, appareil_id, user_id, statut (`accepte`, `rejete`), motif, cree_at (heure du téléphone), recu_at (heure du serveur) | clé d'idempotence : acceptée ⇒ un renvoi répond `deja_recu` sans rien refaire ; rejetée ⇒ renvoyable corrigée avec le même UUID |
 | `personal_access_tokens` | (Sanctum) tokenable, name (= appareil), token, abilities, last_used_at, expires_at | un jeton par téléphone ; révoqué à la déconnexion ; un compte désactivé est refusé même avec un jeton valide |
-| `parametres` | cle, valeur | clés connues du code (`App\Enums\CleParametre`) ; **pas de valeur par défaut** : non défini ≠ 0, le code applique la règle prudente |
+| `parametres` | cle, valeur | clés connues du code (`App\Enums\CleParametre`) ; **pas de valeur par défaut** : non défini ≠ 0, le code applique la règle prudente. Sem. 10 : `seuil_alerte_ecart_poids_pour_mille` (non défini ⇒ **tout** écart est signalé) |
+
+Rapports (sem. 10, `App\Services\Rapports`) : **aucune table**. Restant dû, stock, soldes et
+écarts sont recalculés à chaque affichage à partir des registres. Écart de poids d'un lot =
+pertes + ajustements d'inventaire + corrections ; une vente (sortie de phase 2) n'est pas un
+écart.
 
 ## Invariants à tester dès la semaine où la table naît
 
