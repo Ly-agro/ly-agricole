@@ -39,7 +39,7 @@ Un bloc a **un seul** propriétaire. Il est seul à écrire dans ses fichiers.
 | **Rapport PDF du contrat (art. 18)** : point d'étape (18.1) | A | fini, non commité |
 | Rapport final (art. 18.2) | A | attend la question 32 |
 | ~~Exports CSV / XLSX / PDF (question 33)~~ | — | **déjà fait** : la branche `semaine-10` (phase 1, pas encore fusionnée) a les rapports de gestion avec exports PDF et Excel (`Rapports`, `RapportController`, `/rapports`). À vérifier à la fusion ; rien à coder ici |
-| **Note de fiabilité** (producteur, d'après prêts et livraisons) | A | à faire |
+| **Note de fiabilité** (producteur, d'après prêts et livraisons) | A | fini, commité |
 | **Ventes en devises** | A | à faire |
 | **API Mobile Money** | A | à faire |
 | **Comparaison des pratiques** des 20 % meilleurs et moins bons | B | après les visites ; **nouveau service** `ComparaisonPratiques`, on ne modifie pas `Rendements` |
@@ -102,3 +102,4 @@ en collision si la règle 5 est suivie.
 **Base de données (règle 4)** : B passe sur `ly_agricole_b` (copie de `ly_agricole` par
 `mysqldump`, lecture seule sur l'originale) ; A garde `ly_agricole`. Annoncé le 2026-09-29.
 | 2026-09-29 | A | Rapport de campagne, art. 18 (point d'étape) | `phase-2-reventes` — préfixe `/rapport-campagne`, vues `rapport-campagne/`, droit `voir-rapport-campagne`, pour ne pas heurter `/rapports` de `semaine-10` |
+| 2026-09-29 | A | Note de fiabilité du producteur | `phase-2-reventes` — `/fiabilite`, service `FiabiliteProducteur`, droit `voir-fiabilite` |

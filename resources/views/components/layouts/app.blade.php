@@ -35,7 +35,7 @@
                     <x-nav-lien route="tableau-de-bord" motif="tableau-de-bord" icone="accueil">Tableau de bord</x-nav-lien>
                 </div>
 
-                @canany(['voir-producteurs', 'saisir-achats', 'valider-achats', 'voir-rendements'])
+                @canany(['voir-producteurs', 'saisir-achats', 'valider-achats', 'voir-rendements', 'voir-fiabilite'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Terrain</p>
                         <div class="space-y-1">
@@ -45,6 +45,9 @@
                             @canany(['saisir-achats', 'valider-achats'])
                                 <x-nav-lien route="achats" motif="achats*" icone="achats">Achats</x-nav-lien>
                             @endcanany
+                            @can('voir-fiabilite')
+                                <x-nav-lien route="fiabilite" motif="fiabilite*" icone="fiabilite">Fiabilité</x-nav-lien>
+                            @endcan
                             @can('voir-rendements')
                                 <x-nav-lien route="rendements" motif="rendements" icone="rendements">Rendements</x-nav-lien>
                             @endcan

@@ -12,6 +12,8 @@ use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Auth\Connexion;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
+use App\Livewire\Fiabilite\FicheFiabilite;
+use App\Livewire\Fiabilite\ListeFiabilite;
 use App\Livewire\Intrants\StockIntrant;
 use App\Livewire\Investisseurs\GestionApports;
 use App\Livewire\Investisseurs\PortailInvestisseur;
@@ -134,6 +136,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
     Route::get('/rendements', ClassementRendements::class)->middleware('can:voir-rendements')->name('rendements');
     Route::get('/rendements/producteurs/{producteur}', EvolutionProducteur::class)->middleware('can:voir-rendements')->name('rendements.producteur');
+    Route::get('/fiabilite', ListeFiabilite::class)->middleware('can:voir-fiabilite')->name('fiabilite');
+    Route::get('/fiabilite/{producteur}', FicheFiabilite::class)->middleware('can:voir-fiabilite')->name('fiabilite.fiche');
     Route::get('/rapport-campagne', PointEtape::class)->middleware('can:voir-rapport-campagne')->name('rapport-campagne');
     Route::post('/rapport-campagne/point-etape', [RapportCampagneController::class, 'pointEtape'])->middleware('can:voir-rapport-campagne')->name('rapport-campagne.point-etape');
     Route::get('/resultat', ResultatDeCampagne::class)->middleware('can:voir-resultat-campagne')->name('resultat');

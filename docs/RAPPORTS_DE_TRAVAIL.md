@@ -5,6 +5,34 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Note de fiabilité du producteur — FINI
+
+> Branche `phase-2-reventes`, après `3e11c9a`. Bloc réclamé par A (`REPARTITION_DES_TACHES.md`).
+
+**Choix de conception.** Le cahier (§10) dit seulement « propose un plafond pour la campagne
+suivante ; la direction décide ». Comme il s'agit de personnes réelles et qu'aucune règle n'est
+donnée, **aucun score n'est inventé** : ni note, ni « bon » ou « mauvais » payeur, ni coefficient.
+`App\Services\FiabiliteProducteur::fiche()` donne l'**historique objectif** des prêts versés (remis,
+remboursé en ‰ entier, soldé à temps ou avec X jours de retard, en cours, en retard) et un plafond
+**proposé** par une règle prudente : le plus gros prêt soldé à l'échéance ou avant, borné par le
+plafond par producteur des Paramètres ; rien sans historique, sans prêt soldé à temps, ou si un prêt
+est en retard ; jamais d'augmentation. La direction reste seule à décider (aucune action sur l'écran).
+Les remboursements contre-passés ne comptent pas. Question ouverte n° 35.
+
+**Écrans.** `/fiabilite` (producteurs ayant reçu un prêt, recherche, pagination) et
+`/fiabilite/{producteur}` (synthèse, plafond proposé et sa raison, prêts, lien vers l'évolution du
+rendement). Droit `voir-fiabilite` : **direction et comptable seulement** (jamais l'agent ni l'investisseur).
+Ni `ProducteurController` ni la fiche producteur ne sont touchés (fichiers de B).
+
+**Vérifié en l'exécutant.** 18 tests (soldé à temps, plus gros prêt, retard, soldé en retard, contre-
+passation, plafond des Paramètres, droits, écrans) au vert du premier coup. Sur la vraie base MySQL :
+`/fiabilite` 200 avec 7 producteurs (aucun plafond proposé : aucun prêt soldé en dev), fiche 200.
+Pas vu dans un navigateur.
+
+**Reste.** Question 35 (règle de progression, qui voit, information du producteur).
+
+---
+
 ## 2026-09-29 — Rapport de campagne : point d'étape (contrat art. 18.1) — FINI, NON COMMITÉ
 
 > Branche `phase-2-reventes`, après `a5f6cdc`. Bloc réclamé par A dans

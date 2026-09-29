@@ -170,6 +170,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('voir-resultat-campagne', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         // Rapports du contrat (art. 18), distincts de `voir-rapports` (rapports de gestion, semaine 10).
         Gate::define('voir-rapport-campagne', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Fiabilité des producteurs (cahier §10) : historique de remboursement de personnes réelles,
+        // réservé à ceux qui décident des prêts.
+        Gate::define('voir-fiabilite', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
     }
 
