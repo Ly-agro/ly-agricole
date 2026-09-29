@@ -55,9 +55,23 @@ LY facultatif, stock invendu arbitré par LY seule, « faute de gestion » non d
 calendrier du rapport final (31 août) antérieur à la fin de vente du stock (30 sept.).
 Si le code doit trancher l'une d'elles, **poser la question** au lieu de choisir.
 
-## Deux projets à ne pas confondre
+## Plusieurs activités, une plateforme centrale
 
-Le compte du responsable projet contient aussi un projet d'installation agricole **en
-France** (maraîchage 2 ha, 249 poules pondeuses, jus d'hibiscus et de gingembre, près
-d'Arles, BPREA). Il est distinct de LY AGRICOLE en Côte d'Ivoire et n'entre pas dans
-cette plateforme sauf demande explicite.(tous est pareil ly Agr)
+Selon le responsable projet (2026-09-29), LY AGRICOLE **regroupe plusieurs activités** —
+agriculture (anacarde, karité, tomate…), élevage, pisciculture… — et a besoin d'un site
+central pour toutes (« tout est pareil »). Le projet de maraîchage, poules pondeuses et
+jus d'hibiscus noté ailleurs sur son compte (près d'Arles, en France) en ferait donc
+partie — lieu et calendrier à confirmer (question 28).
+
+Même pour le négoce, **l'anacarde n'est pas seul** : plusieurs produits peuvent entrer
+selon la période et le prix (précision du responsable projet, 2026-09-29). Plusieurs
+campagnes de produits différents peuvent donc être ouvertes en même temps ; tout écran
+ou calcul part de la campagne (donc du produit), jamais d'un produit supposé.
+
+Conséquences pour le code, **en attendant le cahier des charges de ces activités**
+(question ouverte n° 28) :
+
+- ne rien coder en dur pour l'anacarde : les produits, campagnes et magasins restent
+  des référentiels ;
+- ne pas coder de module élevage ou pisciculture (lots d'animaux, bassins, mortalité,
+  aliment) sans ses règles écrites et validées : poser la question.
