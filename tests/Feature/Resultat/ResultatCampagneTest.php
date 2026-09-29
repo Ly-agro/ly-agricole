@@ -263,16 +263,43 @@ class ResultatCampagneTest extends TestCase
     }
 
     #[Test]
-    public function l_ecran_prend_la_valeur_du_stock_et_refuse_un_montant_ambigu(): void
+    public function l_ecran_enregistre_la_valorisation_du_stock_a_partir_de_deux_offres(): void
+    {
+        $this->apports();
+        $this->scenario(); // 100 kg restent en stock ; résultat 117 500
+        $this->actingAs($this->direction);
+
+        Livewire::test(ResultatDeCampagne::class)
+            ->assertSee('Le stock invendu n\'est pas valorisé')
+            ->call('ouvrirValorisation')
+            ->assertSet('poidsKg', '100')
+            ->set('fournisseur1', 'Ivoire Export')->set('prix1', '900')
+            ->set('fournisseur2', 'Usine Korhogo')->set('prix2', '850')
+            ->set('valeurRetenue', '85 000')
+            ->call('valoriser')
+            ->assertHasNoErrors()
+            ->assertSee('Valorisation du stock enregistrée')
+            ->assertSee('Ivoire Export')->assertSee('Usine Korhogo')
+            // 117 500 + 85 000 = 202 500
+            ->assertSee('202'.self::FINE.'500 FCFA');
+    }
+
+    #[Test]
+    public function l_ecran_refuse_un_prix_decimal_et_deux_fois_le_meme_fournisseur(): void
     {
         $this->apports();
         $this->scenario();
         $this->actingAs($this->direction);
 
-        Livewire::test(ResultatDeCampagne::class)->set('valeurStock', '100 000')
-            ->assertSee('217'.self::FINE.'500'.' FCFA');
-        Livewire::test(ResultatDeCampagne::class)->set('valeurStock', '1.500')
-            ->assertSee('sans virgule ni point');
+        Livewire::test(ResultatDeCampagne::class)->call('ouvrirValorisation')
+            ->set('fournisseur1', 'Ivoire Export')->set('prix1', '900,5')
+            ->set('fournisseur2', 'Ivoire Export')->set('prix2', '850')->set('valeurRetenue', '85000')
+            ->call('valoriser')->assertHasErrors(['prix1']);
+
+        Livewire::test(ResultatDeCampagne::class)->call('ouvrirValorisation')
+            ->set('fournisseur1', 'Ivoire Export')->set('prix1', '900')
+            ->set('fournisseur2', ' ivoire export ')->set('prix2', '850')->set('valeurRetenue', '85000')
+            ->call('valoriser')->assertHasErrors(['valeurRetenue']);
     }
 
     #[Test]

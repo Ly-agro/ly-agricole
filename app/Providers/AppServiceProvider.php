@@ -10,6 +10,7 @@ use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\Decaissement;
+use App\Models\DecisionPlafond;
 use App\Models\Depense;
 use App\Models\Encaissement;
 use App\Models\GroupeProducteur;
@@ -30,6 +31,7 @@ use App\Models\Produit;
 use App\Models\Remboursement;
 use App\Models\User;
 use App\Models\ValidationPret;
+use App\Models\ValorisationStock;
 use App\Models\Vente;
 use App\Models\Village;
 use App\Models\Visite;
@@ -107,6 +109,8 @@ class AppServiceProvider extends ServiceProvider
             'apport' => Apport::class,
             'ligne_budget' => LigneBudget::class,
             'visite' => Visite::class,
+            'valorisation_stock' => ValorisationStock::class,
+            'decision_plafond' => DecisionPlafond::class,
         ]);
     }
 
@@ -179,6 +183,10 @@ class AppServiceProvider extends ServiceProvider
         // Fiabilité des producteurs (cahier §10) : historique de remboursement de personnes réelles,
         // réservé à ceux qui décident des prêts.
         Gate::define('voir-fiabilite', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Décisions de la direction seule (questions 32 et 35) : valorisation du stock invendu
+        // (contrat art. 11.3) et plafond de prêt d'un producteur. La comptabilité lit, ne décide pas.
+        Gate::define('valoriser-stock', fn (User $user) => $user->aLeRole(Role::Direction));
+        Gate::define('decider-plafond', fn (User $user) => $user->aLeRole(Role::Direction));
         Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
 
         // Budget de campagne (cahier §8) : fixé par la direction, comme le prix officiel

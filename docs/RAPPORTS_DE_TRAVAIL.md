@@ -5,6 +5,38 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Décisions des questions 32 et 35 : valorisation du stock et décision de plafond — FINI
+
+> Branche `phase-2-suite` (depuis `fusion-phase-2`). Le responsable projet a rempli les décisions des
+> questions 35 et 32 dans son fichier de réponses.
+
+**Question 35 (fiabilité).** Règle prudente **confirmée comme provisoire** (aucune augmentation
+automatique, rien sans historique favorable) ; l'écran le dit. Nouveau registre immuable
+`decisions_plafond` + `App\Services\DecisionsPlafond` : la direction (seule) enregistre le plafond
+**retenu**, le logiciel garde sa **proposition**, sa raison, les **données utilisées** (synthèse et
+prêts), la **date du calcul**, le motif et l'auteur. Un motif est exigé si la décision diffère de la
+proposition ; jamais au-dessus du plafond des Paramètres ; 0 est permis (« pas de nouveau prêt »). Le
+comptable lit l'historique, ne décide pas ; l'agent et le producteur ne voient rien. Trace seulement :
+le plafond retenu n'est pas appliqué automatiquement à la création d'un prêt.
+
+**Question 32 (résultat).** Arrondi et avances hors résultat : **confirmés** (déjà codés).
+(c) Perte supérieure aux fonds : libellé « **Perte non imputée — traitement à décider** », rien
+attribué automatiquement. (d) Stock invendu : la saisie libre de l'écran `/resultat` est **remplacée** par
+un formulaire à **deux offres écrites de deux fournisseurs différents** + valeur retenue par la direction
+(registre immuable `valorisations_stock` + `ValorisationsStock`) ; `ResultatCampagne::etat()` prend
+la valorisation enregistrée (0 sans elle). **Conditions de clôture** affichées sur l'écran
+(`ResultatCampagne::conditionsDeCloture`) : stock valorisé, perte au-delà des fonds traitée, avances
+présentées ; tant qu'une manque, « résultat provisoire, non définitif ». Toujours rien de montré aux
+investisseurs.
+
+**Vérifié en l'exécutant.** Tests des deux registres, des conditions de clôture, des écrans et des
+droits : voir le comptage de la fin de session. Pas vu dans un navigateur.
+
+**Reste.** Traitement d'une perte au-delà des fonds (règle métier) ; rapport final (art. 18.2) ;
+politique d'information du producteur.
+
+---
+
 ## 2026-09-29 — Fusion des branches de la phase 1 et de la phase 2 — FINI, à pousser
 
 > Branche `fusion-phase-2`, créée depuis `origin/main` (`450446e`). Demande du responsable projet :
