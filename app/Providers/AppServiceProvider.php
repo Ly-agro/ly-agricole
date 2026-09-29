@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Enums\ActionJournal;
 use App\Enums\Role;
 use App\Models\Achat;
+use App\Models\Actualite;
 use App\Models\Apport;
 use App\Models\Campagne;
 use App\Models\CategorieDepense;
@@ -27,6 +28,7 @@ use App\Models\Parcelle;
 use App\Models\Pisteur;
 use App\Models\PointCollecte;
 use App\Models\Pret;
+use App\Models\PrixMarche;
 use App\Models\Producteur;
 use App\Models\Produit;
 use App\Models\Remboursement;
@@ -111,6 +113,8 @@ class AppServiceProvider extends ServiceProvider
             'ligne_budget' => LigneBudget::class,
             'visite' => Visite::class,
             'langue' => Langue::class,
+            'prix_marche' => PrixMarche::class,
+            'actualite' => Actualite::class,
             'valorisation_stock' => ValorisationStock::class,
             'decision_plafond' => DecisionPlafond::class,
         ]);
@@ -190,6 +194,8 @@ class AppServiceProvider extends ServiceProvider
         // Téléphones de l'appli terrain (question 25) : liste, dernière synchronisation, couper un
         // téléphone perdu. Sécurité des comptes : direction et administrateur.
         Gate::define('gerer-appareils', fn (User $user) => $user->aLeRole(Role::Direction, Role::Admin));
+        // Vitrine publique : prix bord-champ affichés et actualités (direction seule).
+        Gate::define('gerer-publications', fn (User $user) => $user->aLeRole(Role::Direction));
         Gate::define('valoriser-stock', fn (User $user) => $user->aLeRole(Role::Direction));
         Gate::define('decider-plafond', fn (User $user) => $user->aLeRole(Role::Direction));
         Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));

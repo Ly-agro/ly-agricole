@@ -22,6 +22,7 @@
         // Prévu contre réel : deux barres, une pleine, une en cours.
         'budget' => 'M4 20h16M7 20V9m5 11V5m5 15v-7',
         'referentiels' => 'M4 6h16M4 12h16M4 18h10',
+        'publications' => 'M4 5h16v11H4zM8 20h8M12 16v4M8 9h8M8 12h5',
         'appareils' => 'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM11 18h2',
         'fiabilite' => 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3ZM9 12l2 2 4-4',
         'rapport' => 'M7 3h7l5 5v13H7V3ZM14 3v5h5M10 13h6M10 17h6',

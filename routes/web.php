@@ -9,6 +9,7 @@ use App\Http\Controllers\ProducteurController;
 use App\Http\Controllers\RapportCampagneController;
 use App\Http\Controllers\RapportController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\VitrineController;
 use App\Livewire\Achats\FormulaireAchat;
 use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Appareils\ListeAppareils;
@@ -32,6 +33,7 @@ use App\Livewire\Producteurs\FormulaireParcelle;
 use App\Livewire\Producteurs\FormulaireProducteur;
 use App\Livewire\Producteurs\Groupes;
 use App\Livewire\Producteurs\ListeProducteurs;
+use App\Livewire\Publications\GestionPublications;
 use App\Livewire\RapportCampagne\PointEtape;
 use App\Livewire\Referentiels\Campagnes;
 use App\Livewire\Referentiels\CategoriesDepense;
@@ -63,7 +65,9 @@ use Illuminate\Support\Facades\Route;
 // Vitrine publique : on n'atterrit plus directement sur la connexion. Sans aucune donnée
 // de l'application, et sans mention de l'opération d'investissement (contrat art. 2.3 :
 // aucune publicité).
-Route::view('/', 'vitrine')->name('accueil');
+Route::get('/', [VitrineController::class, 'accueil'])->name('accueil');
+Route::get('/actualites', [VitrineController::class, 'actualites'])->name('actualites');
+Route::get('/actualites/{actualite}', [VitrineController::class, 'actualite'])->name('actualites.voir');
 
 // Nommée `login` : c'est la route où Laravel renvoie un visiteur non connecté.
 Route::get('/connexion', Connexion::class)->middleware('guest')->name('login');
@@ -152,6 +156,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/rendements', ClassementRendements::class)->middleware('can:voir-rendements')->name('rendements');
     Route::get('/rendements/producteurs/{producteur}', EvolutionProducteur::class)->middleware('can:voir-rendements')->name('rendements.producteur');
     // Les groupes AVANT `/fiabilite/{producteur}` : sinon « groupes » serait pris pour un producteur.
+    Route::get('/publications', GestionPublications::class)->middleware('can:gerer-publications')->name('publications');
     Route::get('/appareils', ListeAppareils::class)->middleware('can:gerer-appareils')->name('appareils');
     Route::get('/fiabilite/groupes', ListeGroupes::class)->middleware('can:voir-fiabilite')->name('fiabilite.groupes');
     Route::get('/fiabilite/groupes/{groupe}', SituationGroupe::class)->middleware('can:voir-fiabilite')->name('fiabilite.groupe');

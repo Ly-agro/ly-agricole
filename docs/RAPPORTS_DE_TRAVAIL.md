@@ -5,6 +5,43 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Vitrine : prix bord-champ et actualités — FINI
+
+> Branche `phase-2-suite`. Demande du responsable projet : « un onglet actualités et l'affichage des prix
+> bord-champ (café, cacao, anacarde et autres), par récupération ou par saisie ».
+
+**Fait : la saisie.** Registre immuable `prix_marche` (produit, prix au kilo, **date d'effet**, **source
+obligatoire**, lien http(s) facultatif, note) et table `actualites` (texte simple, brouillon / publiée).
+`App\Services\Publications` ; écran de la direction `/publications` (onglets Prix et Actualités ; droit
+`gerer-publications`, **direction seule**). La vitrine affiche, sans connexion, une section « Prix
+bord-champ » (prix, date, source cliquable, écart signé au prix précédent) et une section « Actualités »
+(3 dernières + page `/actualites` et une page par actualité), avec liens « Prix » et « Actualités » dans le
+menu. Les brouillons et les actualités datées du futur n'existent pas pour le public (404) ; le texte est
+échappé (jamais de HTML) ; un lien de source doit commencer par http:// ou https://.
+
+**Un prix affiché n'est pas le prix officiel.** Il ne change rien aux achats : le plancher reste
+`campagnes.prix_officiel_kg_fcfa`, qui n'est jamais publié tel quel. L'écran et la vitrine le disent ; le
+bouton « Reprendre le prix officiel de la campagne ouverte » ne fait que pré-remplir le formulaire. (Point
+confirmé avec l'autre session : ses alertes concernent le prix de campagne, pas ces prix affichés.)
+
+**Pas fait : la récupération automatique.** Aucune source n'est choisie, les sources officielles n'ont pas
+d'interface stable connue, et un prix faux affiché publiquement engage LY. Question ouverte n° 39.
+
+**Au passage.** La vitrine est découpée en morceaux partagés (`resources/views/vitrine/*` et le composant
+`x-vitrine.page`) pour que les pages d'actualités aient le même en-tête, style et pied ; rendu inchangé.
+`php artisan migrate` a été lancé sur la base de dev (9 migrations en attente, ajouts seulement).
+
+**Vérifié en l'exécutant.** 34 tests (validations, source obligatoire, lien dangereux refusé, immuabilité,
+prix en vigueur par date d'effet, écart signé, droits, vitrine vide / remplie, aucun montant hors de la section
+des prix, brouillons et futur invisibles, texte échappé, liens du menu, écran de gestion) ; deux défauts
+trouvés et corrigés (comparaison de dates en SQLite, message inversé au basculement de publication).
+**Vu dans Chrome** sur une base de contrôle (supprimée) avec des données d'essai : menu, section des prix,
+page des actualités. Pas vu : la section « Actualités » de l'accueil ni la largeur téléphone.
+
+**Reste.** Question 39 (sources à suivre, validation avant publication, flux externe).
+
+---
+
 ## 2026-09-29 — Commission des pisteurs (question 6, repris de B) — FINI
 
 > Branche `phase-2-suite`. Dernier des cinq blocs repris de B.

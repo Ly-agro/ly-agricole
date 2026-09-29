@@ -13,136 +13,12 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <script>document.documentElement.classList.add('js');</script>
-        <style>
-            :root {
-                --sable: #e8dcc8;
-                --sable-fonce: #dccdb2;
-                --sable-clair: #f3ebdc;
-                --brun: #34251a;
-                --brun-doux: #5c4632;
-                --vert: #123524;
-                --vert-vif: #1f7a45;
-                --or: #f2b632;
-            }
-            html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
-            body.v { background: var(--sable); color: var(--brun); }
-            .v-alt { background: var(--sable-fonce); }
-            .v-carte { background: var(--sable-clair); border: 1px solid rgba(52, 37, 26, .14); transition: transform .35s ease, box-shadow .35s ease, border-color .35s ease; }
-            .v-carte:hover { transform: translateY(-6px); box-shadow: 0 18px 32px -14px rgba(52, 37, 26, .35); border-color: rgba(31, 122, 69, .55); }
-            .v-texte-doux { color: var(--brun-doux); }
-
-            /* En-tête : se resserre et prend une ombre quand on défile. */
-            .v-entete { background: rgba(232, 220, 200, .85); backdrop-filter: blur(8px); transition: padding .3s ease, box-shadow .3s ease, background .3s ease; }
-            .v-entete.est-defile { background: rgba(232, 220, 200, .97); box-shadow: 0 8px 24px -14px rgba(52, 37, 26, .5); }
-            .v-entete.est-defile .v-entete-in { padding-top: .35rem; padding-bottom: .35rem; }
-            .v-entete-in { transition: padding .3s ease; }
-            .v-lien { position: relative; }
-            .v-lien::after { content: ''; position: absolute; left: .5rem; right: .5rem; bottom: .15rem; height: 2px; background: var(--vert-vif); transform: scaleX(0); transform-origin: left; transition: transform .3s ease; }
-            .v-lien:hover::after { transform: scaleX(1); }
-
-            /* Accueil */
-            .v-hero { background: radial-gradient(60rem 32rem at 82% -5%, rgba(242, 182, 50, .38), transparent 60%), radial-gradient(48rem 30rem at -5% 105%, rgba(31, 122, 69, .55), transparent 62%), linear-gradient(160deg, #123524 0%, #1c2a1d 55%, #2b2118 100%); }
-            .v-soleil { position: absolute; right: -6rem; top: -6rem; width: 26rem; height: 26rem; border-radius: 9999px; background: radial-gradient(circle, rgba(242, 182, 50, .55), rgba(242, 182, 50, 0) 65%); animation: v-pulse 7s ease-in-out infinite; }
-            .v-logo-boite { animation: v-flotte 6s ease-in-out infinite; transition: transform .2s ease-out; will-change: transform; }
-            .v-bouton { transition: transform .25s ease, background-color .25s ease, box-shadow .25s ease; }
-            .v-bouton:hover { transform: translateY(-2px); box-shadow: 0 12px 22px -12px rgba(0, 0, 0, .55); }
-            .v-fleche { display: inline-block; transition: transform .25s ease; }
-            .v-bouton:hover .v-fleche { transform: translateX(5px); }
-
-            /* Bandeau défilant */
-            .v-bandeau { background: var(--vert); color: #f3ebdc; overflow: hidden; }
-            .v-bandeau-piste { display: flex; width: max-content; animation: v-defile 32s linear infinite; }
-            .v-bandeau:hover .v-bandeau-piste { animation-play-state: paused; }
-
-            /* Bouton flottant « haut de page » */
-            .v-haut { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 50; display: flex; height: 3rem; width: 3rem; align-items: center; justify-content: center; border-radius: 9999px; background: var(--vert); color: #f3ebdc; box-shadow: 0 10px 24px -8px rgba(18, 53, 36, .7); opacity: 0; visibility: hidden; transform: translateY(16px) scale(.9); transition: opacity .3s ease, transform .3s ease, visibility .3s, background-color .25s ease; }
-            .v-haut.est-visible { opacity: 1; visibility: visible; transform: none; }
-            .v-haut:hover { background: var(--vert-vif); transform: translateY(-3px); }
-            .v-haut:focus-visible { outline: 3px solid var(--or); outline-offset: 3px; }
-            @media (max-width: 640px) { .v-haut { right: 1rem; bottom: 1rem; } }
-
-            /* Vagues */
-            .v-vague { display: block; width: 100%; height: 3.5rem; }
-
-            /* Chaîne */
-            .v-etapes { position: relative; }
-            .v-ligne { position: absolute; left: 1.35rem; top: 1.5rem; bottom: 1.5rem; width: 3px; background: rgba(52, 37, 26, .15); border-radius: 3px; overflow: hidden; }
-            .v-ligne::after { content: ''; position: absolute; inset: 0; background: linear-gradient(var(--vert-vif), var(--or)); transform: scaleY(0); transform-origin: top; transition: transform 1.6s ease-out .2s; }
-            .v-etapes.est-visible .v-ligne::after { transform: scaleY(1); }
-            .v-pastille { transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), background-color .3s ease; }
-            .v-etape:hover .v-pastille { transform: scale(1.18) rotate(-6deg); background: var(--or); color: var(--brun); }
-
-            /* Apparition au défilement : seulement si JavaScript est actif. */
-            .js [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity .8s ease, transform .8s cubic-bezier(.2, .7, .2, 1); transition-delay: var(--d, 0s); }
-            .js [data-reveal="gauche"] { transform: translateX(-30px); }
-            .js [data-reveal="droite"] { transform: translateX(30px); }
-            .js [data-reveal].est-visible { opacity: 1; transform: none; }
-
-            /* Entrée de l'accueil */
-            .v-entree { opacity: 0; animation: v-monte .9s cubic-bezier(.2, .7, .2, 1) forwards; animation-delay: var(--d, 0s); }
-
-            @keyframes v-monte { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
-            @keyframes v-flotte { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
-            @keyframes v-pulse { 0%, 100% { transform: scale(1); opacity: .85; } 50% { transform: scale(1.12); opacity: 1; } }
-            @keyframes v-defile { to { transform: translateX(-50%); } }
-
-            @media (prefers-reduced-motion: reduce) {
-                html { scroll-behavior: auto; }
-                *, *::before, *::after { animation: none !important; transition: none !important; }
-                .js [data-reveal] { opacity: 1; transform: none; }
-                .v-entree { opacity: 1; }
-                .v-ligne::after { transform: scaleY(1); }
-            }
-        </style>
+        @include('vitrine.style')
     </head>
     <body class="v min-h-screen antialiased">
         <a href="#contenu" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2">Aller au contenu</a>
 
-        <header id="entete" class="v-entete sticky top-0 z-40 border-b border-[#34251a]/10">
-            <div class="v-entete-in mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-                <a href="{{ route('accueil') }}" class="flex items-center gap-3">
-                    <img src="{{ asset('images/logo-yl-agro.png') }}" alt="" width="48" height="48" class="h-12 w-12 rounded-lg bg-white/70 p-0.5">
-                    <span class="leading-tight">
-                        <span class="block text-base font-semibold tracking-wide">LY AGRICOLE</span>
-                        <span class="v-texte-doux block text-xs">Cultiver – Élever – Durer</span>
-                    </span>
-                </a>
-
-                <nav aria-label="Navigation" class="hidden items-center gap-1 text-sm md:flex">
-                    <a href="#filieres" class="v-lien rounded-md px-3 py-1.5">Nos filières</a>
-                    <a href="#chaine" class="v-lien rounded-md px-3 py-1.5">Du champ à l'acheteur</a>
-                    <a href="#mission" class="v-lien rounded-md px-3 py-1.5">Mission</a>
-                    <a href="#contact" class="v-lien rounded-md px-3 py-1.5">Nous trouver</a>
-                    @auth
-                        <a href="{{ route('tableau-de-bord') }}" class="v-bouton ml-2 rounded-md bg-emerald-800 px-4 py-2 font-medium text-white hover:bg-emerald-900">Mon espace</a>
-                    @else
-                        <a href="{{ route('login') }}" class="v-bouton ml-2 rounded-md bg-emerald-800 px-4 py-2 font-medium text-white hover:bg-emerald-900">Se connecter</a>
-                    @endauth
-                </nav>
-
-                <div class="flex items-center gap-2 md:hidden">
-                    @auth
-                        <a href="{{ route('tableau-de-bord') }}" class="rounded-md bg-emerald-800 px-3 py-2 text-sm font-medium text-white">Mon espace</a>
-                    @else
-                        <a href="{{ route('login') }}" class="rounded-md bg-emerald-800 px-3 py-2 text-sm font-medium text-white">Se connecter</a>
-                    @endauth
-                    <button type="button" id="menu-bouton" aria-expanded="false" aria-controls="menu-mobile" aria-label="Ouvrir le menu"
-                        class="rounded-md border border-[#34251a]/25 p-2 transition-colors hover:bg-[#34251a]/10">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-                    </button>
-                </div>
-            </div>
-            <nav id="menu-mobile" aria-label="Navigation mobile" class="grid overflow-hidden px-4 transition-all duration-300 md:hidden" style="grid-template-rows: 0fr; opacity: 0;">
-                <div class="min-h-0">
-                    <ul class="space-y-1 pb-3 text-sm">
-                        <li><a href="#filieres" class="block rounded-md px-3 py-2 hover:bg-[#34251a]/10">Nos filières</a></li>
-                        <li><a href="#chaine" class="block rounded-md px-3 py-2 hover:bg-[#34251a]/10">Du champ à l'acheteur</a></li>
-                        <li><a href="#mission" class="block rounded-md px-3 py-2 hover:bg-[#34251a]/10">Mission</a></li>
-                        <li><a href="#contact" class="block rounded-md px-3 py-2 hover:bg-[#34251a]/10">Nous trouver</a></li>
-                    </ul>
-                </div>
-            </nav>
-        </header>
+        @include('vitrine.entete')
 
         <main id="contenu">
             {{-- Accueil --}}
@@ -218,6 +94,40 @@
                 </p>
             </section>
 
+            {{-- Prix bord-champ : information datée et sourcée, saisie par la direction. --}}
+            <section id="prix" class="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20">
+                <p data-reveal class="text-sm font-medium uppercase tracking-widest text-emerald-800">Prix bord-champ</p>
+                <h2 data-reveal style="--d: .1s" class="mt-2 max-w-2xl text-3xl font-semibold tracking-tight">Les prix du moment, avec leur source.</h2>
+
+                @if ($prix->isEmpty())
+                    <p data-reveal class="v-carte mt-8 rounded-2xl p-6">Aucun prix publié pour le moment.</p>
+                @else
+                    <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ($prix as $i => $ligne)
+                            <article data-reveal style="--d: {{ 0.1 * ($i % 3) }}s" class="v-carte rounded-2xl p-6">
+                                <h3 class="text-lg font-semibold">{{ $ligne['produit']->nom }}</h3>
+                                <p class="mt-2 text-3xl font-semibold tabular-nums">{{ \App\Support\Format::entier($ligne['prix']->prix_kg_fcfa) }} <span class="text-base font-normal v-texte-doux">FCFA / kg</span></p>
+                                @if ($ligne['ecart'] !== null && $ligne['ecart'] !== 0)
+                                    <p class="mt-1 text-sm font-medium {{ $ligne['ecart'] > 0 ? 'text-emerald-700' : 'text-red-700' }}">
+                                        {{ $ligne['ecart'] > 0 ? '▲ +' : '▼ −' }}{{ \App\Support\Format::entier(abs($ligne['ecart'])) }} FCFA depuis le {{ $ligne['precedent']->date_effet->format('d/m/Y') }}
+                                    </p>
+                                @endif
+                                <p class="v-texte-doux mt-3 text-xs">
+                                    Au {{ $ligne['prix']->date_effet->format('d/m/Y') }} ·
+                                    @if ($ligne['prix']->source_url)
+                                        <a href="{{ $ligne['prix']->source_url }}" target="_blank" rel="noopener noreferrer" class="underline">{{ $ligne['prix']->source }}</a>
+                                    @else
+                                        {{ $ligne['prix']->source }}
+                                    @endif
+                                </p>
+                                @if ($ligne['prix']->note)<p class="v-texte-doux mt-1 text-xs">{{ $ligne['prix']->note }}</p>@endif
+                            </article>
+                        @endforeach
+                    </div>
+                @endif
+                <p data-reveal class="v-texte-doux mt-5 text-xs">Prix indicatifs relevés à la date indiquée, avec leur source. Ils ne remplacent pas le prix officiel fixé pour la campagne.</p>
+            </section>
+
             <svg class="v-vague text-[#dccdb2]" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 60V28C180 4 360 4 540 26s360 34 540 12 270-30 360-14v38Z" /></svg>
 
             {{-- Chaîne --}}
@@ -254,6 +164,33 @@
             </section>
 
             <svg class="v-vague -mt-px rotate-180 text-[#dccdb2]" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 60V28C180 4 360 4 540 26s360 34 540 12 270-30 360-14v38Z" /></svg>
+
+            {{-- Actualités --}}
+            <section id="actualites" class="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <p data-reveal class="text-sm font-medium uppercase tracking-widest text-emerald-800">Actualités</p>
+                        <h2 data-reveal style="--d: .1s" class="mt-2 text-3xl font-semibold tracking-tight">Les nouvelles de LY AGRICOLE</h2>
+                    </div>
+                    @if ($actualites->isNotEmpty())
+                        <a href="{{ route('actualites') }}" class="v-lien text-sm font-medium">Toutes les actualités →</a>
+                    @endif
+                </div>
+
+                @if ($actualites->isEmpty())
+                    <p data-reveal class="v-carte mt-8 rounded-2xl p-6">Aucune actualité pour le moment.</p>
+                @else
+                    <div class="mt-8 grid gap-5 md:grid-cols-3">
+                        @foreach ($actualites as $i => $a)
+                            <a data-reveal style="--d: {{ 0.12 * $i }}s" href="{{ route('actualites.voir', $a) }}" class="v-carte block rounded-2xl p-6">
+                                <p class="v-texte-doux text-xs font-medium uppercase tracking-widest">{{ $a->publie_le->translatedFormat('j F Y') }}</p>
+                                <h3 class="mt-1 text-lg font-semibold">{{ $a->titre }}</h3>
+                                <p class="v-texte-doux mt-2 text-sm leading-relaxed">{{ \Illuminate\Support\Str::limit($a->contenu, 140) }}</p>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+            </section>
 
             {{-- Mission --}}
             <section id="mission" class="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
@@ -307,74 +244,8 @@
             </section>
         </main>
 
-        <footer style="background: #2a1f16; color: #e8dcc8;">
-            <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm sm:px-6">
-                <p>© {{ date('Y') }} LUNA YEO AGRICOLE SARL — LY AGRICOLE. Cultiver – Élever – Durer.</p>
-            </div>
-        </footer>
+        @include('vitrine.pied')
 
-        {{-- Bouton flottant : apparaît après un peu de défilement, revient tout en haut. --}}
-        <a href="#contenu" id="haut" aria-label="Retour en haut de la page" class="v-haut">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
-        </a>
-
-        @verbatim
-        <script>
-            (function () {
-                var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-                // En-tête : se resserre quand on défile.
-                var entete = document.getElementById('entete');
-                var haut = document.getElementById('haut');
-                function defile() {
-                    entete.classList.toggle('est-defile', window.scrollY > 24);
-                    haut.classList.toggle('est-visible', window.scrollY > 500);
-                }
-                defile();
-                window.addEventListener('scroll', defile, { passive: true });
-
-                // Menu mobile.
-                var bouton = document.getElementById('menu-bouton');
-                var menu = document.getElementById('menu-mobile');
-                function fermer() {
-                    menu.style.gridTemplateRows = '0fr'; menu.style.opacity = '0';
-                    bouton.setAttribute('aria-expanded', 'false');
-                }
-                bouton.addEventListener('click', function () {
-                    var ouvert = bouton.getAttribute('aria-expanded') === 'true';
-                    if (ouvert) { fermer(); return; }
-                    menu.style.gridTemplateRows = '1fr'; menu.style.opacity = '1';
-                    bouton.setAttribute('aria-expanded', 'true');
-                });
-                menu.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', fermer); });
-
-                // Apparition au défilement.
-                var cibles = document.querySelectorAll('[data-reveal], #etapes');
-                if (reduit || !('IntersectionObserver' in window)) {
-                    cibles.forEach(function (c) { c.classList.add('est-visible'); });
-                } else {
-                    var obs = new IntersectionObserver(function (entrees) {
-                        entrees.forEach(function (e) {
-                            if (e.isIntersecting) { e.target.classList.add('est-visible'); obs.unobserve(e.target); }
-                        });
-                    }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
-                    cibles.forEach(function (c) { obs.observe(c); });
-                }
-
-                // Le logo suit doucement le pointeur (ordinateur seulement).
-                var boite = document.getElementById('logo-boite');
-                if (!reduit && boite && window.matchMedia('(hover: hover)').matches) {
-                    var zone = boite.closest('section');
-                    zone.addEventListener('pointermove', function (e) {
-                        var r = zone.getBoundingClientRect();
-                        var x = (e.clientX - r.left) / r.width - 0.5;
-                        var y = (e.clientY - r.top) / r.height - 0.5;
-                        boite.style.transform = 'perspective(700px) rotateY(' + (x * 10).toFixed(2) + 'deg) rotateX(' + (-y * 8).toFixed(2) + 'deg)';
-                    });
-                    zone.addEventListener('pointerleave', function () { boite.style.transform = ''; });
-                }
-            })();
-        </script>
-        @endverbatim
+        @include('vitrine.scripts')
     </body>
 </html>
