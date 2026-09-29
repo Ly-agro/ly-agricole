@@ -38,6 +38,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $pret_id
  * @property int $grammes_rembourses
  * @property int $montant_especes_fcfa
+ * @property int|null $commission_pisteur_fcfa commission DUE au pisteur (calcul activé par la direction) ; null = non calculée
  * @property int $compte_id
  * @property int|null $mouvement_id
  * @property StatutAchat $statut
@@ -60,7 +61,7 @@ use Illuminate\Support\Carbon;
     'id', 'campagne_id', 'lot_id', 'fournisseur_type', 'producteur_id', 'pisteur_id', 'fournisseur_nom',
     'point_collecte_id', 'date_achat', 'lat', 'lng', 'poids_brut_g', 'tare_g', 'poids_net_g', 'poids_source', 'humidite_pour_mille',
     'kor_centieme_lbs', 'grainage_noix_kg', 'prix_kg_fcfa', 'montant_fcfa', 'pret_id', 'grammes_rembourses',
-    'montant_especes_fcfa', 'compte_id', 'mouvement_id', 'photo_pesee', 'statut', 'cree_par', 'valide_par',
+    'montant_especes_fcfa', 'commission_pisteur_fcfa', 'compte_id', 'mouvement_id', 'photo_pesee', 'statut', 'cree_par', 'valide_par',
     'valide_at', 'motif_refus',
 ])]
 class Achat extends Model
@@ -157,6 +158,7 @@ class Achat extends Model
             'montant_fcfa' => 'integer',
             'grammes_rembourses' => 'integer',
             'montant_especes_fcfa' => 'integer',
+            'commission_pisteur_fcfa' => 'integer',
             'lat' => 'decimal:7',
             'lng' => 'decimal:7',
         ];

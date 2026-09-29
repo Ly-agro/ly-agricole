@@ -55,7 +55,11 @@
                     <tr wire:key="achat-{{ $a->id }}">
                         <td class="whitespace-nowrap px-4 py-3 font-mono text-xs">{{ $a->reference }}</td>
                         <td class="whitespace-nowrap px-4 py-3">{{ $a->date_achat->format('d/m/Y H:i') }}</td>
-                        <td class="px-4 py-3">{{ $a->nomFournisseur() }} <span class="text-xs text-stone-400">({{ $a->fournisseur_type->libelle() }})</span></td>
+                        <td class="px-4 py-3">{{ $a->nomFournisseur() }} <span class="text-xs text-stone-400">({{ $a->fournisseur_type->libelle() }})</span>
+                            @if ($a->commission_pisteur_fcfa !== null)
+                                <span class="block text-xs text-stone-500">commission due : {{ \App\Support\Format::fcfa($a->commission_pisteur_fcfa) }}</span>
+                            @endif
+                        </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums">
                             {{ \App\Support\Format::kg($a->poids_net_g) }}
                             @if ($a->poids_source)

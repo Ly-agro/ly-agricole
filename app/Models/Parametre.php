@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CalculCommissionPisteur;
 use App\Enums\CleParametre;
 use App\Enums\RegleCautionSolidaire;
 use App\Enums\RegleValorisationNature;
@@ -46,6 +47,14 @@ class Parametre extends Model
         $valeur = static::query()->where('cle', CleParametre::CautionSolidaire)->value('valeur');
 
         return RegleCautionSolidaire::tryFrom((string) $valeur) ?? RegleCautionSolidaire::Aucune;
+    }
+
+    /** Calcul automatique des commissions de pisteurs ; « aucun » tant que la direction n'a rien choisi. */
+    public static function calculCommissionPisteur(): CalculCommissionPisteur
+    {
+        $valeur = static::query()->where('cle', CleParametre::CalculCommissionPisteur)->value('valeur');
+
+        return CalculCommissionPisteur::tryFrom((string) $valeur) ?? CalculCommissionPisteur::Aucun;
     }
 
     protected function casts(): array

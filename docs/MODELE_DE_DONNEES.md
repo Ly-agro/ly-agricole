@@ -41,6 +41,8 @@ flowchart TD
 | `compteurs` | nom, valeur | numéros lisibles attribués par le serveur, sous verrou de ligne ; pas de trou si la création échoue |
 | `groupes_producteurs` | nom, village_id, responsable_id, actif | nom unique par village ; responsable = producteur du village |
 | `parcelles` 📱 | id (UUID v7), producteur_id, nom, contour, surface_m2 (calculée), **contour_origine** (`import` : fichier au bureau ; `gps` : relevé en marchant, sem. 9), produit_id, annee_plantation, nb_arbres, sol, acces_eau, cree_par, actif | `contour` = géométrie GeoJSON (Polygon/MultiPolygon, WGS84) ; `surface_m2` recalculée par le modèle à chaque changement de contour, **non affectable** ; sans contour : vide (« non relevée »). Culture = `produit_id` (au lieu de `culture` texte). |
+| ↳ `pisteurs.commission_mode` / `commission_valeur` | `par_kg` \| `pourcent` ; entier (FCFA/kg ou ‰ du montant) | question 6 : règle de commission du pisteur, **vide** tant que la direction ne la choisit pas ; les deux vont ensemble |
+| ↳ `achats.commission_pisteur_fcfa` | entier nullable | commission **due** au pisteur vendeur, calculée seulement si la direction a activé le calcul (paramètre `calcul_commission_pisteur`) et si le pisteur a une règle ; jamais un paiement |
 | `langues` | code (unique, minuscules), nom, actif | question 12 : langues de préférence pour les messages ; **aucune pré-remplie** (le français est la langue de tout producteur qui n'en a pas) ; pas de suppression |
 | ↳ `producteurs.langue_id` 📱 | langue_id (nullable) | vide = français ; choisie au bureau ou sur le téléphone ; reçue par `/api/sync` (langue inconnue ou désactivée ⇒ opération rejetée) ; Dexie version 4 (`langues`) |
 

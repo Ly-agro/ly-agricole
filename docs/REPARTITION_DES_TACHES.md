@@ -43,11 +43,11 @@ Un bloc a **un seul** propriétaire. Il est seul à écrire dans ses fichiers.
 | **Ventes en devises** | A | à faire |
 | **API Mobile Money** | A | à faire |
 | **Comparaison des pratiques** des 20 % meilleurs et moins bons | B | après les visites ; **nouveau service** `ComparaisonPratiques`, on ne modifie pas `Rendements` |
-| **Groupes et caution solidaire** | A (repris de B, 2026-09-29, à la demande du responsable projet) | en cours |
-| **Balance Bluetooth** | A (repris de B) | à faire, après les groupes ; réutilise `terrain/src/lib/imprimante.ts` (BLE) ; prochaine table locale = Dexie version 4 |
+| **Groupes et caution solidaire** | A (repris de B, 2026-09-29, à la demande du responsable projet) | fini (commité) |
+| **Balance Bluetooth** | A (repris de B) | fini (commité), **non vérifié sur une vraie balance** (question 38) ; Dexie est passée en version 4 pour les langues |
 | **Alerte d'écart de poids** (question 34) | B | à faire |
-| **Jetons et appareils** (révocation, liste, dernière synchro, question 25) | A (repris de B) | à faire |
-| **Langue par producteur** (question 12) et **commission des pisteurs** (question 6) | A (repris de B) | à faire |
+| **Jetons et appareils** (révocation, liste, dernière synchro, question 25) | A (repris de B) | fini (commité) |
+| **Langue par producteur** (question 12) et **commission des pisteurs** (question 6) | A (repris de B) | fini (commité) |
 | **Notifications push** : web push bureau (validations en attente), push agents (FCM + APK), alertes direction. Fichiers propres à B (`Notifications/*`, observateurs, tables `abonnements_push` et `notifications_envoyees`) ; expose `Notifications::envoyer(...)` que A peut appeler. **La source d'une alerte reste à son propriétaire** (seuil de caisse, prêt en retard : A) | B | réclamé 2026-09-29 |
 | **Impression de reçus 58 mm** (ESC/POS Bluetooth depuis l'appli terrain, page 58 mm au bureau) ; réutilise `BonAchat` / `RecuRemise` en lecture seule, fichiers nouveaux pour le format 58 mm | B | réclamé 2026-09-29 |
 | Véhicules, indicateurs d'impact, module Conseil du Coton et de l'Anacarde (question 16) | **personne** | à réclamer (voir règle 1) |

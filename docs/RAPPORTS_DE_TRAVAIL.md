@@ -5,6 +5,32 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Commission des pisteurs (question 6, repris de B) — FINI
+
+> Branche `phase-2-suite`. Dernier des cinq blocs repris de B.
+
+**Décision du responsable projet (question 6).** Les achats via pisteurs sont possibles ; « la commission
+et son mode de calcul / paiement » restent à définir ; proposition : « prévoir dès maintenant le champ pisteur
+et la commission dans le modèle d'achat, même si le calcul automatique est activé ultérieurement ».
+
+**Fait, et seulement cela.** Règle de commission **par pisteur** (`ModeCommission` : FCFA par kilo, ou pour mille
+du montant), saisie dans Référentiels › Pisteurs, **vide** tant que la direction ne l'a pas choisie (mode et
+valeur vont ensemble ; entier ; ≤ 1 000 ‰). Colonne `achats.commission_pisteur_fcfa` (nullable). **Calcul
+automatique désactivé par défaut** : paramètre `calcul_commission_pisteur` (aucun / automatique), à activer par
+la direction. `App\Services\CommissionsPisteur` : arrondi au franc le plus proche en entiers, exact au-delà de
+2^31 ; seul un achat dont le **vendeur est un pisteur** porte une commission ; `due()` = somme des achats
+**validés** (jamais « à valider » ni refusés). Affichée par pisteur et dans la liste des achats.
+**C'est une somme due, pas un paiement** : quand et comment elle est payée n'est pas défini, et elle n'entre
+pas dans le résultat de campagne tant qu'elle n'est pas payée par une dépense (contrat art. 10.2).
+
+**Vérifié en l'exécutant.** 13 tests (calcul par kilo et en pour mille, arrondis, très gros montant, sans règle
+complète, calcul non activé, achat au pisteur, achat à un producteur, achats validés seulement, formulaire et
+ses refus, affichage, paramètre). Pas vu dans un navigateur.
+
+**Reste.** Question 6 : montant, moment et mode de paiement ; imputation comptable.
+
+---
+
 ## 2026-09-29 — Langue par producteur (question 12, repris de B) — FINI
 
 > Branche `phase-2-suite`. Quatrième des cinq blocs repris de B.

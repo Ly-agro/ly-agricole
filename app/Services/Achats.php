@@ -95,6 +95,10 @@ class Achats
             }
 
             $montant = intdiv($net * $prix + 500, 1000);
+            // Commission due au pisteur : vide tant que la direction n'a pas activé le calcul (question 6).
+            $commission = $type === TypeFournisseur::Pisteur
+                ? CommissionsPisteur::calculer(Pisteur::query()->find((int) ($donnees['pisteur_id'] ?? 0)), $net, $montant)
+                : null;
 
             // Prêt : kilos retenus pour le remboursement.
             $pret = null;
@@ -138,6 +142,7 @@ class Achats
                 'grainage_noix_kg' => $donnees['grainage_noix_kg'] ?? null,
                 'prix_kg_fcfa' => $prix,
                 'montant_fcfa' => $montant,
+                'commission_pisteur_fcfa' => $commission,
                 'pret_id' => $pret?->id,
                 'grammes_rembourses' => $grammesRembourses,
                 'montant_especes_fcfa' => $especes,

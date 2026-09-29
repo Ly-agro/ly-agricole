@@ -19,6 +19,7 @@ enum CleParametre: string
     case RegleRemboursementNature = 'regle_remboursement_nature';
     case SeuilAlerteEcartPoids = 'seuil_alerte_ecart_poids_pour_mille';
     case CautionSolidaire = 'regle_caution_solidaire';
+    case CalculCommissionPisteur = 'calcul_commission_pisteur';
 
     public function libelle(): string
     {
@@ -32,6 +33,7 @@ enum CleParametre: string
             self::RegleRemboursementNature => 'Valorisation des remboursements en kilos',
             self::SeuilAlerteEcartPoids => 'Seuil d\'alerte d\'écart de poids d\'un lot',
             self::CautionSolidaire => 'Caution solidaire des groupes de producteurs',
+            self::CalculCommissionPisteur => 'Calcul de la commission des pisteurs',
         };
     }
 
@@ -47,13 +49,14 @@ enum CleParametre: string
             self::RegleRemboursementNature => 'Prix appliqué aux kilos livrés en remboursement d\'un prêt (question 3). Tant qu\'il n\'est pas choisi, un achat ne peut pas rembourser un prêt.',
             self::SeuilAlerteEcartPoids => 'Écart (séchage, pertes, inventaire) au-delà duquel un lot est signalé dans les alertes, en pour mille des kilos achetés (50 = 5 %). Non défini : tous les lots avec un écart sont signalés.',
             self::CautionSolidaire => 'Ce que fait un prêt à un membre d\'un groupe quand un autre membre du même groupe a un prêt en retard (question 37). Non défini : aucune règle de groupe, les prêts ne changent pas.',
+            self::CalculCommissionPisteur => "Calcule la commission due sur chaque achat d'un pisteur qui a une règle (question 6). Non défini : aucun calcul, la commission reste vide. La commission calculée est une somme DUE : son paiement n'est pas encore défini.",
         };
     }
 
     /** Un choix dans une liste (et non un montant). */
     public function estUnChoix(): bool
     {
-        return $this === self::RegleRemboursementNature || $this === self::CautionSolidaire;
+        return $this === self::RegleRemboursementNature || $this === self::CautionSolidaire || $this === self::CalculCommissionPisteur;
     }
 
     /**
@@ -68,6 +71,8 @@ enum CleParametre: string
                 ->mapWithKeys(fn (RegleValorisationNature $r) => [$r->value => $r->libelle()])->all(),
             self::CautionSolidaire => collect(RegleCautionSolidaire::cases())
                 ->mapWithKeys(fn (RegleCautionSolidaire $r) => [$r->value => $r->libelle()])->all(),
+            self::CalculCommissionPisteur => collect(CalculCommissionPisteur::cases())
+                ->mapWithKeys(fn (CalculCommissionPisteur $r) => [$r->value => $r->libelle()])->all(),
             default => [],
         };
     }
@@ -77,7 +82,7 @@ enum CleParametre: string
         return match ($this) {
             self::PlafondPretHectare => 'FCFA / ha',
             self::SeuilAlerteEcartPoids => '‰',
-            self::RegleRemboursementNature, self::CautionSolidaire => '',
+            self::RegleRemboursementNature, self::CautionSolidaire, self::CalculCommissionPisteur => '',
             default => 'FCFA',
         };
     }
