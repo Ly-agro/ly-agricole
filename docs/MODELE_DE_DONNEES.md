@@ -69,6 +69,16 @@ flowchart TD
 | `mouvements_stock` 🔒 | lot_id, magasin_id, type (`entree_achat`, `transfert_sortie`, `transfert_entree`, `perte`, `ajustement_inventaire`, `contre_passation` ; `sortie_vente` en phase 2), grammes (signé), date_mouvement, motif, achat_id, lien (transfert), annule_id, cree_par | stock d'un lot = Σ grammes ≥ 0 par magasin ; l'entrée d'un achat ne se contre-passe pas depuis le stock |
 | ~~`inventaires`~~ | — | **remplacée (2026-10-31)** : un inventaire saisit le poids compté ; l'écart devient un mouvement `ajustement_inventaire` motivé (le poids compté est dans le motif) |
 
+## Reventes (phase 2, ajoutée le 2026-12-05)
+
+| Table | Colonnes principales | Remarques |
+| --- | --- | --- |
+| `ventes` | id (UUID v7), reference (`VTE-000001`), campagne_id, lot_id, type_acheteur (`exportateur`, `grossiste`, `autre`), acheteur_nom, date_vente, poids_net_g, prix_kg_fcfa, montant_fcfa, qualite_acceptee, facture, statut (`a_valider`, `valide`, `refuse`), cree_par, valide_par, valide_at, motif_refus | montant = `intdiv(poids × prix + 500, 1000)` ; au-dessus du seuil `seuil_validation_vente_fcfa` — **ou seuil non défini** — validation par un autre avant que le stock ne sorte ; un lot dont le stock tombe à 0 (tous magasins) passe `vendu` |
+| `encaissements` 🔒 | vente_id, montant_fcfa (**signé**), compte_id, date_encaissement, reference_paiement, mouvement_id, motif, annule_id, cree_par | **stade séparé de la vente** (cahier §7) : l'acheteur peut payer à la livraison ou à terme (question 15, non tranchée) ; reste à encaisser = montant − Σ montant_fcfa, jamais négatif |
+| `mouvements_stock` | + colonne `vente_id` (nullable) | sortie d'une vente (`sortie_vente`), au même titre que l'entrée d'un achat ; ne se contre-passe pas seule, elle suit la vente |
+
+**Limite connue.** La marge par lot (`App\Services\Ventes::margeLot()`) ne compte que les achats et les ventes : les frais de transport, taxes et commissions à la revente ne sont pas rattachés au lot (pas de `lot_id` sur `depenses`). La marge affichée est donc une borne haute, et l'écran le dit.
+
 ## Trésorerie et dépenses
 
 | Table | Colonnes principales | Remarques |

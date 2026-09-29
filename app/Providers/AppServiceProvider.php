@@ -10,6 +10,7 @@ use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\Decaissement;
 use App\Models\Depense;
+use App\Models\Encaissement;
 use App\Models\GroupeProducteur;
 use App\Models\Intrant;
 use App\Models\Lot;
@@ -27,6 +28,7 @@ use App\Models\Produit;
 use App\Models\Remboursement;
 use App\Models\User;
 use App\Models\ValidationPret;
+use App\Models\Vente;
 use App\Models\Village;
 use App\Models\Zone;
 use App\Services\Journal;
@@ -97,6 +99,8 @@ class AppServiceProvider extends ServiceProvider
             'achat' => Achat::class,
             'mouvement_stock' => MouvementStock::class,
             'remboursement' => Remboursement::class,
+            'vente' => Vente::class,
+            'encaissement' => Encaissement::class,
         ]);
     }
 
@@ -146,6 +150,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('gerer-stock', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         // Remboursement d'un prêt en espèces : encaissé par la comptabilité.
         Gate::define('encaisser-remboursements', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Reventes (cahier §7) : négociées au bureau, pas sur le terrain — contrairement
+        // aux achats, pas de droit agent ici. Encaissement : même droit que la trésorerie.
+        Gate::define('voir-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('saisir-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('valider-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('encaisser-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
     }
 
     private function journaliserLesConnexions(): void

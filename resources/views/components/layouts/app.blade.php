@@ -49,12 +49,15 @@
                     </div>
                 @endcanany
 
-                @canany(['voir-prets', 'gerer-tresorerie', 'saisir-depenses', 'valider-depenses'])
+                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'saisir-depenses', 'valider-depenses'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Argent</p>
                         <div class="space-y-1">
                             @can('voir-prets')
                                 <x-nav-lien route="prets" motif="prets*" icone="prets">Prêts</x-nav-lien>
+                            @endcan
+                            @can('voir-ventes')
+                                <x-nav-lien route="ventes" motif="ventes*" icone="ventes">Ventes</x-nav-lien>
                             @endcan
                             @can('gerer-tresorerie')
                                 <x-nav-lien route="tresorerie" motif="tresorerie*" icone="tresorerie">Trésorerie</x-nav-lien>

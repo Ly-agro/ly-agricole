@@ -20,7 +20,7 @@ date, et la reporter dans le document concerné (cahier, décisions, modèle).
 | 12 | Quelles langues locales pour les messages aux producteurs ? | phase 2 | |
 | 13 | Un agronome est-il disponible pour le référentiel des traitements et la validation des diagnostics ? | phase 3 | |
 | 14 | Qui tient la comptabilité (cabinet, logiciel) et sous quel format veut-il les données ? | phase 3 | |
-| 15 | Quels acheteurs pour la revente, et paient-ils à la livraison ou à terme ? | phase 2 | |
+| 15 | Quels acheteurs pour la revente, et paient-ils à la livraison ou à terme ? | phase 2 | *En attendant (2026-12-05) : la vente (livraison, facture) et l'encaissement (argent reçu) sont deux registres séparés, comme le cahier le prévoit déjà (§7) — une vente peut être payée en une fois, en plusieurs fois, ou pas encore ; le reste à encaisser est visible sur sa fiche.* |
 | 16 | Obligations envers le Conseil du Coton et de l'Anacarde (agrément, déclarations) ? | phase 2 | |
 | 17 | Budget et délai acceptés pour la phase 1 ? | — | |
 | 18 | Nom de domaine : `ylagro.com` est-il réservé ? (le nom de marque est LY AGRICOLE) | sem. 12 | |

@@ -37,6 +37,9 @@ use App\Livewire\TableauDeBord;
 use App\Livewire\Tresorerie\Comptes;
 use App\Livewire\Tresorerie\ReleveCompte;
 use App\Livewire\Utilisateurs\GestionUtilisateurs;
+use App\Livewire\Ventes\FicheVente;
+use App\Livewire\Ventes\FormulaireVente;
+use App\Livewire\Ventes\ListeVentes;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/tableau-de-bord');
@@ -98,6 +101,13 @@ Route::middleware('auth')->group(function () {
 
     // Photos du terrain (pesée, justificatifs) : le contrôleur vérifie le droit.
     Route::get('/photos-terrain/{photo}', [PhotoTerrainController::class, 'afficher'])->name('photos-terrain');
+
+    // Ventes : négociées au bureau (direction, comptabilité) ; l'encaissement est séparé.
+    Route::prefix('ventes')->name('ventes')->group(function () {
+        Route::get('/', ListeVentes::class)->middleware('can:voir-ventes')->name('');
+        Route::get('/nouvelle', FormulaireVente::class)->middleware('can:saisir-ventes')->name('.nouvelle');
+        Route::get('/{vente}', FicheVente::class)->middleware('can:voir-ventes')->name('.fiche');
+    });
 
     Route::prefix('lots')->name('lots')->middleware('can:gerer-stock')->group(function () {
         Route::get('/', ListeLots::class)->name('');

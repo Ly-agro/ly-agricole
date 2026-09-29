@@ -5,6 +5,74 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Phase 2 : reventes, encaissements, marge par lot — FINI, NON COMMITÉ
+
+> Session `ly-agricole-fb`, branche `phase-2-reventes` (depuis `66f10d2`, avant les
+> semaines 6 à 10 de `ly-agricole-f9`, restées sur ses propres branches). À la demande
+> de l'utilisateur : « laisse l'autre s'occuper de la phase 1, toi fais la phase 2 ».
+> Premier bloc choisi : reventes et marge par lot (cahier §7, module 5, stade Revente +
+> Encaissement).
+
+**Fichiers nouveaux.** `app/Enums/{TypeAcheteur,StatutVente}.php`,
+`app/Models/{Vente,Encaissement}.php`, `app/Services/{Ventes,Encaissements}.php`,
+`database/migrations/2026_12_05_000001_create_ventes_tables.php`,
+`app/Livewire/Ventes/{ListeVentes,FormulaireVente,FicheVente}.php` + leurs vues,
+`tests/Feature/Ventes/{VentesTest,EcransVentesTest}.php` (23 tests).
+
+**Fichiers modifiés (peu, tous additifs).** `StatutLot` (+ `Vendu`),
+`TypeMouvementStock` (+ `SortieVente`), `NatureMouvement` (+ `EncaissementVente`),
+`CleParametre` (+ `SeuilValidationVente`), `Lot` (relations `achats()`/`ventes()`),
+`Stock::sortieVente()` (mirroir de `entreeAchat()`, garde de contre-passation),
+`Tresorerie::encaisserVente()` (mirroir de `encaisserRemboursement()`),
+`AppServiceProvider` (droits `voir/saisir/valider-ventes`, `encaisser-ventes` ; morph
+map), `routes/web.php` (+ `/ventes`), menu latéral (+ lien Ventes, sous Argent).
+
+**Modèle.** `ventes` (statut `a_valider`/`valide`/`refuse`, comme les achats) et
+`encaissements` 🔒 (montant **signé**, une contre-passation est négative) sont deux
+tables séparées, comme le cahier le prévoit déjà (stade Revente ≠ stade Encaissement) :
+la question 15 (acheteur, paiement à la livraison ou à terme) reste ouverte, mais le
+modèle n'a pas besoin de trancher — une vente peut être encaissée en une fois, en
+plusieurs, ou pas encore ; le reste à encaisser est sur sa fiche. `mouvements_stock`
+gagne une colonne `vente_id` (nullable, ajoutée après coup par migration : la table est
+de la semaine 6). Un lot dont le stock (tous magasins) tombe à 0 après une vente passe
+automatiquement `vendu`.
+
+**Marge par lot** (`Ventes::margeLot()`) = revenu des ventes validées − coût des achats
+validés. **Limite documentée** (dans le modèle de données et à l'écran) : les frais de
+transport, taxes et commissions à la revente ne sont pas rattachés au lot (pas de
+`lot_id` sur `depenses`) — la marge affichée est une borne haute, pas le résultat net
+exact du contrat (art. 10 à 14, qui restent à coder pour le rapport de campagne).
+
+**Vérifié.** `php artisan test` : 323 tests avant ce module → **346 tests** (323 + 23 :
+`VentesTest` 12, `EcransVentesTest` 11), tous verts ; Larastan 0 erreur sur tout le
+projet ; Pint propre ; `npm run build` OK.
+**Dans Chrome**, sur la vraie base MySQL partagée : vente VTE-000001 de 400 kg sur
+LOT-00001 (600 → 200 kg), créée en comptable (« à valider »), validée en direction
+(séparation des tâches respectée), encaissement partiel de 200 000 FCFA sur la caisse
+centrale, contre-passé (motif obligatoire) → reste à encaisser revenu à 360 000 FCFA ;
+marge du lot affichée (105 000 FCFA, frais non compris, l'écran le précise).
+
+**Piège rencontré.** Le bouton « Valider » d'une vente porte un `wire:confirm` (boîte de
+dialogue native) : un clic direct bloque l'automatisation du navigateur. Contournement
+en Chrome : appeler la méthode Livewire par JS (`Livewire.find(id).call(...)`) plutôt
+que de cliquer le bouton. Sans rapport avec le code : quelques captures d'écran ont
+expiré (30 s) juste après un clic réel, alors que la page répondait normalement en JS —
+lenteur ponctuelle de l'outil de capture, pas un blocage de l'application.
+
+**Coordination.** `ly-agricole-f9` fait la phase 1 (semaines 6 à 10, branches
+`semaine-6` à `semaine-10`, worktree séparé `ly-agricole-phase1`) ; je n'ai touché à
+aucun de ses fichiers. Elle confirme que `sortie_vente` est bien exclu de son calcul
+d'écart de poids (semaine 10) et n'est pas compté comme une anomalie.
+
+**Reste.** Commit (proposé : un commit sur `phase-2-reventes`, à faire pointer sur
+`main` ou à fusionner avec les branches `semaine-*` selon ce que décide l'utilisateur —
+les deux travaux sont indépendants en fichiers mais partagent le même schéma de base).
+Écran dédié « Reventes » sur la fiche du lot (`FicheLot`, propriété de la session f9) :
+pas fait, pour ne pas toucher à son fichier sans coordination — la marge est visible
+depuis la fiche de la vente à la place.
+
+---
+
 ## 2026-09-28 — Semaine 9 (en avance) : parcelle au GPS, photos, dépense terrain, rejets — FINI, COMMITÉ
 
 > Session `ly-agricole-f9`, branche `semaine-9` (depuis `semaine-8`). Décisions de

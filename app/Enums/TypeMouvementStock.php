@@ -9,6 +9,7 @@ enum TypeMouvementStock: string
     case TransfertEntree = 'transfert_entree';
     case Perte = 'perte';
     case AjustementInventaire = 'ajustement_inventaire';
+    case SortieVente = 'sortie_vente';
     case ContrePassation = 'contre_passation';
 
     public function libelle(): string
@@ -19,6 +20,7 @@ enum TypeMouvementStock: string
             self::TransfertEntree => 'Transfert (entrée)',
             self::Perte => 'Perte',
             self::AjustementInventaire => 'Ajustement d\'inventaire',
+            self::SortieVente => 'Sortie (vente)',
             self::ContrePassation => 'Contre-passation',
         };
     }

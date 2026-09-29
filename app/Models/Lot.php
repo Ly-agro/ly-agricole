@@ -53,6 +53,18 @@ class Lot extends Model
         return $this->hasMany(MouvementStock::class);
     }
 
+    /** @return HasMany<Achat, $this> */
+    public function achats(): HasMany
+    {
+        return $this->hasMany(Achat::class);
+    }
+
+    /** @return HasMany<Vente, $this> */
+    public function ventes(): HasMany
+    {
+        return $this->hasMany(Vente::class);
+    }
+
     /** @return BelongsTo<Produit, $this> */
     public function produit(): BelongsTo
     {

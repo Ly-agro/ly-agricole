@@ -9,6 +9,7 @@ use App\Models\Lot;
 use App\Models\Magasin;
 use App\Models\MouvementStock;
 use App\Models\User;
+use App\Models\Vente;
 use App\Support\Format;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,17 @@ class Stock
 
             return self::ecrire($lot, $lot->magasin, TypeMouvementStock::EntreeAchat, $achat->poids_net_g,
                 Carbon::parse($achat->date_achat), $auteur, achat: $achat);
+        });
+    }
+
+    /** Sortie d'une vente, dans le magasin du lot : appelé par App\Services\Ventes. */
+    public static function sortieVente(Vente $vente, User $auteur): MouvementStock
+    {
+        return DB::transaction(function () use ($vente, $auteur) {
+            $lot = self::verrouiller($vente->lot);
+
+            return self::ecrire($lot, $lot->magasin, TypeMouvementStock::SortieVente, -$vente->poids_net_g,
+                Carbon::parse($vente->date_vente), $auteur, vente: $vente);
         });
     }
 
@@ -115,6 +127,9 @@ class Stock
                 if ($original->type === TypeMouvementStock::EntreeAchat) {
                     throw new OperationRefusee('L\'entrée d\'un achat suit l\'achat : elle ne se contre-passe pas depuis le stock.');
                 }
+                if ($original->type === TypeMouvementStock::SortieVente) {
+                    throw new OperationRefusee('La sortie d\'une vente suit la vente : elle ne se contre-passe pas depuis le stock.');
+                }
                 if (MouvementStock::query()->where('annule_id', $original->id)->exists()) {
                     throw new OperationRefusee('Ce mouvement a déjà été contre-passé.');
                 }
@@ -144,6 +159,7 @@ class Stock
         Carbon $date,
         User $auteur,
         ?Achat $achat = null,
+        ?Vente $vente = null,
         ?string $motif = null,
         ?string $lien = null,
         ?MouvementStock $annule = null,
@@ -170,6 +186,7 @@ class Stock
             'date_mouvement' => $date->toDateString(),
             'motif' => $motif,
             'achat_id' => $achat?->id,
+            'vente_id' => $vente?->id,
             'lien' => $lien,
             'annule_id' => $annule?->id,
             'cree_par' => $auteur->id,
