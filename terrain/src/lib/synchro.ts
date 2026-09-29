@@ -124,6 +124,7 @@ interface Referentiels {
     producteurs: object[];
     prets_en_cours: object[];
     categories_depense: object[];
+    parcelles?: object[];
 }
 
 /** Télécharge les référentiels : tout la première fois, puis seulement ce qui a changé. */
@@ -131,7 +132,7 @@ export async function telechargerReferentiels(base: BaseTerrain, f: Fetch = fetc
     const depuis = await reglage<string>(base, 'horodatage');
     const r = (await appeler(base, '/referentiels' + (depuis ? '?depuis=' + encodeURIComponent(depuis) : ''), {}, f)) as Referentiels;
 
-    const tables = [base.villages, base.produits, base.campagnes, base.lots, base.points_collecte, base.producteurs, base.categories_depense] as const;
+    const tables = [base.villages, base.produits, base.campagnes, base.lots, base.points_collecte, base.producteurs, base.categories_depense, base.parcelles] as const;
     await base.transaction('rw', [...tables, base.comptes, base.prets_en_cours, base.reglages, base.operations], async () => {
         if (r.complet) {
             await Promise.all(tables.map((t) => t.clear()));
@@ -143,12 +144,21 @@ export async function telechargerReferentiels(base: BaseTerrain, f: Fetch = fetc
         await base.points_collecte.bulkPut(r.points_collecte as never[]);
         await base.producteurs.bulkPut(r.producteurs as never[]);
         await base.categories_depense.bulkPut((r.categories_depense ?? []) as never[]);
+        await base.parcelles.bulkPut((r.parcelles ?? []) as never[]);
         // Fiches créées sur le téléphone et pas encore au bureau : elles restent utilisables.
         const locales = await base.operations.filter((o) => o.type === 'producteur' && o.statut !== 'envoye' && o.statut !== 'abandonne').toArray();
         for (const o of locales) {
             if (!(await base.producteurs.get(o.uuid))) {
                 const d = o.donnees as { nom: string; prenoms: string; telephone: string | null; village_id: number };
                 await base.producteurs.put({ id: o.uuid, code: null, nom: d.nom, prenoms: d.prenoms, telephone: d.telephone, village_id: d.village_id, groupe_id: null, actif: true });
+            }
+        }
+        // Idem pour les parcelles relevées ici : on peut les visiter avant l'envoi.
+        const parcellesLocales = await base.operations.filter((o) => o.type === 'parcelle' && o.statut !== 'envoye' && o.statut !== 'abandonne').toArray();
+        for (const o of parcellesLocales) {
+            if (!(await base.parcelles.get(o.uuid))) {
+                const d = o.donnees as { producteur_id: string; nom: string; produit_id?: number | null };
+                await base.parcelles.put({ id: o.uuid, producteur_id: d.producteur_id, nom: d.nom, surface_m2: null, produit_id: d.produit_id ?? null, actif: true });
             }
         }
         // Toujours complets : ils changent sans date (soldes, restants dus).
@@ -191,7 +201,7 @@ export async function envoyer(base: BaseTerrain, f: Fetch = fetch): Promise<Bila
     const bilan: BilanEnvoi = { envoyees: 0, dejaRecues: 0, rejetees: 0, photos: 0 };
     const appareil = await appareilId(base);
 
-    // Les photos d'abord : une dépense exige que son justificatif soit déjà au bureau.
+    // Les photos d'abord : une dépense ou une visite exige que ses photos soient déjà au bureau.
     bilan.photos = await envoyerPhotos(base, appareil, f);
 
     for (;;) {

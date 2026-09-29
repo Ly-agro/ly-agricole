@@ -5,6 +5,64 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Phase 2 : visites de parcelle — FINI, NON COMMITÉ
+
+> Session `ly-agricole-45`, branche `phase-2-visites` (depuis `92dbebd`), worktree
+> `../ly-agricole-budget`. **Travail en double** : la session `ly-agricole-05` codait
+> aussi les visites dans `ly-agricole/`. Découvert à la migration (« table visites
+> already exists »). L'utilisateur a gardé cette version-ci ; l'autre a été retirée
+> (tables vides supprimées, patch gardé dans `%TEMP%/sauvegarde-visites/`). Depuis, les
+> deux sessions s'annoncent leur bloc avant de commencer.
+
+**Fichiers nouveaux.** `app/Enums/PratiqueCulturale.php`, `app/Models/Visite.php`,
+`database/migrations/2026_12_26_000001_create_visites_tables.php`,
+`app/Livewire/Visites/ListeVisites.php` + sa vue, `tests/Feature/Api/VisitesTest.php`
+(16 tests) ; appli terrain : `src/routes/visite/+page.svelte`, `src/lib/pratiques.ts`,
+`src/lib/photos.test.ts`.
+
+**Fichiers modifiés.** `Synchronisation` (type `visite`), `TerrainController`
+(parcelles dans les référentiels, sans contour ; accès avec `saisir-visites`),
+`PhotoTerrainController` (photo de visite visible de qui voit les visites),
+`Parcelle`/`PhotoTerrain` (relations), `AppServiceProvider` (droits `saisir-visites` :
+direction, agent, agronome ; `voir-visites` : direction, agent, comptable, agronome ;
+morph map), `ProducteurController` + fiche (« Dernière visite » par parcelle), route et
+menu `/visites` ; terrain : `db.ts` (version 3, table `parcelles`), `synchro.ts`
+(parcelles téléchargées, parcelles relevées sur le téléphone gardées), page parcelle
+(visitable avant l'envoi), `photos.ts` (délai GPS), menu Saisir. `ApiTerrainTest` mis à
+jour : l'agronome reçoit désormais les référentiels (il saisit des visites).
+
+**Vérifié.** PHP : 388 → **404 tests**, tous verts ; Larastan 0 erreur (avec
+`-d opcache.enable_cli=0`, voir CLAUDE.md) ; Pint propre ; terrain : **29 tests
+vitest** (24 → 29), svelte-check 0 erreur, build OK. Migration appliquée sur MySQL.
+**Dans Chrome**, appli terrain (localhost:4173 → API localhost:8001, compte agent) :
+connexion, téléchargement complet (passage Dexie v2 → v3), Saisir → Visite, producteur
+Coulibaly Awa → sa parcelle téléchargée « Champ du marigot — 2,25 ha » choisie
+d'office, 2 pratiques, observation, photo ; « Enregistrer » → dans la file ; « Envoyer
+maintenant » → « 1 nouveau, 0 rejeté, 2 photos ». En base : la visite, ses pratiques,
+son auteur, `cree_at` du téléphone, la photo rattachée. Au bureau en **agronome** : menu
+Producteurs + Visites, la visite avec pratiques, observation et photo affichée ; photo
+d'un reçu de dépense → 403 ; fiche producteur → « 29/09/2026 · 1 visite(s) ».
+
+**Bogues trouvés par le vrai parcours (invisibles aux tests).**
+1. La visite ne s'enregistrait pas, **sans aucun message** : IndexedDB refuse les
+   tableaux réactifs de Svelte 5 (`DataCloneError`). Corrigé par `$state.snapshot`, et
+   l'erreur est maintenant affichée à l'agent.
+2. Photo bloquée en « Compression… » **pour toujours** tant que la question « Autoriser
+   la position ? » reste sans réponse (le délai du GPS ne court pas pendant la question).
+   Touchait aussi la photo de pesée des achats. Corrigé : délai à nous, photo gardée sans
+   position ; test vitest ajouté.
+
+**Limites / surprises.** Dans Chrome, les clics et la frappe n'atteignaient plus l'onglet
+après la connexion (même extension d'émulation qu'au budget) : parcours mené en
+JavaScript dans la page (mêmes événements, vrai code de l'appli). Une photo prise puis
+abandonnée (tentative ratée) part quand même au bureau, sans fiche : orpheline, sans
+effet, mais elle occupe le disque. `vite preview` servait l'ancienne build (voir
+CLAUDE.md). Pas testé sur un vrai téléphone (question 26).
+
+**Reste.** Commit ; question 30 (liste des pratiques, saisie par l'agronome).
+
+---
+
 ## 2026-09-29 — Phase 2 : budget de campagne, prévu contre réel — FINI, branche `phase-2-budget`
 
 > Session `ly-agricole-45`, branche `phase-2-budget` (depuis `ad360cd`), dans un

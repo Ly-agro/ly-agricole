@@ -43,6 +43,7 @@ use App\Livewire\Utilisateurs\GestionUtilisateurs;
 use App\Livewire\Ventes\FicheVente;
 use App\Livewire\Ventes\FormulaireVente;
 use App\Livewire\Ventes\ListeVentes;
+use App\Livewire\Visites\ListeVisites;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/tableau-de-bord');
@@ -126,6 +127,7 @@ Route::middleware('auth')->group(function () {
     // l'investisseur (deux écrans distincts : pas les mêmes droits ni la même vue).
     Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
     Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
+    Route::get('/visites', ListeVisites::class)->middleware('can:voir-visites')->name('visites');
     Route::get('/budget', SuiviBudget::class)->middleware('can:voir-budget')->name('budget');
 
     Route::prefix('prets')->name('prets')->group(function () {

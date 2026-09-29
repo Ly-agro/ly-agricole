@@ -17,6 +17,8 @@
         'depenses' => 'M6 3h12v18l-3-2-3 2-3-2-3 2V3ZM9 8h6M9 12h6',
         // Argent qui entre dans la campagne : flèche vers un bac, sens inverse de « ventes ».
         'apports' => 'M4 8.5V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3.5M7 13.5 12 18.5l5-5M12 17.5v-11',
+        // Feuille dans un cercle : constat sur la parcelle.
+        'visites' => 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8.5 15.5c0-4 2.5-7 7-7 0 4.5-3 7-7 7Zm0 0 3-3',
         // Prévu contre réel : deux barres, une pleine, une en cours.
         'budget' => 'M4 20h16M7 20V9m5 11V5m5 15v-7',
         'referentiels' => 'M4 6h16M4 12h16M4 18h10',

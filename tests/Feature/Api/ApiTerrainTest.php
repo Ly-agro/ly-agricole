@@ -86,10 +86,16 @@ class ApiTerrainTest extends TestCase
     public function un_role_sans_saisie_terrain_n_a_pas_les_referentiels(): void
     {
         Sanctum::actingAs(User::factory()->role(Role::Comptable)->create());
-        // Le comptable saisit des achats (bureau) : il y a droit. L'agronome, non.
+        // Le comptable saisit des achats (bureau) : il y a droit. L'agronome aussi depuis
+        // la phase 2 (visites de parcelle). L'investisseur et l'admin, non.
         $this->getJson('/api/referentiels')->assertOk();
 
         Sanctum::actingAs(User::factory()->role(Role::Agronome)->create());
-        $this->getJson('/api/referentiels')->assertForbidden();
+        $this->getJson('/api/referentiels')->assertOk();
+
+        foreach ([Role::Investisseur, Role::Admin] as $role) {
+            Sanctum::actingAs(User::factory()->role($role)->create());
+            $this->getJson('/api/referentiels')->assertForbidden();
+        }
     }
 }

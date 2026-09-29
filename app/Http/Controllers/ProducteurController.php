@@ -16,7 +16,8 @@ class ProducteurController extends Controller
     {
         Gate::authorize('voir-producteurs');
 
-        $producteur->load(['village.zone', 'groupe', 'auteurConsentement', 'parcelles' => fn ($q) => $q->with('produit')->orderBy('nom')]);
+        $producteur->load(['village.zone', 'groupe', 'auteurConsentement', 'parcelles' => fn ($q) => $q->with('produit')
+            ->withCount('visites')->withMax('visites', 'date_visite')->orderBy('nom')]);
 
         return view('producteurs.fiche', ['producteur' => $producteur]);
     }
