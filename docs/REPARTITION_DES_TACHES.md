@@ -43,11 +43,11 @@ Un bloc a **un seul** propriétaire. Il est seul à écrire dans ses fichiers.
 | **Ventes en devises** | A | à faire |
 | **API Mobile Money** | A | à faire |
 | **Comparaison des pratiques** des 20 % meilleurs et moins bons | B | après les visites ; **nouveau service** `ComparaisonPratiques`, on ne modifie pas `Rendements` |
-| **Groupes et caution solidaire** | B | à faire |
-| **Balance Bluetooth** | B | à faire |
+| **Groupes et caution solidaire** | A (repris de B, 2026-09-29, à la demande du responsable projet) | en cours |
+| **Balance Bluetooth** | A (repris de B) | à faire, après les groupes ; réutilise `terrain/src/lib/imprimante.ts` (BLE) ; prochaine table locale = Dexie version 4 |
 | **Alerte d'écart de poids** (question 34) | B | à faire |
-| **Jetons et appareils** (révocation, liste, dernière synchro, question 25) | B | à faire |
-| **Langue par producteur** (question 12) et **commission des pisteurs** (question 6) | B | à faire |
+| **Jetons et appareils** (révocation, liste, dernière synchro, question 25) | A (repris de B) | à faire |
+| **Langue par producteur** (question 12) et **commission des pisteurs** (question 6) | A (repris de B) | à faire |
 | **Notifications push** : web push bureau (validations en attente), push agents (FCM + APK), alertes direction. Fichiers propres à B (`Notifications/*`, observateurs, tables `abonnements_push` et `notifications_envoyees`) ; expose `Notifications::envoyer(...)` que A peut appeler. **La source d'une alerte reste à son propriétaire** (seuil de caisse, prêt en retard : A) | B | réclamé 2026-09-29 |
 | **Impression de reçus 58 mm** (ESC/POS Bluetooth depuis l'appli terrain, page 58 mm au bureau) ; réutilise `BonAchat` / `RecuRemise` en lecture seule, fichiers nouveaux pour le format 58 mm | B | réclamé 2026-09-29 |
 | Véhicules, indicateurs d'impact, module Conseil du Coton et de l'Anacarde (question 16) | **personne** | à réclamer (voir règle 1) |
@@ -106,3 +106,6 @@ en collision si la règle 5 est suivie.
 | 2026-09-29 | A | Note de fiabilité du producteur | `phase-2-reventes` — `/fiabilite`, service `FiabiliteProducteur`, droit `voir-fiabilite` |
 
 **Branches (2026-09-29).** `fusion-phase-2` = `semaine-12` + A + B (budget, visites) : à pousser et fusionner dans `main` **sans y ajouter de commit**. Le travail suivant de A part de là, sur `phase-2-suite`. B a `phase-2-notifications` (`b23c849`) ; elle y fusionne `fusion-phase-2` pour ne résoudre les conflits qu'une fois. Ordre des PR : `fusion-phase-2`, puis `phase-2-notifications`.
+| 2026-09-29 | B | **IA / LLM** (phase 3) : service `ia/` (Python FastAPI + Ollama), `App\Services\Ia\*`, écrans et routes `/ia/*` | à définir |
+| 2026-09-29 | A | Décisions des questions 32 et 35 (valorisation du stock, décision de plafond) ; vitrine animée | `phase-2-suite` (commité) |
+| 2026-09-29 | A | Groupes et caution solidaire, puis balance Bluetooth, appareils et jetons, langue par producteur, commission des pisteurs (repris de B, dans cet ordre) | `phase-2-suite` (sur `phase-2-alertes`) |
