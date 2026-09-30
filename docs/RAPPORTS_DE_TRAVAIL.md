@@ -5,6 +5,36 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-30 — IA : sources de données et script d'entraînement — FINI, branche `phase-3-ia`
+
+> Décision de l'administration : un agronome **dans 3 mois environ** ; on démarre sans lui,
+> il valide tout avant la mise à disposition réelle. LY trouve elle-même données et photos.
+
+**Recherche des jeux publics** (licences lues sur les pages officielles) : **CCMT**
+(Ghana, photos de terrain, anacarde 5 classes et tomate 5 classes, validé par des
+virologues, **CC BY 4.0** : citer les auteurs) retenu comme point de départ ;
+PlantVillage (CC0 sur Mendeley, CC BY 3.0 selon une autre source) en complément seulement
+(fond uni de labo, biais connu) ; **aucun jeu public pour le karité**. Détails, attribution,
+correspondance des classes et protocole photo des agents : `docs/DONNEES_IA.md`.
+
+**Script d'entraînement** (`ia/entrainement/`) : MobileNetV3-small, pour une machine louée
+avec carte graphique ; lit le jeu CCMT brut et l'export LY (`ia:exporter-jeu`), classes
+traduites par une table (une classe inconnue **arrête** le script), jeu de test fixe,
+classes rares pesées, export ONNX + `classes.json` + `rapport.json` (rappel et précision
+par maladie, matrice de confusion). **Décision de remplacement** : refusée si une seule
+maladie recule au-delà de 3 points ou si une classe a moins de 20 photos de test.
+
+**Vérifié.** 22 tests Python (outils d'entraînement : lecture CCMT et export LY, classe
+inconnue, provisoires seulement sur demande, répartition fixe d'environ 1/10, mesures par
+classe, refus sur recul d'une maladie) ; `entrainer.py` compile. **Non exécuté** :
+l'entraînement PyTorch (ni PyTorch ni carte graphique sur ce poste, 1 Go de mémoire
+libre) ; le jeu CCMT n'est pas téléchargé (1,2 Go brut, à faire sur la machine louée).
+
+**Reste.** Télécharger CCMT sur la machine louée et faire un premier modèle **d'essai**
+(anacarde) ; brancher le modèle ONNX dans `ia/app/diagnostic.py` ; photos de visites.
+
+---
+
 ## 2026-09-29 — IA : VPS sans carte graphique, annotations provisoires — FINI, branche `phase-3-ia`
 
 > Réponses du responsable projet : agronome « pas pour l'instant » (53) ; serveur IA « non,

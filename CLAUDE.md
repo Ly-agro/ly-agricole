@@ -73,7 +73,8 @@ Service IA (`ia/`, phase 3) — Python 3.13, FastAPI :
 
 ```bash
 cd ia
-python -m unittest discover -s tests -t .      # contrôle après génération, API
+python -m unittest discover -s tests -t .      # contrôle après génération, API, outils d'entraînement
+python -m entrainement.entrainer --culture anacarde --ccmt … --ly … --sortie …   # sur une machine LOUÉE avec carte graphique
 IA_JETON=… IA_LLM=faux python -m uvicorn app.main:app --port 8100   # essai sans Ollama (poste de dev)
 ```
 

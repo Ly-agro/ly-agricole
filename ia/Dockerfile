@@ -8,6 +8,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 COPY tests ./tests
+# Outils d'entraînement (sans PyTorch) : testés à la construction ; l'entraînement lui-même
+# se fait sur une machine louée avec carte graphique.
+COPY entrainement ./entrainement
 
 # Les tests tournent à la construction : une image qui ne rejette plus une dose inventée
 # ne doit pas partir en service.
