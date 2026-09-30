@@ -3,7 +3,10 @@
 namespace App\Livewire\Visites;
 
 use App\Enums\PratiqueCulturale;
+use App\Exceptions\OperationRefusee;
+use App\Models\User;
 use App\Models\Visite;
+use App\Services\Ia\Diagnostics;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -40,6 +43,26 @@ class ListeVisites extends Component
     public function updatedPratique(): void
     {
         $this->resetPage();
+    }
+
+    public string $statut = '';
+
+    /** Confie les photos de la visite au service IA (file d'attente) ; l'agronome validera. */
+    public function demanderAvisIa(string $id): void
+    {
+        $this->authorize('demander-avis-ia');
+        /** @var User $moi */
+        $moi = auth()->user();
+        try {
+            $n = Diagnostics::demander(Visite::query()->findOrFail($id), $moi);
+        } catch (OperationRefusee $e) {
+            $this->statut = $e->getMessage();
+
+            return;
+        }
+        $this->statut = $n === 0
+            ? 'Ces photos ont déjà un avis IA (voir « Diagnostics IA »).'
+            : "{$n} photo(s) confiée(s) au service IA. L'avis apparaîtra dans « Diagnostics IA », à confirmer par un agronome.";
     }
 
     public function render(): View

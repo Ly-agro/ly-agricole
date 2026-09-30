@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+# Modèles entraînés et jeux de données : volumineux, et faits de photos de producteurs.
+modeles/
+donnees/

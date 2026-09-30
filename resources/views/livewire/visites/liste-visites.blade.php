@@ -20,6 +20,10 @@
         </div>
     </div>
 
+    @if ($statut !== '')
+        <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
+    @endif
+
     <div class="space-y-4">
         @forelse ($visites as $v)
             <article wire:key="visite-{{ $v->id }}" class="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
@@ -63,6 +67,9 @@
                             </a>
                         @endforeach
                     </div>
+                    @can('demander-avis-ia')
+                        <button type="button" wire:click="demanderAvisIa('{{ $v->id }}')" class="mt-3 rounded-md border border-stone-300 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-50">Demander un avis IA sur les photos</button>
+                    @endcan
                 @endif
             </article>
         @empty

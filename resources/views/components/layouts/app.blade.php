@@ -57,6 +57,10 @@
                             @can('voir-visites')
                                 <x-nav-lien route="visites" motif="visites" icone="visites">Visites</x-nav-lien>
                             @endcan
+                            @can('voir-ia')
+                                <x-nav-lien route="ia.diagnostics" motif="ia.diagnostics" icone="ia">Diagnostics IA</x-nav-lien>
+                                <x-nav-lien route="ia.referentiel" motif="ia.referentiel" icone="traitements">Traitements</x-nav-lien>
+                            @endcan
                         </div>
                     </div>
                 @endcanany

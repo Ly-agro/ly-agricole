@@ -22,6 +22,8 @@ use App\Livewire\Fiabilite\FicheFiabilite;
 use App\Livewire\Fiabilite\ListeFiabilite;
 use App\Livewire\Fiabilite\ListeGroupes;
 use App\Livewire\Fiabilite\SituationGroupe;
+use App\Livewire\Ia\ListeDiagnostics;
+use App\Livewire\Ia\ReferentielTraitements;
 use App\Livewire\Intrants\StockIntrant;
 use App\Livewire\Investisseurs\GestionApports;
 use App\Livewire\Investisseurs\PortailInvestisseur;
@@ -169,6 +171,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/resultat', ResultatDeCampagne::class)->middleware('can:voir-resultat-campagne')->name('resultat');
     Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
     Route::get('/visites', ListeVisites::class)->middleware('can:voir-visites')->name('visites');
+    // IA (phase 3) : diagnostics des photos et référentiel des traitements (agronome).
+    Route::get('/ia/diagnostics', ListeDiagnostics::class)->middleware('can:voir-ia')->name('ia.diagnostics');
+    Route::get('/ia/referentiel', ReferentielTraitements::class)->middleware('can:voir-ia')->name('ia.referentiel');
     // Avis de chacun (tout utilisateur connecté, les siens seulement).
     Route::get('/notifications', ListeNotifications::class)->name('notifications');
     // Tickets 58 mm (imprimante thermique) ; droits vérifiés dans le contrôleur.

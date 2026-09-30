@@ -293,6 +293,125 @@ droits : voir le comptage de la fin de session. Pas vu dans un navigateur.
 **Reste.** Traitement d'une perte au-delà des fonds (règle métier) ; rapport final (art. 18.2) ;
 politique d'information du producteur.
 
+## 2026-09-30 — IA : sources de données et script d'entraînement — FINI, branche `phase-3-ia`
+
+> Décision de l'administration : un agronome **dans 3 mois environ** ; on démarre sans lui,
+> il valide tout avant la mise à disposition réelle. LY trouve elle-même données et photos.
+
+**Recherche des jeux publics** (licences lues sur les pages officielles) : **CCMT**
+(Ghana, photos de terrain, anacarde 5 classes et tomate 5 classes, validé par des
+virologues, **CC BY 4.0** : citer les auteurs) retenu comme point de départ ;
+PlantVillage (CC0 sur Mendeley, CC BY 3.0 selon une autre source) en complément seulement
+(fond uni de labo, biais connu) ; **aucun jeu public pour le karité**. Détails, attribution,
+correspondance des classes et protocole photo des agents : `docs/DONNEES_IA.md`.
+
+**Script d'entraînement** (`ia/entrainement/`) : MobileNetV3-small, pour une machine louée
+avec carte graphique ; lit le jeu CCMT brut et l'export LY (`ia:exporter-jeu`), classes
+traduites par une table (une classe inconnue **arrête** le script), jeu de test fixe,
+classes rares pesées, export ONNX + `classes.json` + `rapport.json` (rappel et précision
+par maladie, matrice de confusion). **Décision de remplacement** : refusée si une seule
+maladie recule au-delà de 3 points ou si une classe a moins de 20 photos de test.
+
+**Vérifié.** 22 tests Python (outils d'entraînement : lecture CCMT et export LY, classe
+inconnue, provisoires seulement sur demande, répartition fixe d'environ 1/10, mesures par
+classe, refus sur recul d'une maladie) ; `entrainer.py` compile. **Non exécuté** :
+l'entraînement PyTorch (ni PyTorch ni carte graphique sur ce poste, 1 Go de mémoire
+libre) ; le jeu CCMT n'est pas téléchargé (1,2 Go brut, à faire sur la machine louée).
+
+**Reste.** Télécharger CCMT sur la machine louée et faire un premier modèle **d'essai**
+(anacarde) ; brancher le modèle ONNX dans `ia/app/diagnostic.py` ; photos de visites.
+
+---
+
+## 2026-09-29 — IA : VPS sans carte graphique, annotations provisoires — FINI, branche `phase-3-ia`
+
+> Réponses du responsable projet : agronome « pas pour l'instant » (53) ; serveur IA « non,
+> si possible sur un VPS » (54) ; données d'entraînement « en session Claude en attendant un
+> agronome » (55).
+
+**Fait.** Docker Compose **sans carte graphique par défaut** (VPS), fichier
+`docker-compose.gpu.yml` à ajouter sur une machine NVIDIA ; petit modèle par défaut
+(`qwen2.5:3b-instruct`), délai 300 s, écoute sur 127.0.0.1 si la plateforme est sur le même
+VPS. Guide §1 bis (VPS 8 vCPU / 16 Go, données envoyées au VPS : hébergeur, chiffrement,
+consentement ; entraînement sur une machine louée à l'heure). **Annotations
+provisoires** : colonnes `annotation_*` sur `diagnostics`, commande `ia:annoter` (liste
+les photos à annoter avec le chemin du fichier, sans nom de producteur ; annote), écran
+« Diagnostics IA » (pastille « Annotation provisoire »), export `--avec-provisoires`
+(colonne `source`, jamais au jeu de test).
+
+**Choix.** Une annotation faite en session Claude n'est **pas** une validation : Claude
+n'est pas agronome, une maladie mal nommée entraînerait un modèle faux. Elle ne change
+pas le statut, ne déclenche aucun conseil, et un agronome qui tranche la remplace.
+
+**Vérifié.** 560 → **561 tests** PHP, 15 Python ; Larastan 0 ; Pint propre. En vrai :
+migration sur `ly_agricole_b`, `php artisan ia:annoter` → « Aucune photo à annoter »
+(l'unique photo de démo a été validée pendant le parcours agronome, et c'est une image
+d'essai, pas une plante).
+
+**Reste.** Des photos réelles de visites à annoter ; VPS à louer ; licence CCMT et
+consentement pour l'entraînement.
+
+---
+
+## 2026-09-29 — Phase 3 : socle IA (service ia/, référentiel, diagnostics) — FINI, branche `phase-3-ia`
+
+> Session `ly-agricole-45` (B), branche `phase-3-ia` depuis `phase-2-alertes` (`bb1c0a3`),
+> base `ly_agricole_b`. Demande de l'utilisateur : « fais l'ajout de LLM » ; les blocs
+> restants de B ont été confiés à la session A. Réponses : préparer l'installation du
+> serveur ; **pas d'agronome pour l'instant**.
+
+**Contexte.** Poste de dev : 6 Go de mémoire (1,2 libres), i3 de 2011, pas de carte
+graphique, pas d'Ollama — aucun vrai modèle n'y tourne. Le service est donc écrit pour
+le serveur IA de LY et testé ici avec un **faux modèle** ; le serveur conseillé est décrit
+dans `docs/INSTALLATION_IA.md` (NVIDIA 12 Go au moins, 32 Go, onduleur, chez LY, VPN).
+
+**Service `ia/` (Python FastAPI).** `/sante`, `/conseil`, `/diagnostic`, jeton obligatoire
+(fermé par défaut). Le modèle ne reçoit des fiches que leur repère, type, cible et
+intitulé — **jamais le nom commercial ni la dose** — et doit citer `[FICHE-n]`.
+**Contrôle après génération** (`app/controle.py`) : rejette une dose écrite, un nom de
+produit ou de matière active en clair (même retiré ou interdit), une fiche non fournie,
+« fongicide / insecticide… » sans fiche chimique citée, un produit chimique avant ou
+sans les pratiques et solutions biologiques fournies, une fiche chimique incomplète.
+Diagnostic : « incertain » tant qu'aucun modèle de vision n'est entraîné. Docker Compose
+(Ollama + service, carte NVIDIA, écoute sur le VPN seulement) ; les tests tournent à la
+construction de l'image.
+
+**Plateforme.** Tables `fiches_traitement`, `diagnostics` ; `Referentiel` (agronome
+seul, daté, fiche chimique incomplète non proposable), `Diagnostics` (demande par
+direction / agronome / agent, traitement en file, validation par l'**agronome seul**,
+brouillon de conseil après validation, rendu des repères par le texte validé, brouillon
+rejeté si une fiche non fournie est citée). Écrans `/ia/diagnostics` et `/ia/referentiel`,
+bouton « Demander un avis IA » sur les visites, commande `ia:exporter-jeu` (photos
+validées seulement, sans donnée personnelle, jeu de test fixe). Droits et alias dans
+`IaServiceProvider` (pas dans `AppServiceProvider`, fichier partagé).
+
+**Vérifié.** Python : **15 tests** (contrôle et API) ; PHP : 550 → **560 tests** (`IaTest`,
+10) ; Larastan 0 ; Pint propre. **En vrai** sur ce poste : service lancé (faux modèle) —
+`/sante` répond, `/conseil` sans jeton → 401 ; en **direction**, « Demander un avis IA »
+sur la visite avec photo → « 1 photo(s) confiée(s) », worker → `POST /diagnostic` 200 →
+diagnostic « **incertain** » en base avec son motif ; en **agronome**, `/ia/referentiel`
+vide avec son explication et le bouton « Nouvelle fiche ».
+
+**Parcours agronome** (« tu es l'agronome pour l'instant », compte de démonstration, sans
+Chrome ni serveur web faute de mémoire : vraies fonctions de la plateforme, vrai service
+par HTTP, vraie file d'attente) : fiche d'**ESSAI** « désherber autour des arbres »
+(pratique, sans produit) → proposable ; diagnostic « incertain » validé « sain » →
+« corrigé » ; brouillon demandé → worker → `POST /conseil` 200 → statut « brouillon »,
+fiche 1 citée, repère remplacé par le texte validé. Fiche d'essai ensuite **retirée**
+(plus proposable). **Aucune vraie fiche de produit ni de dose n'a été saisie** : le
+référentiel ne se remplit pas de mémoire (skill IA, règle 6) ; il attend un agronome.
+Défaut vu au rendu et corrigé : le faux modèle écrivait l'intitulé ET le repère
+(intitulé en double) ; il n'écrit plus que le repère.
+
+**Pas vérifié.** Aucun vrai modèle (Ollama) : pas de serveur IA. Les processus lancés
+plus tôt (service, plateforme, worker) avaient été arrêtés faute de mémoire sur le poste.
+
+**Reste.** Questions 53 (agronome), 54 (serveur IA), 55 (jeu CCMT,
+consentement pour l'entraînement) ; brancher un modèle de vision (ONNX) quand il y aura
+des photos confirmées.
+
+---
+
 ## 2026-09-29 — Phase 2 : alertes quotidiennes et avis de campagne — FINI, branche `phase-2-alertes`
 
 > Session `ly-agricole-45` (B), branche `phase-2-alertes`, au-dessus de `phase-2-notifications`

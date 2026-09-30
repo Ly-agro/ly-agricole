@@ -64,6 +64,8 @@ php artisan serve                      # http://127.0.0.1:8000
 php artisan queue:work                 # envoie les SMS et les notifications en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
 php artisan notifications:cles-vapid   # une fois : clés du Web Push à mettre dans .env (PUSH_VAPID_PUBLIQUE / _PRIVEE)
 php artisan notifications:alertes      # alertes du jour (planifiée à 7 h via schedule:run) ; relancée le même jour : rien ne repart
+php artisan ia:exporter-jeu <dossier>  # photos validées par un agronome → jeu d'entraînement (manifeste.csv, jeu de test fixe)
+php artisan ia:annoter [n° classe]     # sans agronome : lister / annoter PROVISOIREMENT une photo (pas une validation)
 php artisan ly:sauvegarder --verifier  # archive base + fichiers, puis VRAIE restauration comparée (docs/MISE_EN_PRODUCTION.md)
 ```
 
@@ -72,6 +74,17 @@ Tunnel public HTTPS (démo, téléphone) : `ngrok start --config "$LOCALAPPDATA/
 LY** dans `ly-agricole.yml` (hors dépôt) ; **jamais** `%LOCALAPPDATA%\ngrok\ngrok.yml`, qui porte le
 jeton de Tharamotors. Proxy local de confiance dans `bootstrap/app.php`. Faire
 `npm run build` avant : sans build, `public/hot` pointe vers un Vite local injoignable du dehors.
+Service IA (`ia/`, phase 3) — Python 3.13, FastAPI :
+
+```bash
+cd ia
+python -m unittest discover -s tests -t .      # contrôle après génération, API, outils d'entraînement
+python -m entrainement.entrainer --culture anacarde --ccmt … --ly … --sortie …   # sur une machine LOUÉE avec carte graphique
+IA_JETON=… IA_LLM=faux python -m uvicorn app.main:app --port 8100   # essai sans Ollama (poste de dev)
+```
+
+Sur le serveur IA : `docker compose up -d --build` (voir `docs/INSTALLATION_IA.md`) ; côté
+Laravel, `IA_URL` et `IA_JETON` dans `.env`, et `queue:work` qui tourne.
 
 Notifications push du bureau : lancer `serve` **et** `queue:work` avec
 `OPENSSL_CONF=C:\xampp\php\extras\ssl\openssl.cnf` (voir pièges).
