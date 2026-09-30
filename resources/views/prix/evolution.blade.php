@@ -13,7 +13,13 @@
             @if (count($tableau['campagnes']) === 0)
                 <p class="v-carte mt-4 rounded-2xl p-6">Aucune campagne commencée pour le moment : le tableau se remplira avec les campagnes et leurs prix.</p>
             @else
-                <div class="v-carte mt-4 overflow-x-auto rounded-2xl">
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <label for="recherche-culture" class="sr-only">Chercher une culture</label>
+                    <input type="search" id="recherche-culture" data-recherche-culture placeholder="Chercher une culture (ex. maïs, hévéa…)" autocomplete="off"
+                        class="w-full max-w-sm rounded-md border border-stone-300 bg-white px-3 py-2 text-sm">
+                    <p class="v-texte-doux text-xs" data-recherche-compte role="status"></p>
+                </div>
+                <div class="v-carte mt-3 overflow-x-auto rounded-2xl">
                     <table class="w-full min-w-[640px] text-left text-sm" data-tableau-cultures>
                         <caption class="sr-only">Dernier prix par culture et par campagne</caption>
                         <thead>
@@ -26,7 +32,7 @@
                         </thead>
                         <tbody>
                             @foreach ($tableau['lignes'] as $ligne)
-                                <tr class="border-t border-[#34251a]/10 {{ $ligne['connu'] ? '' : 'v-texte-doux' }}">
+                                <tr class="border-t border-[#34251a]/10 {{ $ligne['connu'] ? '' : 'v-texte-doux' }}" data-culture="{{ $ligne['produit']->nom }}">
                                     <th scope="row" class="sticky left-0 z-10 bg-[#f3ebdc] px-4 py-2 font-medium">
                                         @if ($ligne['connu'])
                                             <a href="{{ route('prix.evolution', ['produit' => $ligne['produit']->id]) }}" class="underline decoration-dotted">{{ $ligne['produit']->nom }}</a>
@@ -51,18 +57,20 @@
                             @endforeach
                         </tbody>
                     </table>
+                    <p class="v-texte-doux hidden px-4 py-6 text-sm" data-recherche-vide>Aucune culture ne correspond à cette recherche.</p>
                 </div>
             @endif
         </div>
 
-        <h2 class="mt-12 text-xl font-semibold">Courbe détaillée par produit</h2>
-        <p class="v-texte-doux mt-1 text-sm">Le prix reste le même jusqu'au changement suivant.</p>
+        <h2 id="courbes" class="mt-12 scroll-mt-24 text-xl font-semibold">Courbe détaillée par produit</h2>
+        <p class="v-texte-doux mt-1 text-sm">Choisissez un produit ou une période : les courbes se mettent à jour aussitôt. Le prix reste le même jusqu'au changement suivant.</p>
 
         @if ($produits->isEmpty())
             <p class="v-carte mt-8 rounded-2xl p-6">Aucun prix publié pour le moment.</p>
         @else
-            {{-- Filtres : une seule ligne, au-dessus des graphiques. --}}
-            <form method="GET" action="{{ route('prix.evolution') }}" class="v-carte mt-8 flex flex-wrap items-end gap-4 rounded-2xl p-4 text-sm">
+            <div data-zone-courbes>
+            {{-- Filtres : une seule ligne, au-dessus des graphiques ; appliqués dès qu'on choisit (bouton seulement sans JavaScript). --}}
+            <form method="GET" action="{{ route('prix.evolution') }}#courbes" data-filtres-prix class="v-carte mt-8 flex flex-wrap items-end gap-4 rounded-2xl p-4 text-sm">
                 <div>
                     <label for="produit" class="mb-1 block text-xs font-medium">Produit</label>
                     <select name="produit" id="produit" class="rounded-md border border-stone-300 bg-white px-3 py-2">
@@ -78,22 +86,25 @@
                         <option value="tout" @selected($periode === 'tout')>Toute la période</option>
                         <option value="6m" @selected($periode === '6m')>6 derniers mois</option>
                         <option value="12m" @selected($periode === '12m')>12 derniers mois</option>
-                        @foreach ($campagnes as $c)
+                        {{-- Les campagnes du produit choisi seulement : toutes les cultures en donneraient plus de cent. --}}
+                        @foreach ($campagnes->when($produitChoisi !== null, fn ($liste) => $liste->where('produit_id', $produitChoisi->id)) as $c)
                             <option value="campagne-{{ $c->id }}" @selected($periode === 'campagne-'.$c->id)>Campagne {{ $c->produit->nom }} {{ $c->code }}</option>
                         @endforeach
                         <option value="perso" @selected($periode === 'perso')>Dates personnalisées</option>
                     </select>
                 </div>
-                <div>
-                    <label for="du" class="mb-1 block text-xs font-medium">Du</label>
-                    <input type="date" name="du" id="du" value="{{ $du }}" class="rounded-md border border-stone-300 bg-white px-3 py-2">
+                <div data-dates-perso @if ($periode !== 'perso') hidden @endif class="flex flex-wrap items-end gap-4">
+                    <div>
+                        <label for="du" class="mb-1 block text-xs font-medium">Du</label>
+                        <input type="date" name="du" id="du" value="{{ $du }}" class="rounded-md border border-stone-300 bg-white px-3 py-2">
+                    </div>
+                    <div>
+                        <label for="au" class="mb-1 block text-xs font-medium">Au</label>
+                        <input type="date" name="au" id="au" value="{{ $au }}" class="rounded-md border border-stone-300 bg-white px-3 py-2">
+                    </div>
                 </div>
-                <div>
-                    <label for="au" class="mb-1 block text-xs font-medium">Au</label>
-                    <input type="date" name="au" id="au" value="{{ $au }}" class="rounded-md border border-stone-300 bg-white px-3 py-2">
-                </div>
-                <button type="submit" class="v-bouton rounded-md bg-emerald-800 px-4 py-2 font-medium text-white hover:bg-emerald-900">Afficher</button>
-                <p class="v-texte-doux w-full text-xs">Les dates ne servent qu'avec « Dates personnalisées ».</p>
+                <noscript><button type="submit" class="v-bouton rounded-md bg-emerald-800 px-4 py-2 font-medium text-white hover:bg-emerald-900">Afficher</button></noscript>
+                <p class="v-texte-doux text-xs" data-filtres-etat role="status" aria-live="polite"></p>
             </form>
 
             <div class="mt-8 space-y-8">
@@ -109,43 +120,81 @@
                         @if ($c === null)
                             <p class="v-texte-doux mt-4">Aucun prix publié sur cette période.</p>
                         @else
-                            <p class="mt-2 text-sm">
-                                <span class="tabular-nums font-semibold">{{ Format::entier($r['premier']) }}</span> →
-                                <span class="tabular-nums font-semibold">{{ Format::entier($r['dernier']) }}</span> FCFA/kg
-                                @if ($r['variation'] !== 0)
-                                    <span class="font-medium {{ $r['variation'] > 0 ? 'text-emerald-700' : 'text-red-700' }}">({{ $r['variation'] > 0 ? '▲ +' : '▼ −' }}{{ Format::entier(abs($r['variation'])) }})</span>
-                                @endif
-                                <span class="v-texte-doux">· plus bas {{ Format::entier($r['min']) }} · plus haut {{ Format::entier($r['max']) }} · {{ $r['changements'] }} changement{{ $r['changements'] > 1 ? 's' : '' }}</span>
-                            </p>
+                            <div class="mt-3 flex flex-wrap items-end gap-x-6 gap-y-3">
+                                <p>
+                                    <span class="text-3xl font-semibold tracking-tight">{{ Format::entier($r['dernier']) }}</span>
+                                    <span class="v-texte-doux text-sm">FCFA/kg</span>
+                                    @if ($r['variation'] !== 0)
+                                        <span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold {{ $r['variation'] > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">{{ $r['variation'] > 0 ? '▲ +' : '▼ −' }}{{ Format::entier(abs($r['variation'])) }} depuis {{ Format::entier($r['premier']) }}</span>
+                                    @else
+                                        <span class="ml-2 inline-flex items-center rounded-full bg-[#34251a]/8 px-2 py-0.5 text-xs font-semibold">Stable</span>
+                                    @endif
+                                </p>
+                                <dl class="v-texte-doux flex gap-5 text-xs">
+                                    <div><dt>Plus bas</dt><dd class="text-sm font-medium tabular-nums text-[#34251a]">{{ Format::entier($r['min']) }}</dd></div>
+                                    <div><dt>Plus haut</dt><dd class="text-sm font-medium tabular-nums text-[#34251a]">{{ Format::entier($r['max']) }}</dd></div>
+                                    <div><dt>Changements</dt><dd class="text-sm font-medium tabular-nums text-[#34251a]">{{ $r['changements'] }}</dd></div>
+                                </dl>
+                            </div>
 
-                            <div class="relative mt-4" data-courbe>
-                                <svg viewBox="0 0 {{ $c['largeur'] }} {{ $c['hauteur'] }}" class="w-full" role="img"
+                            <div class="relative mt-5" data-courbe>
+                                @php($idg = 'lavis-'.$g['produit']->id)
+                                <svg viewBox="0 0 {{ $c['largeur'] }} {{ $c['hauteur'] }}" class="w-full touch-pan-y select-none overflow-visible" role="img"
+                                    data-zone-g="{{ $c['zone']['gauche'] }}" data-zone-d="{{ $c['zone']['droite'] }}" data-zone-h="{{ $c['zone']['haut'] }}" data-zone-b="{{ $c['zone']['bas'] }}"
                                     aria-label="Évolution du prix {{ $g['produit']->nom }} : de {{ Format::entier($r['premier']) }} à {{ Format::entier($r['dernier']) }} FCFA par kilo, du {{ $g['serie']['debut']->format('d/m/Y') }} au {{ $g['serie']['fin']->format('d/m/Y') }}. Le tableau ci-dessous donne toutes les valeurs.">
+                                    <defs>
+                                        <linearGradient id="{{ $idg }}" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0" stop-color="#1f7a45" stop-opacity="0.22" />
+                                            <stop offset="1" stop-color="#1f7a45" stop-opacity="0.02" />
+                                        </linearGradient>
+                                    </defs>
+
+                                    {{-- Grille : filets fins et discrets ; la ligne de base un peu plus marquée. --}}
                                     @foreach ($c['graduations_y'] as $grad)
-                                        <line x1="{{ $c['zone']['gauche'] }}" x2="{{ $c['zone']['droite'] }}" y1="{{ $grad['y'] }}" y2="{{ $grad['y'] }}" stroke="#34251a" stroke-opacity="0.12" stroke-width="1" />
-                                        <text x="{{ $c['zone']['gauche'] - 10 }}" y="{{ $grad['y'] + 4 }}" text-anchor="end" font-size="11" fill="#5c4632">{{ Format::entier($grad['valeur']) }}</text>
+                                        <line x1="{{ $c['zone']['gauche'] }}" x2="{{ $c['zone']['droite'] }}" y1="{{ $grad['y'] }}" y2="{{ $grad['y'] }}" stroke="#34251a" stroke-opacity="{{ $loop->first ? '0.28' : '0.08' }}" stroke-width="1" shape-rendering="crispEdges" />
+                                        <text x="{{ $c['zone']['gauche'] - 12 }}" y="{{ $grad['y'] + 4 }}" text-anchor="end" font-size="11" fill="#7a6450" style="font-variant-numeric: tabular-nums">{{ Format::entier($grad['valeur']) }}</text>
                                     @endforeach
                                     @foreach ($c['graduations_x'] as $grad)
-                                        <text x="{{ $grad['x'] }}" y="{{ $c['zone']['bas'] + 20 }}" text-anchor="middle" font-size="11" fill="#5c4632">{{ $grad['date']->format('d/m/y') }}</text>
+                                        <line x1="{{ $grad['x'] }}" x2="{{ $grad['x'] }}" y1="{{ $c['zone']['bas'] }}" y2="{{ $c['zone']['bas'] + 5 }}" stroke="#34251a" stroke-opacity="0.28" shape-rendering="crispEdges" />
+                                        <text x="{{ $grad['x'] }}" y="{{ $c['zone']['bas'] + 22 }}" text-anchor="middle" font-size="11" fill="#7a6450">{{ $grad['libelle'] }}</text>
                                     @endforeach
 
+                                    <path d="{{ $c['aire'] }}" fill="url(#{{ $idg }})" stroke="none" />
                                     <path d="{{ $c['chemin'] }}" fill="none" stroke="#1f7a45" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
 
+                                    {{-- Chaque changement de prix : point cerclé de la couleur du fond ; le prix déjà en vigueur au début est creux. --}}
                                     @foreach ($c['marqueurs'] as $m)
                                         @php($pt = $g['serie']['points'][$m['index']])
-                                        {{-- Marque de 10 px, cerclée de la couleur du fond ; le prix déjà en vigueur au début est creux. --}}
-                                        <circle cx="{{ $m['x'] }}" cy="{{ $m['y'] }}" r="5" fill="{{ $pt['report'] ? '#f3ebdc' : '#1f7a45' }}" stroke="{{ $pt['report'] ? '#1f7a45' : '#f3ebdc' }}" stroke-width="2" pointer-events="none" />
-                                        <circle cx="{{ $m['x'] }}" cy="{{ $m['y'] }}" r="14" fill="transparent" tabindex="0" style="cursor: pointer; outline: none"
+                                        <circle cx="{{ $m['x'] }}" cy="{{ $m['y'] }}" r="4" fill="{{ $pt['report'] ? '#f3ebdc' : '#1f7a45' }}" stroke="{{ $pt['report'] ? '#1f7a45' : '#f3ebdc' }}" stroke-width="2" pointer-events="none" />
+                                    @endforeach
+
+                                    {{-- Dernier prix : pastille à droite de la courbe. --}}
+                                    @php($texteFin = Format::entier($r['dernier']))
+                                    @php($largeurPastille = 16 + 7.5 * mb_strlen($texteFin))
+                                    <circle cx="{{ $c['fin']['x'] }}" cy="{{ $c['fin']['y'] }}" r="5" fill="#1f7a45" stroke="#f3ebdc" stroke-width="2" />
+                                    <rect x="{{ $c['fin']['x'] + 10 }}" y="{{ $c['fin']['y'] - 11 }}" width="{{ $largeurPastille }}" height="22" rx="11" fill="#1f7a45" />
+                                    <text x="{{ $c['fin']['x'] + 10 + $largeurPastille / 2 }}" y="{{ $c['fin']['y'] + 4 }}" text-anchor="middle" font-size="12" font-weight="600" fill="#ffffff" style="font-variant-numeric: tabular-nums">{{ $texteFin }}</text>
+
+                                    {{-- Réticule : suit le pointeur, le point se pose sur le prix en vigueur à cette date. --}}
+                                    <g data-reticule visibility="hidden" pointer-events="none">
+                                        <line data-reticule-ligne x1="0" x2="0" y1="{{ $c['zone']['haut'] }}" y2="{{ $c['zone']['bas'] }}" stroke="#34251a" stroke-opacity="0.35" stroke-width="1" />
+                                        <circle data-reticule-point cx="0" cy="0" r="6" fill="#1f7a45" stroke="#f3ebdc" stroke-width="2.5" />
+                                    </g>
+
+                                    {{-- Cibles clavier (Tab) : une par changement de prix, invisibles. --}}
+                                    @foreach ($c['marqueurs'] as $m)
+                                        @php($pt = $g['serie']['points'][$m['index']])
+                                        <circle cx="{{ $m['x'] }}" cy="{{ $m['y'] }}" r="12" fill="transparent" tabindex="0" pointer-events="none" style="outline: none"
                                             data-x="{{ $m['x'] }}" data-y="{{ $m['y'] }}"
-                                            data-date="{{ $pt['date']->format('d/m/Y') }}" data-prix="{{ Format::entier($pt['prix']) }} FCFA / kg"
-                                            data-source="{{ $pt['report'] ? 'Prix déjà en vigueur au début de la période — '.$pt['source'] : $pt['source'] }}"
+                                            data-date="{{ $pt['report'] ? 'En vigueur au '.$pt['date']->format('d/m/Y') : 'Depuis le '.$pt['date']->format('d/m/Y') }}" data-prix="{{ Format::entier($pt['prix']) }} FCFA / kg"
+                                            data-source="{{ $pt['source'] }}"
                                             aria-label="{{ $pt['date']->format('d/m/Y') }} : {{ Format::entier($pt['prix']) }} FCFA par kilo, source {{ $pt['source'] }}" />
                                     @endforeach
 
-                                    {{-- Étiquette directe du dernier prix, à droite de la courbe. --}}
-                                    <text x="{{ $c['fin']['x'] + 10 }}" y="{{ $c['fin']['y'] + 4 }}" font-size="12" font-weight="600" fill="#34251a">{{ Format::entier($r['dernier']) }}</text>
+                                    <rect data-zone-survol x="{{ $c['zone']['gauche'] }}" y="{{ $c['zone']['haut'] }}" width="{{ $c['zone']['droite'] - $c['zone']['gauche'] }}" height="{{ $c['zone']['bas'] - $c['zone']['haut'] }}" fill="transparent" style="cursor: crosshair" />
                                 </svg>
-                                <div data-info-bulle role="status" class="pointer-events-none absolute z-10 hidden max-w-[16rem] rounded-lg border border-[#34251a]/20 bg-[#fbf6ec] px-3 py-2 text-xs shadow-lg"></div>
+                                <div data-info-bulle role="status" class="pointer-events-none absolute z-10 hidden max-w-[17rem] rounded-xl border border-[#34251a]/15 bg-[#fffaf1]/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm"></div>
+                            </div>
                             </div>
 
                             <details class="mt-3 text-sm">
@@ -192,37 +241,145 @@
                     </article>
                 @endforeach
             </div>
+            </div>
         @endif
     </section>
 
     @verbatim
     <script>
         (function () {
-            // Info-bulle au survol ou au focus d'une valeur ; le clavier (Tab) marche aussi.
-            document.querySelectorAll('[data-courbe]').forEach(function (bloc) {
-                var bulle = bloc.querySelector('[data-info-bulle]');
+            // Recherche dans le tableau des cultures, à chaque lettre tapée ; sans tenir compte des accents.
+            var recherche = document.querySelector('[data-recherche-culture]');
+            if (recherche) {
+                var sansAccent = function (t) { return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
+                var lignes = Array.prototype.slice.call(document.querySelectorAll('[data-tableau-cultures] tbody tr'));
+                var compte = document.querySelector('[data-recherche-compte]');
+                var vide = document.querySelector('[data-recherche-vide]');
+                recherche.addEventListener('input', function () {
+                    var terme = sansAccent(recherche.value.trim());
+                    var n = 0;
+                    lignes.forEach(function (tr) {
+                        var visible = terme === '' || sansAccent(tr.dataset.culture).indexOf(terme) !== -1;
+                        tr.hidden = !visible;
+                        n += visible ? 1 : 0;
+                    });
+                    compte.textContent = terme === '' ? '' : n + (n > 1 ? ' cultures' : ' culture');
+                    vide.classList.toggle('hidden', n > 0);
+                });
+            }
+
+            // Filtres des courbes : appliqués dès qu'on choisit ; seule la zone des courbes est rechargée.
+            var zone = document.querySelector('[data-zone-courbes]');
+            var enCours = null;
+            function brancherFiltres() {
+                var form = zone.querySelector('[data-filtres-prix]');
+                var produit = form.querySelector('#produit');
+                var periode = form.querySelector('#periode');
+                var dates = form.querySelector('[data-dates-perso]');
+                form.addEventListener('submit', function (e) { e.preventDefault(); rafraichir(form); });
+                produit.addEventListener('change', function () {
+                    // Une campagne appartient à un produit : on revient à « toute la période » en changeant de produit.
+                    if (periode.value.indexOf('campagne-') === 0) { periode.value = 'tout'; }
+                    rafraichir(form);
+                });
+                periode.addEventListener('change', function () {
+                    dates.hidden = periode.value !== 'perso';
+                    if (periode.value !== 'perso') { rafraichir(form); }
+                });
+                dates.querySelectorAll('input').forEach(function (champ) {
+                    champ.addEventListener('change', function () {
+                        if (form.querySelector('#du').value && form.querySelector('#au').value) { rafraichir(form); }
+                    });
+                });
+            }
+            function rafraichir(form) {
+                var params = new URLSearchParams(new FormData(form));
+                if (params.get('periode') !== 'perso') { params.delete('du'); params.delete('au'); }
+                if (!params.get('produit')) { params.delete('produit'); }
+                var url = form.getAttribute('action').split('#')[0] + '?' + params.toString();
+                var focus = document.activeElement && document.activeElement.id;
+                var etat = form.querySelector('[data-filtres-etat]');
+                etat.textContent = 'Mise à jour…';
+                zone.style.opacity = '0.55';
+                if (enCours) { enCours.abort(); }
+                enCours = new AbortController();
+                fetch(url, { signal: enCours.signal, headers: { 'X-Requested-With': 'fetch' } })
+                    .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.text(); })
+                    .then(function (html) {
+                        var neuve = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-zone-courbes]');
+                        if (!neuve) { throw new Error('zone'); }
+                        zone.innerHTML = neuve.innerHTML;
+                        history.replaceState(null, '', url + '#courbes');
+                        zone.style.opacity = '';
+                        brancherFiltres();
+                        brancherCourbes(zone);
+                        if (focus && document.getElementById(focus)) { document.getElementById(focus).focus(); }
+                    })
+                    .catch(function (err) {
+                        if (err.name === 'AbortError') { return; }
+                        // En cas d'échec, on recharge la page entière : le filtre s'applique quand même.
+                        window.location.href = url + '#courbes';
+                    });
+            }
+            if (zone) { brancherFiltres(); }
+
+            brancherCourbes(document);
+        })();
+
+        // Réticule + info-bulle : la souris ou le doigt n'a pas à viser la ligne, seulement une date.
+        // Au clavier (Tab), chaque changement de prix donne la même info-bulle.
+        function brancherCourbes(racine) {
+            racine.querySelectorAll('[data-courbe]').forEach(function (bloc) {
                 var svg = bloc.querySelector('svg');
-                function montrer(cible) {
-                    bulle.innerHTML = '<strong class="block">' + cible.dataset.prix + '</strong><span class="block">' + cible.dataset.date + '</span><span class="block opacity-80"></span>';
-                    bulle.querySelector('span.opacity-80').textContent = cible.dataset.source;
+                var bulle = bloc.querySelector('[data-info-bulle]');
+                var reticule = svg.querySelector('[data-reticule]');
+                var ligne = svg.querySelector('[data-reticule-ligne]');
+                var point = svg.querySelector('[data-reticule-point]');
+                var zone = svg.querySelector('[data-zone-survol]');
+                var cibles = Array.prototype.slice.call(svg.querySelectorAll('circle[data-prix]'));
+                var g = parseFloat(svg.dataset.zoneG), d = parseFloat(svg.dataset.zoneD);
+
+                function remplir(cible) {
+                    bulle.textContent = '';
+                    [['font-semibold text-sm text-[#24201a]', cible.dataset.prix], ['text-[#5c4632]', cible.dataset.date], ['mt-1 text-[#7a6450]', cible.dataset.source]].forEach(function (l) {
+                        var s = document.createElement('span');
+                        s.className = 'block ' + l[0];
+                        s.textContent = l[1];
+                        bulle.appendChild(s);
+                    });
+                }
+                function montrer(cible, x) {
+                    var y = parseFloat(cible.dataset.y);
+                    remplir(cible);
+                    ligne.setAttribute('x1', x); ligne.setAttribute('x2', x);
+                    point.setAttribute('cx', x); point.setAttribute('cy', y);
+                    reticule.setAttribute('visibility', 'visible');
                     var r = svg.getBoundingClientRect();
                     var echelle = r.width / svg.viewBox.baseVal.width;
-                    var x = parseFloat(cible.dataset.x) * echelle;
-                    var y = parseFloat(cible.dataset.y) * echelle;
                     bulle.classList.remove('hidden');
                     var l = bulle.offsetWidth;
-                    bulle.style.left = Math.max(4, Math.min(x - l / 2, r.width - l - 4)) + 'px';
-                    bulle.style.top = Math.max(0, y - bulle.offsetHeight - 14) + 'px';
+                    bulle.style.left = Math.max(0, Math.min(x * echelle - l / 2, r.width - l)) + 'px';
+                    bulle.style.top = Math.max(0, y * echelle - bulle.offsetHeight - 16) + 'px';
                 }
-                function cacher() { bulle.classList.add('hidden'); }
-                bloc.querySelectorAll('circle[data-prix]').forEach(function (c) {
-                    c.addEventListener('pointerenter', function () { montrer(c); });
-                    c.addEventListener('pointerleave', cacher);
-                    c.addEventListener('focus', function () { montrer(c); });
+                function cacher() { bulle.classList.add('hidden'); reticule.setAttribute('visibility', 'hidden'); }
+                // Prix en vigueur à l'abscisse x : le dernier changement à gauche (ou le premier).
+                function enVigueur(x) {
+                    var choisi = cibles[0];
+                    cibles.forEach(function (c) { if (parseFloat(c.dataset.x) <= x) { choisi = c; } });
+                    return choisi;
+                }
+                zone.addEventListener('pointermove', function (e) {
+                    var r = svg.getBoundingClientRect();
+                    var x = Math.max(g, Math.min(d, (e.clientX - r.left) * svg.viewBox.baseVal.width / r.width));
+                    montrer(enVigueur(x), x);
+                });
+                zone.addEventListener('pointerleave', cacher);
+                cibles.forEach(function (c) {
+                    c.addEventListener('focus', function () { montrer(c, parseFloat(c.dataset.x)); });
                     c.addEventListener('blur', cacher);
                 });
             });
-        })();
+        }
     </script>
     @endverbatim
 </x-vitrine.page>

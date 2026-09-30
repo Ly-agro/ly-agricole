@@ -72,7 +72,10 @@ class CourbeSvgTest extends TestCase
         $this->assertMatchesRegularExpression('/^M[\d.]+ [\d.]+ H[\d.]+ V[\d.]+ H[\d.]+$/', $c['chemin']);
         $this->assertCount(2, $c['marqueurs']);
         // Le premier point est au bord gauche de la zone, à la date de début.
-        $this->assertSame(68.0, $c['marqueurs'][0]['x']);
+        $this->assertSame($c['zone']['gauche'], $c['marqueurs'][0]['x']);
+        // L'aire reprend l'escalier et se ferme sur la ligne de base.
+        $this->assertStringStartsWith($c['chemin'], $c['aire']);
+        $this->assertStringEndsWith(sprintf('V%.1f H%.1f Z', $c['zone']['bas'], $c['zone']['gauche']), $c['aire']);
         // Un prix plus bas se dessine plus bas à l'écran (y plus grand).
         $this->assertGreaterThan($c['marqueurs'][0]['y'], $c['marqueurs'][1]['y']);
         // La ligne va jusqu'au bord droit de la zone, au niveau du dernier prix.
@@ -95,6 +98,17 @@ class CourbeSvgTest extends TestCase
             $this->assertGreaterThanOrEqual($c['zone']['haut'], $m['y']);
             $this->assertLessThanOrEqual($c['zone']['bas'], $m['y']);
         }
+    }
+
+    #[Test]
+    public function sur_plusieurs_annees_les_reperes_sont_les_1er_janvier_et_sur_quelques_jours_des_dates(): void
+    {
+        $annees = CourbeSvg::datesRondes($this->jour('2019-10-01'), $this->jour('2026-09-30'));
+        $this->assertSame(['2020', '2021', '2022', '2023', '2024', '2025', '2026'], array_column($annees, 'libelle'));
+        $this->assertSame('2020-01-01', $annees[0]['date']->toDateString());
+
+        $jours = CourbeSvg::datesRondes($this->jour('2026-09-01'), $this->jour('2026-09-21'));
+        $this->assertSame(['01/09/26', '06/09/26', '11/09/26', '16/09/26', '21/09/26'], array_column($jours, 'libelle'));
     }
 
     #[Test]
@@ -122,9 +136,12 @@ class CourbeSvgTest extends TestCase
         $valeurs = array_column($c['graduations_y'], 'valeur');
         $this->assertLessThanOrEqual(1_200, min($valeurs));
         $this->assertGreaterThanOrEqual(1_850, max($valeurs));
-        $this->assertCount(6, $c['graduations_x']);
-        $this->assertSame('2026-01-01', $c['graduations_x'][0]['date']->toDateString());
-        $this->assertSame('2026-12-31', $c['graduations_x'][5]['date']->toDateString());
+        // Sur un an : un repère tous les deux mois, au 1er du mois, nommé en français.
+        $this->assertSame(['janv. 2026', 'mars 2026', 'mai 2026', 'juil. 2026', 'sept. 2026', 'nov. 2026'], array_column($c['graduations_x'], 'libelle'));
+        $this->assertSame($c['zone']['gauche'], $c['graduations_x'][0]['x']);
+        foreach ($c['graduations_x'] as $grad) {
+            $this->assertLessThanOrEqual($c['zone']['droite'], $grad['x']);
+        }
         // Un prix plus haut est plus haut à l'écran : les graduations descendent quand la valeur monte.
         $ys = array_column($c['graduations_y'], 'y');
         $this->assertSame($ys, collect($ys)->sortDesc()->values()->all());

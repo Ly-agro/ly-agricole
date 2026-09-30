@@ -75,7 +75,7 @@ class AlertesTest extends TestCase
     /** @return list<string> titres des avis reçus */
     private function titres(User $u): array
     {
-        return $u->notifications()->oldest()->get()->map(fn ($n) => (string) $n->data['titre'])->all();
+        return $u->notifications()->reorder()->oldest()->get()->map(fn ($n) => (string) $n->data['titre'])->all();
     }
 
     private function avisDe(User $u, string $titre): int
@@ -183,7 +183,7 @@ class AlertesTest extends TestCase
         $nouvelle->update(['prix_officiel_kg_fcfa' => 450]);
         $nouvelle->update(['prix_officiel_kg_fcfa' => 475]);
 
-        $avis = $this->agent->notifications()->oldest()->get()->map(fn ($n) => $n->data['titre'].' | '.$n->data['texte'])->all();
+        $avis = $this->agent->notifications()->reorder()->oldest()->get()->map(fn ($n) => $n->data['titre'].' | '.$n->data['texte'])->all();
         $this->assertCount(3, $avis);
         $this->assertStringContainsString('ouverte', $avis[0]);
         $this->assertStringContainsString('prix officiel pas encore annoncé', $avis[0]);

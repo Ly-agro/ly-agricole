@@ -11,25 +11,28 @@ use Carbon\CarbonInterface;
  * restent des entiers, jamais recalculés ici.
  *
  * Axe vertical : une seule échelle par graphique, graduée en pas « ronds » (10, 25, 50, 100…),
- * avec une marge autour des valeurs ; jamais sous zéro. Axe horizontal : le temps, linéaire.
+ * avec une marge autour des valeurs ; jamais sous zéro. Axe horizontal : le temps, linéaire, gradué
+ * sur des dates rondes (1er janvier, 1er du mois) selon la durée affichée.
  */
 class CourbeSvg
 {
     public const LARGEUR = 760;
 
-    public const HAUTEUR = 300;
+    public const HAUTEUR = 320;
 
-    private const MARGE = ['gauche' => 68, 'droite' => 112, 'haut' => 18, 'bas' => 38];
+    private const MARGE = ['gauche' => 56, 'droite' => 84, 'haut' => 24, 'bas' => 40];
 
     private const PAS = [5, 10, 25, 50, 100, 200, 250, 500, 1000, 2500, 5000, 10_000, 50_000, 100_000];
+
+    private const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
     /**
      * @param  list<array{date: CarbonInterface, prix: int}>  $points  triés par date croissante, une valeur par date
      * @return array{
-     *     largeur: int, hauteur: int, chemin: string,
+     *     largeur: int, hauteur: int, chemin: string, aire: string,
      *     marqueurs: list<array{x: float, y: float, index: int}>,
      *     graduations_y: list<array{y: float, valeur: int}>,
-     *     graduations_x: list<array{x: float, date: CarbonInterface}>,
+     *     graduations_x: list<array{x: float, date: CarbonInterface, libelle: string}>,
      *     zone: array{gauche: float, droite: float, haut: float, bas: float},
      *     fin: array{x: float, y: float}
      * }|null null s'il n'y a aucun point
@@ -72,23 +75,64 @@ class CourbeSvg
             $graduationsY[] = ['y' => round($y($v), 1), 'valeur' => $v];
         }
 
-        $graduationsX = [];
-        $nb = 5;
-        for ($i = 0; $i <= $nb; $i++) {
-            $date = $debut->copy()->startOfDay()->addSeconds((int) round(($t1 - $t0) * $i / $nb));
-            $graduationsX[] = ['x' => round($g + ($d - $g) * $i / $nb, 1), 'date' => $date];
-        }
+        $graduationsX = array_map(
+            fn (array $t) => ['x' => round($x($t['date']), 1), 'date' => $t['date'], 'libelle' => $t['libelle']],
+            self::datesRondes($debut->copy()->startOfDay(), $debut->copy()->startOfDay()->setTimestamp($t1)),
+        );
+
+        // Aire sous l'escalier, fermée sur la ligne de base : un lavis, jamais une masse pleine.
+        $aire = $chemin.sprintf(' V%.1f H%.1f Z', $b, $marqueurs[0]['x']);
 
         return [
             'largeur' => self::LARGEUR,
             'hauteur' => self::HAUTEUR,
             'chemin' => $chemin,
+            'aire' => $aire,
             'marqueurs' => $marqueurs,
             'graduations_y' => $graduationsY,
             'graduations_x' => $graduationsX,
             'zone' => ['gauche' => (float) $g, 'droite' => (float) $d, 'haut' => (float) $h, 'bas' => (float) $b],
             'fin' => ['x' => (float) $d, 'y' => round($yPrecedent, 1)],
         ];
+    }
+
+    /**
+     * Graduations du temps sur des dates rondes, 3 à 8 environ : le 1er janvier (« 2024 ») sur
+     * plusieurs années, le 1er du mois (« oct. 2025 ») sur quelques mois, sinon des jours réguliers.
+     *
+     * @return list<array{date: CarbonInterface, libelle: string}>
+     */
+    public static function datesRondes(CarbonInterface $debut, CarbonInterface $fin): array
+    {
+        $mois = ($fin->year - $debut->year) * 12 + $fin->month - $debut->month;
+        $dates = [];
+
+        if ($mois >= 30) {
+            $saut = $mois > 96 ? 2 : 1;
+            for ($a = $debut->year + ($debut->dayOfYear > 1 ? 1 : 0); $a <= $fin->year; $a += $saut) {
+                $dates[] = ['date' => $debut->copy()->setDate($a, 1, 1), 'libelle' => (string) $a];
+            }
+        } elseif ($mois >= 3) {
+            $saut = $mois <= 7 ? 1 : ($mois <= 14 ? 2 : ($mois <= 21 ? 3 : 6));
+            $courant = $debut->copy()->startOfMonth();
+            if ($courant->lessThan($debut)) {
+                $courant->addMonthNoOverflow();
+            }
+            for (; $courant->lessThanOrEqualTo($fin); $courant->addMonthsNoOverflow($saut)) {
+                $dates[] = ['date' => $courant->copy(), 'libelle' => self::MOIS[$courant->month - 1].' '.$courant->year];
+            }
+        }
+
+        if (count($dates) < 2) {
+            $dates = [];
+            $jours = max((int) $debut->diffInDays($fin), 1);
+            for ($i = 0; $i <= 4; $i++) {
+                $date = $debut->copy()->addDays((int) round($jours * $i / 4));
+                $dates[] = ['date' => $date, 'libelle' => $date->format('d/m/y')];
+            }
+        }
+
+        return $dates;
     }
 
     /**

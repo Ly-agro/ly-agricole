@@ -67,6 +67,12 @@ php artisan notifications:alertes      # alertes du jour (planifiée à 7 h via 
 php artisan ly:sauvegarder --verifier  # archive base + fichiers, puis VRAIE restauration comparée (docs/MISE_EN_PRODUCTION.md)
 ```
 
+Tunnel public HTTPS (démo, téléphone) : `ngrok start --config "$LOCALAPPDATA/ngrok/ly-agricole.yml"
+--config ngrok.yml ly-agricole` avec `serve` lancé sur `localhost:8000`. Jeton du compte ngrok **de
+LY** dans `ly-agricole.yml` (hors dépôt) ; **jamais** `%LOCALAPPDATA%\ngrok\ngrok.yml`, qui porte le
+jeton de Tharamotors. Proxy local de confiance dans `bootstrap/app.php`. Faire
+`npm run build` avant : sans build, `public/hot` pointe vers un Vite local injoignable du dehors.
+
 Notifications push du bureau : lancer `serve` **et** `queue:work` avec
 `OPENSSL_CONF=C:\xampp\php\extras\ssl\openssl.cnf` (voir pièges).
 

@@ -145,10 +145,13 @@ class NotificationsTest extends TestCase
     {
         $valide = $this->acheter();
         Achats::valider($valide, $this->comptable);
+        // Deux avis dans la même seconde n'ont pas d'ordre (identifiants UUID) : on sépare les dates.
+        $this->travel(1)->seconds();
         $refuse = $this->acheter();
         Achats::refuser($refuse, $this->direction, 'Pesée illisible sur la photo');
 
-        $titres = $this->agent->notifications()->oldest()->get()->map(fn ($n) => $n->data['titre'].' | '.$n->data['texte'])->all();
+        // notifications() trie déjà du plus récent au plus ancien : reorder() avant oldest().
+        $titres = $this->agent->notifications()->reorder()->oldest()->get()->map(fn ($n) => $n->data['titre'].' | '.$n->data['texte'])->all();
         $this->assertCount(2, $titres);
         $this->assertStringStartsWith("Achat {$valide->reference} validé", $titres[0]);
         $this->assertStringStartsWith("Achat {$refuse->reference} refusé", $titres[1]);

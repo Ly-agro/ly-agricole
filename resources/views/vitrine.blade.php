@@ -103,7 +103,7 @@
                     <p data-reveal class="v-carte mt-8 rounded-2xl p-6">Aucun prix publié pour le moment.</p>
                 @else
                     <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                        @foreach ($prix as $i => $ligne)
+                        @foreach ($prixEnAvant as $i => $ligne)
                             <article data-reveal style="--d: {{ 0.1 * ($i % 3) }}s" class="v-carte rounded-2xl p-6">
                                 <h3 class="text-lg font-semibold">{{ $ligne['produit']->nom }}</h3>
                                 <p class="mt-2 text-3xl font-semibold tabular-nums">{{ \App\Support\Format::entier($ligne['prix']->prix_kg_fcfa) }} <span class="text-base font-normal v-texte-doux">FCFA / kg</span></p>
@@ -124,6 +124,48 @@
                             </article>
                         @endforeach
                     </div>
+
+                    {{-- Les autres prix, repliés : un clic les liste, sans quitter la page. --}}
+                    @if ($prixAutres->isNotEmpty())
+                        <details class="v-carte group mt-5 rounded-2xl" data-autres-prix>
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 font-medium [&::-webkit-details-marker]:hidden">
+                                <span class="group-open:hidden">Afficher les {{ $prixAutres->count() }} autres cultures</span>
+                                <span class="hidden group-open:inline">Masquer les autres cultures</span>
+                                <span class="v-texte-doux text-sm transition-transform group-open:rotate-180" aria-hidden="true">▾</span>
+                            </summary>
+                            <div class="overflow-x-auto border-t border-[#34251a]/10">
+                                <table class="w-full min-w-[520px] text-left text-sm">
+                                    <caption class="sr-only">Prix des autres cultures</caption>
+                                    <thead>
+                                        <tr class="v-texte-doux text-xs">
+                                            <th scope="col" class="px-6 py-2 font-medium">Culture</th>
+                                            <th scope="col" class="px-3 py-2 text-right font-medium">FCFA / kg</th>
+                                            <th scope="col" class="px-3 py-2 text-right font-medium">Écart</th>
+                                            <th scope="col" class="px-6 py-2 font-medium">Au</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($prixAutres as $ligne)
+                                            <tr class="border-t border-[#34251a]/10">
+                                                <th scope="row" class="px-6 py-2 font-medium">
+                                                    <a href="{{ route('prix.evolution', ['produit' => $ligne['produit']->id]) }}" class="underline decoration-dotted">{{ $ligne['produit']->nom }}</a>
+                                                </th>
+                                                <td class="px-3 py-2 text-right font-semibold tabular-nums">{{ \App\Support\Format::entier($ligne['prix']->prix_kg_fcfa) }}</td>
+                                                <td class="whitespace-nowrap px-3 py-2 text-right text-xs tabular-nums">
+                                                    @if ($ligne['ecart'] !== null && $ligne['ecart'] !== 0)
+                                                        <span class="{{ $ligne['ecart'] > 0 ? 'text-emerald-700' : 'text-red-700' }}">{{ $ligne['ecart'] > 0 ? '▲ +' : '▼ −' }}{{ \App\Support\Format::entier(abs($ligne['ecart'])) }}</span>
+                                                    @else
+                                                        <span class="v-texte-doux">—</span>
+                                                    @endif
+                                                </td>
+                                                <td class="v-texte-doux px-6 py-2 text-xs tabular-nums">{{ $ligne['prix']->date_effet->format('d/m/Y') }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    @endif
                 @endif
                 @if ($sansPrix->isNotEmpty())
                     <div data-reveal class="mt-8">
@@ -137,7 +179,7 @@
                     </div>
                 @endif
                 @if ($prix->isNotEmpty())
-                    <p data-reveal class="mt-5"><a href="{{ route('prix.evolution') }}" class="v-lien text-sm font-medium">Voir toutes les cultures, campagne après campagne, et les courbes →</a></p>
+                    <p data-reveal class="mt-5"><a href="{{ route('prix.evolution') }}" class="v-bouton inline-block rounded-md bg-emerald-800 px-5 py-3 text-sm font-medium text-white hover:bg-emerald-900">Voir tous les prix et les courbes <span class="v-fleche" aria-hidden="true">→</span></a></p>
                 @endif
                 <p data-reveal class="v-texte-doux mt-5 text-xs">Prix indicatifs relevés à la date indiquée, avec leur source. Ils ne remplacent pas le prix officiel fixé pour la campagne.</p>
             </section>
@@ -242,6 +284,18 @@
                             <span class="font-medium">LY AGRICOLE</span><br>
                             <span class="v-texte-doux">Siège : Yopougon Gesco, Abidjan<br>Côte d'Ivoire</span>
                         </address>
+                        @php($email = config('vitrine.contact.email'))
+                        @php($tel = config('vitrine.contact.telephone'))
+                        <ul class="mt-4 space-y-2">
+                            <li>
+                                <span class="v-texte-doux text-sm">E-mail</span><br>
+                                <a href="mailto:{{ $email }}" class="v-lien font-medium" data-contact-email>{{ $email }}</a>
+                            </li>
+                            <li>
+                                <span class="v-texte-doux text-sm">Téléphone</span><br>
+                                <a href="tel:+225{{ $tel }}" class="v-lien font-medium tabular-nums" data-contact-telephone>{{ \App\Support\Telephone::afficher($tel) }}</a>
+                            </li>
+                        </ul>
                     </div>
                     <div data-reveal="droite">
                         <h2 class="text-2xl font-semibold tracking-tight">Producteur, agent, partenaire ?</h2>

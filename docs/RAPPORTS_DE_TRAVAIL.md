@@ -5,6 +5,46 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-30 (soir) — Prix sur la vitrine repliés, « Voir tous » immédiat, test d'avis stabilisé, fusion — FAIT
+
+- **Vitrine** : 6 cartes de prix d'emblée (anacarde, karité, tomate, cacao, café, hévéa), les
+  27 autres derrière « Afficher les autres cultures » (tableau replié), bouton « Voir tous les prix ».
+- **`/prix`** : recherche d'une culture dans le tableau à chaque lettre (sans accents) ; filtres
+  des courbes appliqués dès le choix, sans bouton ni rechargement (zone des courbes remplacée,
+  adresse mise à jour, bouton gardé sans JavaScript) ; campagnes proposées : celles du produit
+  choisi seulement (116 sinon) ; dates visibles seulement pour « Dates personnalisées ».
+  Vu dans Chrome : « ba » → 2 cultures ; Hévéa puis campagne 2023-2024 → courbe et info-bulle.
+- **Test d'avis instable** : `notifications()` trie déjà du plus récent au plus ancien, `oldest()`
+  ne faisait qu'ajouter un second critère ; le test ne passait que par hasard dans une même
+  seconde. `reorder()->oldest()` et une seconde d'écart (NotificationsTest, AlertesTest).
+
+---
+
+## 2026-09-30 (suite) — Prix relevés des autres cultures, courbe refaite, contact, ngrok — FAIT, À FAIRE RELIRE
+
+- **Prix** (`HistoriquePrixCulturesSeeder`, d'après `docs/Prixrelever1-3`) : 95 prix, 29 cultures,
+  un par année de campagne, tous avec lien. Coton, karité, canne : prix officiels ; hévéa, palmier :
+  moyennes des prix mensuels/par période (APROMAC, CHPHC) ; riz, maïs, vivriers : ANADER, année
+  civile Y rangée dans (Y-1)-Y. Chargé dans MySQL (24 → 119 prix).
+- **Écartés** : prix de marché 2025-2026 sans lien de Prixrelever1 (N'kalo, Fratmat… dont des prix
+  de détail à Abidjan) ; « proxies » ANADER de Prixrelever2 pour hévéa (283/312/272), palmier
+  (207/244/225, invraisemblable pour le régime payé 65-80) et riz (194/238/302), contredits par
+  APROMAC, CHPHC et ADERIZ (Prixrelever3). Sans source : sésame, piment, hibiscus, poivre.
+- **À relire** : palmier 2022-2023 (77) et 2023-2024 (66) contiennent un mois estimé (≈ 71) ;
+  canne 2024-2025 arrondie (20 250 F/t → 20 F/kg) ; coton 2020-2021 : 300 (KOACI dit 270).
+- **Courbe** (`CourbeSvg` + `prix/evolution`) : aire en dégradé sous l'escalier, grille en filets,
+  repères de temps sur dates rondes (« 2024 », « oct. 2025 »), pastille du dernier prix, réticule
+  qui suit le pointeur et info-bulle (prix en vigueur, date, source) ; en-tête prix en grand +
+  variation. Vu dans Chrome (hévéa, survol à 2022-2023 → 295, source APROMAC).
+- **Contact** : direction@ylagro.com, 07 78 15 58 78 (`config/vitrine.php`, « Nous trouver » et
+  pied de page, liens mailto/tel) ; `MAIL_FROM_ADDRESS` et sujet VAPID mis à jour.
+- **ngrok** : `ngrok.yml` (tunnel `ly-agricole` → localhost:8000, sans jeton ; jeton du compte LY dans
+  `%LOCALAPPDATA%/ngrok/ly-agricole.yml`, pas celui de Tharamotors) ; `trustProxies`
+  limité à 127.0.0.1/::1. Config validée par `ngrok config check` ; en-têtes X-Forwarded simulés →
+  ressources en https. Tunnel non lancé.
+
+---
+
 ## 2026-09-30 — Prix des campagnes passées (cacao, café, anacarde) — FAIT, À FAIRE RELIRE
 
 - 37 cultures (`CulturesSeeder`) ; tableau d'ensemble de `/prix` : cultures × 7 dernières

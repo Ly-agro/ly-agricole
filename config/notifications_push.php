@@ -9,7 +9,7 @@ return [
      * Sans clés, rien ne part vers les navigateurs ; la liste dans l'application reste.
      */
     'vapid' => [
-        'sujet' => $env('PUSH_VAPID_SUJET') ?? 'mailto:contact@ylagro.com',
+        'sujet' => $env('PUSH_VAPID_SUJET') ?? 'mailto:direction@ylagro.com',
         'publique' => $env('PUSH_VAPID_PUBLIQUE'),
         'privee' => $env('PUSH_VAPID_PRIVEE'),
     ],

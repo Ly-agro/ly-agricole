@@ -1,0 +1,400 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Prix à relever</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap">
+<style>
+  /* Fiche de travail : cultures en lignes, années de campagne (octobre à septembre) en colonnes. */
+  :root {
+    --bg: #f5f1e8;
+    --surface: #fffdf8;
+    --ink: #24201a;
+    --ink-2: #6a6256;
+    --line: #ddd5c4;
+    --accent: #1f6f43;
+    --accent-ink: #ffffff;
+    --accent-soft: #dcecdf;
+    --warn: #8a5a00;
+    --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "Spline Sans Mono", ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1813; --surface: #24211a; --ink: #eee7d8; --ink-2: #a89f8d; --line: #3d382c;
+      --accent: #5fbf85; --accent-ink: #10281a; --accent-soft: #23382b; --warn: #e0b060;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1813; --surface: #24211a; --ink: #eee7d8; --ink-2: #a89f8d; --line: #3d382c;
+    --accent: #5fbf85; --accent-ink: #10281a; --accent-soft: #23382b; --warn: #e0b060;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+  .page { max-width: 1180px; margin: 0 auto; padding: 28px 16px 56px; display: grid; gap: 22px; }
+  h1 { margin: 0; font-size: clamp(1.6rem, 3vw + 1rem, 2.3rem); line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance; }
+  .intro { margin: 8px 0 0; max-width: 62ch; color: var(--ink-2); }
+  .regles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin: 0; padding: 0; list-style: none; }
+  .regles li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  .regles strong { display: block; margin-bottom: 2px; }
+  .barre { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; justify-content: space-between; }
+  .barre-gauche { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-width: 0; }
+  input[type="search"], input[type="text"], input[type="number"], textarea, select {
+    font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  }
+  input:focus-visible, button:focus-visible, textarea:focus-visible, a:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input[type="search"] { width: min(280px, 100%); }
+  label.case { display: inline-flex; gap: 6px; align-items: center; color: var(--ink-2); font-size: 14px; }
+  .compteur { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); }
+  .compteur b { color: var(--accent); font-weight: 500; }
+  button { font: inherit; font-weight: 600; border-radius: 8px; padding: 9px 14px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  button.second { background: transparent; color: var(--accent); }
+  button:hover { filter: brightness(1.08); }
+  .tableau-cadre { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 980px; }
+  thead th { position: sticky; top: env(safe-area-inset-top, 0px); background: var(--surface); text-align: right; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-2); padding: 10px 6px; border-bottom: 1px solid var(--line); z-index: 2; }
+  thead th:first-child, tbody th { text-align: left; position: sticky; left: 0; background: var(--surface); z-index: 3; }
+  thead th:first-child { z-index: 4; padding-left: 14px; }
+  thead th.src { text-align: left; }
+  tbody th { font-weight: 600; padding: 8px 10px 8px 14px; border-bottom: 1px solid var(--line); min-width: 190px; max-width: 240px; }
+  tbody th a { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--accent); }
+  tbody th .note { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 400; line-height: 1.35; color: var(--warn); }
+  tbody td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+  td input.prix { width: 84px; text-align: right; font-family: var(--font-mono); font-size: 13px; padding: 7px 8px; }
+  td input.prix.rempli { border-color: var(--accent); background: var(--accent-soft); }
+  td.src { text-align: left; padding-right: 10px; min-width: 250px; }
+  td.src input { width: 100%; font-size: 13px; }
+  tr.cache { display: none; }
+  .export { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .export h2 { margin: 0; font-size: 1.05rem; }
+  .export p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 70ch; }
+  textarea { width: 100%; min-height: 150px; font-family: var(--font-mono); font-size: 12.5px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .etat { font-size: 13px; color: var(--accent); min-height: 1.2em; }
+  @media (prefers-reduced-motion: no-preference) { td input.prix { transition: background .15s, border-color .15s; } }
+</style>
+
+<main class="page">
+  <header>
+    <h1>Prix à relever, culture par culture</h1>
+    <p class="intro">34 cultures, 7 années de campagne. Les prix bord champ officiels déjà trouvés (coton, karité, canne à sucre) sont conservés. Les données ANADER 2021-2023 sont ajoutées ; comme elles sont annuelles et non oct.-sept., elles sont explicitement marquées comme proxies. Saisissez le reste quand vous le trouvez. Le cacao, le café et l'anacarde sont déjà dans la plateforme. Ce que vous saisissez ici reste dans votre navigateur jusqu'à ce que vous le copiez.</p>
+  </header>
+
+  <ul class="regles">
+    <li><strong>Prix en FCFA par kilo</strong>Un entier, sans espace. Le prix du kilo au producteur (bord-champ) si vous le trouvez, sinon dites dans « Source » que c'est un prix de marché.</li>
+    <li><strong>Année de campagne</strong>D'octobre à septembre. « 2023-2024 » va d'octobre 2023 à septembre 2024. Une campagne de février 2024 entre dans 2023-2024.</li>
+    <li><strong>Une source par ligne</strong>Le nom du site ou du document, et le lien si possible. Sans source, le prix ne sera pas publié.</li>
+  </ul>
+
+  <div class="barre">
+    <div class="barre-gauche">
+      <input type="search" id="filtre" placeholder="Chercher une culture" aria-label="Chercher une culture">
+      <label class="case" for="seulement-vides"><input type="checkbox" id="seulement-vides"> Seulement celles à remplir</label>
+    </div>
+    <div class="compteur" id="compteur" aria-live="polite"></div>
+  </div>
+
+  <div class="tableau-cadre" role="region" aria-label="Tableau des prix à saisir" tabindex="0">
+    <table>
+      <thead>
+        <tr id="entete"></tr>
+      </thead>
+      <tbody id="corps"></tbody>
+    </table>
+  </div>
+
+  <section class="export" aria-labelledby="titre-export">
+    <h2 id="titre-export">À me renvoyer</h2>
+    <p>Une ligne par prix : culture ; année de campagne ; prix ; source. Copiez le texte et collez-le dans la conversation : je le saisis dans la plateforme avec les sources.</p>
+    <textarea id="sortie" readonly aria-label="Prix saisis, prêts à copier" placeholder="Rien à copier pour l'instant."></textarea>
+    <div class="actions">
+      <button type="button" id="copier">Copier les prix saisis</button>
+      <button type="button" class="second" id="vider">Tout effacer</button>
+      <span class="etat" id="etat" role="status"></span>
+    </div>
+  </section>
+</main>
+
+<script>
+  var CULTURES = [
+    ["tomate","Tomate"],["hevea","Hévéa (caoutchouc)"],["palmier-huile","Palmier à huile"],["coton","Coton"],
+    ["mais","Maïs"],["riz","Riz"],["manioc","Manioc"],["igname","Igname"],["banane-plantain","Banane plantain"],
+    ["banane-dessert","Banane dessert"],["ananas","Ananas"],["mangue","Mangue"],["arachide","Arachide"],
+    ["soja","Soja"],["sesame","Sésame"],["piment","Piment"],["gombo","Gombo"],["aubergine","Aubergine"],
+    ["oignon","Oignon"],["cola","Noix de cola"],["gingembre","Gingembre"],["hibiscus","Hibiscus (bissap)"],
+    ["sucre","Canne à sucre"],["patate-douce","Patate douce"],["taro","Taro"],["papaye","Papaye"],
+    ["poivre","Poivre"],["niebe","Niébé (haricot)"],["fonio","Fonio"],["sorgho","Sorgho"],["mil","Mil"],
+    ["concombre","Concombre"],["chou","Chou"],["karite","Karité"]
+  ];
+  var ANNEES = ["2019-2020","2020-2021","2021-2022","2022-2023","2023-2024","2024-2025","2025-2026"];
+  var CLE = "ly-agricole-prix-a-relever";
+
+  /* Prix bord champ officiels relevés le 30/09/2026. Ils ne remplacent jamais une saisie déjà faite. */
+  var PREREMPLI = {
+    "coton": {
+      prix: { "2019-2020": "300", "2020-2021": "300", "2021-2022": "300", "2022-2023": "310", "2023-2024": "310", "2024-2025": "310", "2025-2026": "310" },
+      source: "Prix officiel coton graine 1er choix (Gouvernement). 2019-20 : CGECI https://cgeci.com/cote-divoire-le-prix-du-coton-graine-fixe-a-300-fcfakg-pour-la-campagne-2019-2020-17/ · 2020-21 : FratMat https://www.fratmat.info/article/207423/ (KOACI annonce 270) · 2021-22 : Financial Afrik https://www.financialafrik.com/2021/10/08/cote-divoire-le-prix-du-coton-graine-fixe-a-300-fcfa-kg-pour-la-campagne-2021-2022/ · 2022-23 : Abidjan.net https://news.abidjan.net/articles/710150 · 2023-24 : Educarriere https://news.educarriere.ci/news-37435 · 2024-25 : AIP https://www.aip.ci/88464/ · 2025-26 : AIP https://www.aip.ci/228182/"
+    },
+    "karite": {
+      prix: { "2024-2025": "250", "2025-2026": "250" },
+      source: "Prix minimum bord champ des amandes de karité (CCAK). Août 2025 : Financial Afrik https://www.financialafrik.com/2025/08/13/cote-divoire-le-prix-des-amandes-de-karite-bien-sechees-et-triees-fixe-a-250-f-cfa-kg/ · campagne dite « 2026-2027 » ouverte le 14/08/2026, donc en 2025-2026 : Financial Afrik https://www.financialafrik.com/2026/08/14/karite-la-cote-divoire-fixe-a-250-fcfa-le-prix-bord-champ-pour-la-campagne-2026-2027/"
+    },
+    "sucre": {
+      prix: { "2023-2024": "18", "2024-2025": "20" },
+      source: "Prix de la tonne de canne payé aux planteurs villageois : 18 000 FCFA/t en 2023-24, 20 250 FCFA/t pour la campagne lancée le 31/10/2024 (arrondi à 20 FCFA/kg). Afrik Soir https://afriksoir.net/cote-divoire-tonne-canne-sucre-a-20-250-fcfa-distillerie-sucaf-ci-ferke/"
+    }
+  };
+
+  /* Ce qu'il faut savoir avant de chercher, affiché sous le nom de la culture. */
+
+  /* Données vérifiées ANADER 2021-2023.
+     ATTENTION : la source est annuelle (année civile), pas une moyenne octobre-septembre.
+     Affectation utilisée : 2021 -> campagne 2020-2021, 2022 -> 2021-2022, 2023 -> 2022-2023.
+     Les valeurs sont donc explicitement des PROXIES, pas des moyennes de campagne calculées. */
+  var ANADER_PROXY = {
+  "tomate": {
+    prix: {"2020-2021":"395", "2021-2022":"476", "2022-2023":"473"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "hevea": {
+    prix: {"2020-2021":"283", "2021-2022":"312", "2022-2023":"272"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "palmier-huile": {
+    prix: {"2020-2021":"207", "2021-2022":"244", "2022-2023":"225"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "mais": {
+    prix: {"2020-2021":"283", "2021-2022":"246", "2022-2023":"282"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "riz": {
+    prix: {"2020-2021":"194", "2021-2022":"238", "2022-2023":"302"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "manioc": {
+    prix: {"2020-2021":"137", "2021-2022":"153", "2022-2023":"177"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "igname": {
+    prix: {"2020-2021":"332", "2021-2022":"379", "2022-2023":"252"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "banane-plantain": {
+    prix: {"2020-2021":"156", "2021-2022":"207", "2022-2023":"338"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "banane-dessert": {
+    prix: {"2020-2021":"160", "2021-2022":"188", "2022-2023":"264"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "ananas": {
+    prix: {"2020-2021":"456", "2021-2022":"375", "2022-2023":"259"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "mangue": {
+    prix: {"2020-2021":"272", "2021-2022":"201", "2022-2023":"229"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "arachide": {
+    prix: {"2020-2021":"325", "2021-2022":"239", "2022-2023":"289"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "soja": {
+    prix: {"2020-2021":"340", "2021-2022":"433"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "gombo": {
+    prix: {"2020-2021":"348", "2021-2022":"442", "2022-2023":"521"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "aubergine": {
+    prix: {"2020-2021":"249", "2021-2022":"364", "2022-2023":"383"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "oignon": {
+    prix: {"2020-2021":"429", "2021-2022":"533", "2022-2023":"536"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "cola": {
+    prix: {"2020-2021":"783", "2021-2022":"240"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "gingembre": {
+    prix: {"2020-2021":"163", "2021-2022":"168", "2022-2023":"281"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "patate-douce": {
+    prix: {"2020-2021":"143", "2021-2022":"299", "2022-2023":"244"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "taro": {
+    prix: {"2020-2021":"180", "2021-2022":"299", "2022-2023":"270"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "papaye": {
+    prix: {"2020-2021":"312", "2021-2022":"173", "2022-2023":"167"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "niebe": {
+    prix: {"2020-2021":"443", "2021-2022":"433", "2022-2023":"484"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "fonio": {
+    prix: {"2020-2021":"262", "2021-2022":"238", "2022-2023":"237"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "sorgho": {
+    prix: {"2020-2021":"589", "2021-2022":"343"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "mil": {
+    prix: {"2020-2021":"401", "2021-2022":"486", "2022-2023":"419"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "concombre": {
+    prix: {"2020-2021":"292", "2021-2022":"235", "2022-2023":"248"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  },
+  "chou": {
+    prix: {"2020-2021":"308", "2021-2022":"389", "2022-2023":"382"},
+    source: "ANADER — prix bord champ annuel 2021-2023 (MINADERPV, Annuaire statistique agricole 2022-2023), utilisés comme proxy de la campagne contenant l'année civile correspondante. Source : https://www.agriculture.gouv.ci/uploads/publications/177557071266.pdf"
+  }
+  };
+
+  Object.keys(ANADER_PROXY).forEach(function (code) {
+    var p = ANADER_PROXY[code];
+    PREREMPLI[code] = PREREMPLI[code] || { prix: {}, source: "" };
+    PREREMPLI[code].prix = PREREMPLI[code].prix || {};
+    Object.keys(p.prix).forEach(function (an) {
+      if (!PREREMPLI[code].prix[an]) PREREMPLI[code].prix[an] = p.prix[an];
+    });
+    var base = (PREREMPLI[code].source || "").trim();
+    PREREMPLI[code].source = base
+      ? base + " | " + p.source
+      : p.source;
+  });
+
+  var NOTES = {
+    "mais": "2021-2023 : données ANADER annuelles utilisées comme proxy de campagne ; voir la source dans la colonne Source.",
+    "hevea": "Prix APROMAC fixé chaque mois : faire la moyenne des 12 mois (oct.-sept.) de chaque campagne.",
+    "palmier-huile": "Prix des régimes fixé par période (ex. 65 000 FCFA/t oct.-déc. 2023, 80 000 FCFA/t fin 2025) : faire la moyenne de la campagne.",
+    "sucre": "Prix 2025-2026 non publié : la campagne a été lancée le 24/10/2025 sans annonce de prix.",
+    "karite": "Pas de prix officiel avant 2025.",
+    "coton": "2020-2021 : 300 selon FratMat, 270 selon KOACI. 300 retenu (prix « maintenu » en 2021-2022)."
+  };
+
+  var etat = {};
+
+  function charger() {
+    try { etat = JSON.parse(localStorage.getItem(CLE) || "{}") || {}; } catch (e) { etat = {}; }
+    Object.keys(PREREMPLI).forEach(function (code) {
+      var p = PREREMPLI[code];
+      etat[code] = etat[code] || { prix: {}, source: "" };
+      etat[code].prix = etat[code].prix || {};
+      Object.keys(p.prix).forEach(function (an) { if (!etat[code].prix[an]) etat[code].prix[an] = p.prix[an]; });
+      if (!(etat[code].source || "").trim()) etat[code].source = p.source;
+    });
+  }
+  function sauver() { try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) { /* stockage indisponible : la saisie reste en mémoire */ } }
+
+  function lien(nom) {
+    return "https://www.google.com/search?q=" + encodeURIComponent("prix bord champ " + nom + " Côte d'Ivoire campagne FCFA kg");
+  }
+
+  function construire() {
+    var tete = document.getElementById("entete");
+    var th = document.createElement("th"); th.scope = "col"; th.textContent = "Culture"; tete.appendChild(th);
+    ANNEES.forEach(function (a) { var h = document.createElement("th"); h.scope = "col"; h.textContent = a; tete.appendChild(h); });
+    var s = document.createElement("th"); s.scope = "col"; s.className = "src"; s.textContent = "Source (nom et lien)"; tete.appendChild(s);
+
+    var corps = document.getElementById("corps");
+    CULTURES.forEach(function (c) {
+      var tr = document.createElement("tr"); tr.dataset.code = c[0]; tr.dataset.nom = c[1].toLowerCase();
+      var nom = document.createElement("th"); nom.scope = "row";
+      nom.appendChild(document.createTextNode(c[1]));
+      if (NOTES[c[0]]) { var n = document.createElement("span"); n.className = "note"; n.textContent = NOTES[c[0]]; nom.appendChild(n); }
+      var a = document.createElement("a"); a.href = lien(c[1]); a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Chercher sur internet";
+      nom.appendChild(a); tr.appendChild(nom);
+      ANNEES.forEach(function (an) {
+        var td = document.createElement("td"); var i = document.createElement("input");
+        i.type = "text"; i.inputMode = "numeric"; i.className = "prix"; i.id = "p-" + c[0] + "-" + an;
+        i.setAttribute("aria-label", c[1] + ", campagne " + an + ", FCFA par kilo");
+        i.dataset.code = c[0]; i.dataset.annee = an; i.placeholder = "—";
+        var v = (etat[c[0]] && etat[c[0]].prix && etat[c[0]].prix[an]) || "";
+        i.value = v; if (v) i.classList.add("rempli");
+        i.addEventListener("input", surPrix);
+        td.appendChild(i); tr.appendChild(td);
+      });
+      var ts = document.createElement("td"); ts.className = "src";
+      var si = document.createElement("input"); si.type = "text"; si.id = "s-" + c[0];
+      si.setAttribute("aria-label", c[1] + ", source"); si.placeholder = "Ex. Ministère de l'Agriculture, https://…";
+      si.dataset.code = c[0]; si.value = (etat[c[0]] && etat[c[0]].source) || "";
+      si.title = si.value;
+      si.addEventListener("input", surSource);
+      ts.appendChild(si); tr.appendChild(ts);
+      corps.appendChild(tr);
+    });
+  }
+
+  function surPrix(e) {
+    var i = e.target; var v = i.value.replace(/[^0-9]/g, "");
+    if (v !== i.value) i.value = v;
+    var c = i.dataset.code; etat[c] = etat[c] || { prix: {}, source: "" }; etat[c].prix = etat[c].prix || {};
+    if (v) etat[c].prix[i.dataset.annee] = v; else delete etat[c].prix[i.dataset.annee];
+    i.classList.toggle("rempli", !!v);
+    sauver(); majSortie(); filtrer();
+  }
+  function surSource(e) {
+    var c = e.target.dataset.code; etat[c] = etat[c] || { prix: {}, source: "" };
+    etat[c].source = e.target.value; e.target.title = e.target.value; sauver(); majSortie();
+  }
+
+  function nbRenseignes() {
+    var n = 0; CULTURES.forEach(function (c) { var p = etat[c[0]] && etat[c[0]].prix; if (p) n += Object.keys(p).length; }); return n;
+  }
+  function ligneVide(code) { var p = etat[code] && etat[code].prix; return !p || Object.keys(p).length === 0; }
+
+  function filtrer() {
+    var q = document.getElementById("filtre").value.trim().toLowerCase();
+    var vides = document.getElementById("seulement-vides").checked;
+    document.querySelectorAll("#corps tr").forEach(function (tr) {
+      var ok = (!q || tr.dataset.nom.indexOf(q) !== -1) && (!vides || ligneVide(tr.dataset.code));
+      tr.classList.toggle("cache", !ok);
+    });
+    var lignes = CULTURES.filter(function (c) { return !ligneVide(c[0]); }).length;
+    document.getElementById("compteur").innerHTML = "<b>" + nbRenseignes() + "</b> prix sur " + (CULTURES.length * ANNEES.length) + " cases · <b>" + lignes + "</b> cultures commencées";
+  }
+
+  function majSortie() {
+    var out = [];
+    CULTURES.forEach(function (c) {
+      var d = etat[c[0]]; if (!d || !d.prix) return;
+      ANNEES.forEach(function (a) { if (d.prix[a]) out.push(c[1] + " ; " + a + " ; " + d.prix[a] + " ; " + ((d.source || "").trim() || "SOURCE MANQUANTE")); });
+    });
+    document.getElementById("sortie").value = out.join("\n");
+  }
+
+  document.getElementById("copier").addEventListener("click", function () {
+    var t = document.getElementById("sortie"); var msg = document.getElementById("etat");
+    if (!t.value) { msg.textContent = "Rien à copier : saisissez au moins un prix."; return; }
+    function repli() { t.focus(); t.select(); msg.textContent = "Texte sélectionné : copiez-le avec Ctrl+C."; }
+    try {
+      navigator.clipboard.writeText(t.value).then(function () { msg.textContent = "Copié. Collez-le dans la conversation."; }, repli);
+    } catch (e) { repli(); }
+  });
+  document.getElementById("vider").addEventListener("click", function () {
+    var b = this;
+    if (b.dataset.confirme !== "1") { b.dataset.confirme = "1"; b.textContent = "Confirmer l'effacement"; setTimeout(function () { b.dataset.confirme = ""; b.textContent = "Tout effacer"; }, 4000); return; }
+    etat = {}; sauver(); document.getElementById("corps").innerHTML = ""; document.getElementById("entete").innerHTML = "";
+    construire(); majSortie(); filtrer(); b.dataset.confirme = ""; b.textContent = "Tout effacer"; document.getElementById("etat").textContent = "Saisies effacées.";
+  });
+  document.getElementById("filtre").addEventListener("input", filtrer);
+  document.getElementById("seulement-vides").addEventListener("change", filtrer);
+
+  charger(); construire(); majSortie(); filtrer();
+</script>
+
+</body></html>

@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectUsersTo('/tableau-de-bord');
+        // Seul un proxy sur la machine même (tunnel ngrok, proxy local) est cru sur X-Forwarded-* :
+        // les liens et les ressources sortent alors en https, sans faire confiance au reste du réseau.
+        $middleware->trustProxies(at: ['127.0.0.1', '::1']);
         $middleware->appendToGroup('web', CompteActif::class);
         $middleware->appendToGroup('api', CompteActif::class);
     })
