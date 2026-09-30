@@ -43,6 +43,7 @@ class PrixController extends Controller
         })->all();
 
         return view('prix.evolution', [
+            'tableau' => Publications::tableauCampagnes(7),
             'produits' => $produits,
             'produitChoisi' => $choisi,
             'periode' => $periode,

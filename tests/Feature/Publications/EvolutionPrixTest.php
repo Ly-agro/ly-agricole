@@ -7,6 +7,7 @@ use App\Models\Campagne;
 use App\Models\Produit;
 use App\Models\User;
 use App\Services\Publications;
+use Database\Seeders\CulturesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
@@ -165,6 +166,49 @@ class EvolutionPrixTest extends TestCase
     }
 
     #[Test]
+    public function le_tableau_d_ensemble_liste_toutes_les_cultures_actives_sur_les_sept_dernieres_campagnes(): void
+    {
+        $this->seed(CulturesSeeder::class);
+        // 9 campagnes de cacao ; seules les 7 plus récentes sont des colonnes.
+        $cacao = Produit::query()->where('code', 'cacao')->firstOrFail();
+        for ($i = 0; $i < 9; $i++) {
+            $an = 1980 + $i;
+            $this->campagne($cacao, $an.'-'.($an + 1), $an.'-10-01', ($an + 1).'-09-30');
+            $this->prix($cacao, 1_000 + 100 * $i, $an.'-10-01');
+        }
+
+        $t = Publications::tableauCampagnes();
+
+        $this->assertSame(['1982-1983', '1983-1984', '1984-1985', '1985-1986', '1986-1987', '1987-1988', '1988-1989'], $t['campagnes']);
+        $this->assertCount(Produit::query()->where('actif', true)->count(), $t['lignes']);
+        $this->assertGreaterThanOrEqual(35, count($t['lignes']));
+        $ligne = collect($t['lignes'])->first(fn (array $l) => $l['produit']->id === $cacao->id);
+        $this->assertTrue($ligne['connu']);
+        $this->assertSame(['prix' => 1_800, 'ecart' => 100], $ligne['cases']['1988-1989']);
+        $manioc = collect($t['lignes'])->first(fn (array $l) => $l['produit']->code === 'manioc');
+        $this->assertFalse($manioc['connu']);
+        $this->assertSame([null], array_values(array_unique($manioc['cases'], SORT_REGULAR)));
+    }
+
+    #[Test]
+    public function la_page_affiche_le_tableau_des_cultures_avec_les_cases_vides_sans_prix_invente(): void
+    {
+        $this->seed(CulturesSeeder::class);
+        $cacao = Produit::query()->where('code', 'cacao')->firstOrFail();
+        $this->campagne($cacao, '1990-1991', '1990-10-01', '1991-09-30');
+        $this->prix($cacao, 2_800, '1990-10-05');
+        $this->campagne($cacao, '1991-1992', '1991-10-01', '1992-09-30');
+        $this->prix($cacao, 1_200, '1991-10-05');
+
+        $page = $this->get('/prix')->assertOk()->assertSee('1990-1991')->assertSee('1991-1992')
+            ->assertSee('Manioc')->assertSee('2'.self::FINE.'800')->assertSee('1'.self::FINE.'200')
+            ->assertSee('1'.self::FINE.'600')->getContent();
+
+        $this->assertStringContainsString('▼', (string) $page);
+        $this->assertGreaterThanOrEqual(35, substr_count((string) $page, '<th scope="row"'));
+    }
+
+    #[Test]
     public function la_toute_premiere_campagne_connue_n_a_pas_d_ecart_depuis_la_precedente(): void
     {
         $this->campagne($this->cacao, '1990-1991', '1990-10-01', '1991-09-30');
@@ -187,7 +231,7 @@ class EvolutionPrixTest extends TestCase
     #[Test]
     public function la_page_sans_prix_le_dit(): void
     {
-        $this->get('/prix')->assertOk()->assertSee('Évolution des prix')->assertSee('Aucun prix publié pour le moment');
+        $this->get('/prix')->assertOk()->assertSee('Les prix, campagne après campagne')->assertSee('Aucun prix publié pour le moment');
     }
 
     #[Test]

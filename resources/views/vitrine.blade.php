@@ -137,7 +137,7 @@
                     </div>
                 @endif
                 @if ($prix->isNotEmpty())
-                    <p data-reveal class="mt-5"><a href="{{ route('prix.evolution') }}" class="v-lien text-sm font-medium">Voir l'évolution des prix, par campagne et par période →</a></p>
+                    <p data-reveal class="mt-5"><a href="{{ route('prix.evolution') }}" class="v-lien text-sm font-medium">Voir toutes les cultures, campagne après campagne, et les courbes →</a></p>
                 @endif
                 <p data-reveal class="v-texte-doux mt-5 text-xs">Prix indicatifs relevés à la date indiquée, avec leur source. Ils ne remplacent pas le prix officiel fixé pour la campagne.</p>
             </section>

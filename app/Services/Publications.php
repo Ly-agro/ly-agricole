@@ -176,6 +176,42 @@ class Publications
         return array_slice($resultat, 0, max($limite, 1));
     }
 
+    /**
+     * Tableau d'ensemble : toutes les cultures actives (lignes) sur les `$nb` dernières campagnes
+     * commencées (colonnes, de la plus ancienne à la plus récente, repérées par leur code). Chaque
+     * case donne le dernier prix publié de la campagne et son écart avec la campagne précédente de
+     * cette culture ; case vide (null) quand aucun prix n'est connu : jamais un prix inventé.
+     *
+     * @return array{
+     *     campagnes: list<string>,
+     *     lignes: list<array{produit: Produit, cases: array<string, array{prix: int, ecart: int|null}|null>, connu: bool}>
+     * }
+     */
+    public static function tableauCampagnes(int $nb = 7): array
+    {
+        $produits = Produit::query()->where('actif', true)->orderBy('nom')->get();
+
+        // Les codes des campagnes les plus récentes (par date de début la plus récente de chaque code).
+        $debuts = Campagne::query()->whereIn('produit_id', $produits->pluck('id'))
+            ->where('debut', '<=', Carbon::today()->toDateString())->get(['code', 'debut'])
+            ->groupBy('code')->map(fn (Collection $c) => $c->max('debut'))->sortDesc();
+        $codes = array_reverse(array_map('strval', array_slice($debuts->keys()->all(), 0, max($nb, 1))));
+
+        $lignes = [];
+        foreach ($produits as $produit) {
+            $cases = array_fill_keys($codes, null);
+            foreach (self::parCampagne($produit, 100) as $l) {
+                $code = (string) $l['campagne']->code;
+                if (array_key_exists($code, $cases)) {
+                    $cases[$code] = ['prix' => $l['resume']['dernier'], 'ecart' => $l['depuis_precedente']];
+                }
+            }
+            $lignes[] = ['produit' => $produit, 'cases' => $cases, 'connu' => count(array_filter($cases)) > 0];
+        }
+
+        return ['campagnes' => $codes, 'lignes' => $lignes];
+    }
+
     /** @return Collection<int, PrixMarche> Du plus récent au plus ancien. */
     public static function historiquePrix(Produit $produit): Collection
     {

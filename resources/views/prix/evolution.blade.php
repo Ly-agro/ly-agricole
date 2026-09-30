@@ -3,8 +3,60 @@
     <section class="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
         <a href="{{ route('accueil') }}#prix" class="v-lien text-sm">← Les prix du moment</a>
         <p class="mt-6 text-sm font-medium uppercase tracking-widest text-emerald-800">Prix bord-champ</p>
-        <h1 class="mt-2 text-3xl font-semibold tracking-tight">Évolution des prix</h1>
-        <p class="v-texte-doux mt-2 max-w-2xl">Chaque prix est daté et sourcé. Le prix reste le même jusqu'au changement suivant. Ces prix sont indicatifs : ils ne remplacent pas le prix officiel fixé pour la campagne.</p>
+        <h1 class="mt-2 text-3xl font-semibold tracking-tight">Les prix, campagne après campagne</h1>
+        <p class="v-texte-doux mt-2 max-w-2xl">D'abord le tableau d'ensemble de toutes nos cultures sur les sept dernières campagnes, puis, plus bas, la courbe détaillée de chaque produit. Chaque prix est daté et sourcé. Ces prix sont indicatifs : ils ne remplacent pas le prix officiel fixé pour la campagne.</p>
+
+        {{-- Tableau d'ensemble : une ligne par culture, une colonne par campagne (la plus récente à droite). --}}
+        <div class="mt-8">
+            <h2 class="text-xl font-semibold">Toutes les cultures, {{ count($tableau['campagnes']) > 1 ? 'les '.count($tableau['campagnes']).' dernières campagnes' : 'la campagne connue' }}</h2>
+            <p class="v-texte-doux mt-1 text-sm">Dernier prix publié de chaque campagne, en FCFA par kg, avec l'écart par rapport à la campagne précédente de la culture. Une case « — » : prix pas encore relevé.</p>
+            @if (count($tableau['campagnes']) === 0)
+                <p class="v-carte mt-4 rounded-2xl p-6">Aucune campagne commencée pour le moment : le tableau se remplira avec les campagnes et leurs prix.</p>
+            @else
+                <div class="v-carte mt-4 overflow-x-auto rounded-2xl">
+                    <table class="w-full min-w-[640px] text-left text-sm" data-tableau-cultures>
+                        <caption class="sr-only">Dernier prix par culture et par campagne</caption>
+                        <thead>
+                            <tr class="v-texte-doux text-xs">
+                                <th scope="col" class="sticky left-0 z-10 bg-[#f3ebdc] px-4 py-3 font-medium">Culture</th>
+                                @foreach ($tableau['campagnes'] as $code)
+                                    <th scope="col" class="px-3 py-3 text-right font-medium">{{ $code }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($tableau['lignes'] as $ligne)
+                                <tr class="border-t border-[#34251a]/10 {{ $ligne['connu'] ? '' : 'v-texte-doux' }}">
+                                    <th scope="row" class="sticky left-0 z-10 bg-[#f3ebdc] px-4 py-2 font-medium">
+                                        @if ($ligne['connu'])
+                                            <a href="{{ route('prix.evolution', ['produit' => $ligne['produit']->id]) }}" class="underline decoration-dotted">{{ $ligne['produit']->nom }}</a>
+                                        @else
+                                            {{ $ligne['produit']->nom }}
+                                        @endif
+                                    </th>
+                                    @foreach ($tableau['campagnes'] as $code)
+                                        @php($case = $ligne['cases'][$code])
+                                        <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                                            @if ($case === null)
+                                                <span aria-label="prix non relevé">—</span>
+                                            @else
+                                                <span class="font-medium">{{ Format::entier($case['prix']) }}</span>
+                                                @if ($case['ecart'] !== null && $case['ecart'] !== 0)
+                                                    <span class="ml-1 text-xs {{ $case['ecart'] > 0 ? 'text-emerald-700' : 'text-red-700' }}">{{ $case['ecart'] > 0 ? '▲' : '▼' }} {{ Format::entier(abs($case['ecart'])) }}</span>
+                                                @endif
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+
+        <h2 class="mt-12 text-xl font-semibold">Courbe détaillée par produit</h2>
+        <p class="v-texte-doux mt-1 text-sm">Le prix reste le même jusqu'au changement suivant.</p>
 
         @if ($produits->isEmpty())
             <p class="v-carte mt-8 rounded-2xl p-6">Aucun prix publié pour le moment.</p>
