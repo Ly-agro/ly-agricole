@@ -5,6 +5,21 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-30 — Prix des campagnes passées (cacao, café, anacarde) — FAIT, À FAIRE RELIRE
+
+- 37 cultures (`CulturesSeeder`) ; tableau d'ensemble de `/prix` : cultures × 7 dernières
+  années de campagne (octobre à septembre : l'anacarde de février 2024 est dans 2023-2024).
+- `HistoriquePrixSeeder` : 24 prix relevés dans la presse ivoirienne (Abidjan.net, KOACI,
+  AIP, Fraternité Matin, Financial Afrik, Journal d'Abidjan, Conseil du Café-Cacao), chacun avec
+  son lien ; 20 campagnes créées **clôturées**, sans prix officiel. Relançable sans doublon.
+- **Réserves** : source = presse, pas le site du Conseil du Café-Cacao ; date d'effet = annonce ou
+  lancement ; non vérifiés au jour près : cacao intermédiaire 2020-2021 (avril 2021) et
+  2024-2025 (avril 2025) ; café 2020-2021 (550, relevé indirectement). Rien avant 2019 ni pour les
+  autres cultures (karité, tomate, maïs…) : pas de source trouvée. Prix 2026-2027 (cacao 1 200,
+  café 1 300) non saisis : ils entrent en vigueur le 1er octobre.
+
+---
+
 ## 2026-09-29 — Courbes d'évolution des prix et actualités depuis internet — FINI
 
 **Demande.** « Les actualités et les prix bord-champ ne peuvent pas être récupérés depuis

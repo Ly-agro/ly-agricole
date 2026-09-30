@@ -191,17 +191,18 @@ class Publications
     {
         $produits = Produit::query()->where('actif', true)->orderBy('nom')->get();
 
-        // Les codes des campagnes les plus récentes (par date de début la plus récente de chaque code).
-        $debuts = Campagne::query()->whereIn('produit_id', $produits->pluck('id'))
-            ->where('debut', '<=', Carbon::today()->toDateString())->get(['code', 'debut'])
-            ->groupBy('code')->map(fn (Collection $c) => $c->max('debut'))->sortDesc();
-        $codes = array_reverse(array_map('strval', array_slice($debuts->keys()->all(), 0, max($nb, 1))));
+        // Les colonnes sont des années de campagne (octobre à septembre) : la campagne du cacao
+        // 2023-2024 (octobre 2023) et celle de l'anacarde 2024 (février 2024) tombent dans la même.
+        $annees = Campagne::query()->whereIn('produit_id', $produits->pluck('id'))
+            ->where('debut', '<=', Carbon::today()->toDateString())->get(['debut'])
+            ->map(fn (Campagne $c) => self::anneeDeCampagne($c->debut))->unique()->sortDesc()->values();
+        $codes = array_reverse(array_slice($annees->all(), 0, max($nb, 1)));
 
         $lignes = [];
         foreach ($produits as $produit) {
             $cases = array_fill_keys($codes, null);
             foreach (self::parCampagne($produit, 100) as $l) {
-                $code = (string) $l['campagne']->code;
+                $code = self::anneeDeCampagne($l['campagne']->debut);
                 if (array_key_exists($code, $cases)) {
                     $cases[$code] = ['prix' => $l['resume']['dernier'], 'ecart' => $l['depuis_precedente']];
                 }
@@ -210,6 +211,14 @@ class Publications
         }
 
         return ['campagnes' => $codes, 'lignes' => $lignes];
+    }
+
+    /** Année de campagne d'une date de début : d'octobre à septembre (« 2023-2024 »). */
+    public static function anneeDeCampagne(Carbon $debut): string
+    {
+        $an = $debut->month >= 10 ? $debut->year : $debut->year - 1;
+
+        return $an.'-'.($an + 1);
     }
 
     /** @return Collection<int, PrixMarche> Du plus récent au plus ancien. */

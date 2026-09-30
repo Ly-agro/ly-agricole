@@ -9,7 +9,7 @@
         {{-- Tableau d'ensemble : une ligne par culture, une colonne par campagne (la plus récente à droite). --}}
         <div class="mt-8">
             <h2 class="text-xl font-semibold">Toutes les cultures, {{ count($tableau['campagnes']) > 1 ? 'les '.count($tableau['campagnes']).' dernières campagnes' : 'la campagne connue' }}</h2>
-            <p class="v-texte-doux mt-1 text-sm">Dernier prix publié de chaque campagne, en FCFA par kg, avec l'écart par rapport à la campagne précédente de la culture. Une case « — » : prix pas encore relevé.</p>
+            <p class="v-texte-doux mt-1 text-sm">Dernier prix publié de chaque campagne, en FCFA par kg, avec l'écart par rapport à la campagne précédente de la culture. Une case « — » : prix pas encore relevé. Les colonnes sont des années de campagne, d'octobre à septembre : la campagne de l'anacarde ouverte en février 2024 figure dans « 2023-2024 ». Quand un prix change en cours de campagne (campagne intermédiaire), c'est le dernier prix qui est indiqué.</p>
             @if (count($tableau['campagnes']) === 0)
                 <p class="v-carte mt-4 rounded-2xl p-6">Aucune campagne commencée pour le moment : le tableau se remplira avec les campagnes et leurs prix.</p>
             @else
