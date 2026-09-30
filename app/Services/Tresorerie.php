@@ -7,11 +7,14 @@ use App\Enums\SensMouvement;
 use App\Enums\StatutDepense;
 use App\Enums\StatutPret;
 use App\Exceptions\OperationRefusee;
+use App\Models\Achat;
+use App\Models\Campagne;
 use App\Models\CompteTresorerie;
 use App\Models\Depense;
 use App\Models\MouvementTresorerie;
 use App\Models\Pret;
 use App\Models\User;
+use App\Models\Vente;
 use App\Support\Format;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -121,17 +124,86 @@ class Tresorerie
         });
     }
 
+    /** Paiement en espèces d'un achat : appelé par App\Services\Achats, dans sa transaction. */
+    public static function payerAchat(Achat $achat, int $montant, User $auteur): MouvementTresorerie
+    {
+        return DB::transaction(function () use ($achat, $montant, $auteur) {
+            $comptes = self::verrouiller([$achat->compte_id]);
+
+            return self::ecrire(
+                $comptes[$achat->compte_id], SensMouvement::Sortie, $montant, NatureMouvement::AchatBordChamp,
+                Carbon::parse($achat->date_achat)->startOfDay(), 'Achat '.$achat->reference.' — '.$achat->nomFournisseur(), $auteur, source: $achat,
+            );
+        });
+    }
+
+    /** Remboursement d'un prêt en argent : appelé par App\Services\Remboursements. */
+    public static function encaisserRemboursement(Pret $pret, CompteTresorerie $compte, int $montant, Carbon $date, User $auteur, ?string $reference): MouvementTresorerie
+    {
+        return DB::transaction(function () use ($pret, $compte, $montant, $date, $auteur, $reference) {
+            $comptes = self::verrouiller([$compte->id]);
+            $pret->loadMissing('producteur');
+
+            return self::ecrire(
+                $comptes[$compte->id], SensMouvement::Entree, $montant, NatureMouvement::RemboursementPret,
+                $date, "Remboursement prêt {$pret->reference} — {$pret->producteur->nomComplet()}", $auteur, reference: $reference, source: $pret,
+            );
+        });
+    }
+
+    /**
+     * Apport de campagne (investisseur ou LY) : appelé par App\Services\Apports, qui
+     * crée ensuite la ligne immuable avec le mouvement déjà en main (la source est la
+     * campagne, seule chose qui existe déjà avant l'apport lui-même).
+     */
+    public static function enregistrerApport(Campagne $campagne, ?User $investisseur, CompteTresorerie $compte, int $montant, Carbon $date, User $auteur): MouvementTresorerie
+    {
+        return DB::transaction(function () use ($campagne, $investisseur, $compte, $montant, $date, $auteur) {
+            $comptes = self::verrouiller([$compte->id]);
+            $nomApporteur = $investisseur === null ? 'LY AGRICOLE (apport propre)' : $investisseur->nom;
+            $libelle = 'Apport campagne '.$campagne->code.' — '.$nomApporteur;
+
+            return self::ecrire($comptes[$compte->id], SensMouvement::Entree, $montant, NatureMouvement::ApportCampagne, $date, $libelle, $auteur, source: $campagne);
+        });
+    }
+
+    /** Encaissement d'une vente, en argent : appelé par App\Services\Encaissements. */
+    public static function encaisserVente(Vente $vente, CompteTresorerie $compte, int $montant, Carbon $date, User $auteur, ?string $reference): MouvementTresorerie
+    {
+        return DB::transaction(function () use ($vente, $compte, $montant, $date, $auteur, $reference) {
+            $comptes = self::verrouiller([$compte->id]);
+
+            return self::ecrire(
+                $comptes[$compte->id], SensMouvement::Entree, $montant, NatureMouvement::EncaissementVente,
+                $date, "Encaissement vente {$vente->reference} — {$vente->acheteur_nom}", $auteur, reference: $reference, source: $vente,
+            );
+        });
+    }
+
     /**
      * Annule un mouvement par un mouvement inverse (motif obligatoire). Un virement est
      * annulé sur ses deux jambes ; une dépense payée passe « annulée ».
      *
      * @return list<MouvementTresorerie> les contre-passations créées
      */
-    public static function contrePasser(MouvementTresorerie $mouvement, string $motif, User $auteur, ?Carbon $date = null): array
+    public static function contrePasser(MouvementTresorerie $mouvement, string $motif, User $auteur, ?Carbon $date = null, bool $depuisOrigine = false): array
     {
         $motif = trim($motif);
         if (mb_strlen($motif) < 5) {
             throw new OperationRefusee('Le motif de la contre-passation est obligatoire (5 caractères au moins).');
+        }
+        // Ces mouvements vont avec un autre registre (remboursement, achat) : ils se
+        // corrigent ensemble, depuis l'écran d'origine, jamais seuls depuis la trésorerie.
+        if (! $depuisOrigine && in_array($mouvement->nature, [
+            NatureMouvement::RemboursementPret, NatureMouvement::AchatBordChamp,
+            NatureMouvement::EncaissementVente, NatureMouvement::ApportCampagne,
+        ], true)) {
+            throw new OperationRefusee('Ce mouvement se corrige depuis '.match ($mouvement->nature) {
+                NatureMouvement::AchatBordChamp => 'l\'achat',
+                NatureMouvement::EncaissementVente => 'la vente (encaissement)',
+                NatureMouvement::ApportCampagne => 'l\'apport',
+                default => 'le prêt (remboursement)',
+            }.', pas depuis la trésorerie.');
         }
 
         return DB::transaction(function () use ($mouvement, $motif, $auteur, $date) {
@@ -166,8 +238,8 @@ class Tresorerie
             $depenseIds = $originaux->where('source_type', 'depense')->pluck('source_id')->filter();
             Depense::query()->whereIn('id', $depenseIds)->get()->each->update(['statut' => StatutDepense::Annulee]);
 
-            // Un versement de prêt annulé rouvre le reste à décaisser.
-            $pretIds = $originaux->where('source_type', 'pret')->pluck('source_id')->filter();
+            // Un VERSEMENT de prêt annulé rouvre le reste à décaisser (pas un remboursement).
+            $pretIds = $originaux->where('source_type', 'pret')->where('nature', NatureMouvement::DecaissementPret)->pluck('source_id')->filter();
             Pret::query()->whereIn('id', $pretIds)->where('statut', StatutPret::Decaisse)->get()
                 ->each->update(['statut' => StatutPret::Valide]);
 

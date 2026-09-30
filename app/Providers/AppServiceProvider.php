@@ -4,27 +4,38 @@ namespace App\Providers;
 
 use App\Enums\ActionJournal;
 use App\Enums\Role;
+use App\Models\Achat;
+use App\Models\Apport;
 use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\Decaissement;
 use App\Models\Depense;
+use App\Models\Encaissement;
 use App\Models\GroupeProducteur;
 use App\Models\Intrant;
+use App\Models\LigneBudget;
+use App\Models\Lot;
 use App\Models\Magasin;
 use App\Models\MouvementIntrant;
+use App\Models\MouvementStock;
 use App\Models\MouvementTresorerie;
 use App\Models\Parametre;
 use App\Models\Parcelle;
+use App\Models\Pisteur;
 use App\Models\PointCollecte;
 use App\Models\Pret;
 use App\Models\Producteur;
 use App\Models\Produit;
+use App\Models\Remboursement;
 use App\Models\User;
 use App\Models\ValidationPret;
+use App\Models\Vente;
 use App\Models\Village;
 use App\Models\Zone;
 use App\Services\Journal;
+use App\Services\Sms\EnvoyeurSms;
+use App\Services\Sms\EnvoyeurSmsJournal;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -40,7 +51,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // D10 : un seul pilote pour l'instant ; un fournisseur réel s'ajoutera ici.
+        $this->app->bind(EnvoyeurSms::class, fn () => match (config('services.sms.pilote')) {
+            'journal' => new EnvoyeurSmsJournal,
+            default => throw new \InvalidArgumentException('Pilote SMS inconnu : '.config('services.sms.pilote')),
+        });
     }
 
     /**
@@ -81,6 +96,15 @@ class AppServiceProvider extends ServiceProvider
             'decaissement' => Decaissement::class,
             'intrant' => Intrant::class,
             'mouvement_intrant' => MouvementIntrant::class,
+            'pisteur' => Pisteur::class,
+            'lot' => Lot::class,
+            'achat' => Achat::class,
+            'mouvement_stock' => MouvementStock::class,
+            'remboursement' => Remboursement::class,
+            'vente' => Vente::class,
+            'encaissement' => Encaissement::class,
+            'apport' => Apport::class,
+            'ligne_budget' => LigneBudget::class,
         ]);
     }
 
@@ -122,6 +146,32 @@ class AppServiceProvider extends ServiceProvider
         // Stock d'intrants : fiches, entrées, pertes, ajustements, contre-passations.
         // Les distributions à crédit suivent le droit de décaisser un prêt.
         Gate::define('gerer-intrants', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Achats bord-champ : l'agent pèse et paie depuis sa caisse ; au-dessus du
+        // seuil, une autre personne valide. Lots et stock : direction et comptable.
+        Gate::define('saisir-achats', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable, Role::Agent));
+        Gate::define('valider-achats', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('gerer-stock', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Remboursement d'un prêt en espèces : encaissé par la comptabilité.
+        Gate::define('encaisser-remboursements', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Reventes (cahier §7) : négociées au bureau, pas sur le terrain — contrairement
+        // aux achats, pas de droit agent ici. Encaissement : même droit que la trésorerie.
+        Gate::define('voir-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('saisir-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('valider-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('encaisser-ventes', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+
+        // Apports de campagne (contrat art. 5, 9) et portail en lecture seule de
+        // l'investisseur (cahier §2 : « consulte sa quote-part », en attendant le
+        // calcul exact — voir App\Services\Apports).
+        Gate::define('gerer-apports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
+
+        // Budget de campagne (cahier §8) : fixé par la direction, comme le prix officiel
+        // et les seuils ; suivi aussi par la comptabilité (question 29).
+        Gate::define('voir-budget', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        Gate::define('gerer-budget', fn (User $user) => $user->aLeRole(Role::Direction));
     }
 
     private function journaliserLesConnexions(): void

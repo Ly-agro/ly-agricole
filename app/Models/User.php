@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * Pas d'inscription publique : les comptes sont créés par l'admin.
@@ -28,7 +29,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Journalise, Notifiable;
+    use HasApiTokens, HasFactory, Journalise, Notifiable;
 
     public function aLeRole(Role ...$roles): bool
     {

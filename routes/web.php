@@ -1,13 +1,20 @@
 <?php
 
+use App\Http\Controllers\AchatController;
 use App\Http\Controllers\Auth\DeconnexionController;
 use App\Http\Controllers\DepenseController;
+use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
 use App\Http\Controllers\ProducteurController;
+use App\Livewire\Achats\FormulaireAchat;
+use App\Livewire\Achats\ListeAchats;
 use App\Livewire\Auth\Connexion;
+use App\Livewire\Budget\SuiviBudget;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
 use App\Livewire\Intrants\StockIntrant;
+use App\Livewire\Investisseurs\GestionApports;
+use App\Livewire\Investisseurs\PortailInvestisseur;
 use App\Livewire\Journal\ConsultationJournal;
 use App\Livewire\Prets\FichePret;
 use App\Livewire\Prets\FormulairePret;
@@ -22,14 +29,20 @@ use App\Livewire\Referentiels\EcranReferentiel;
 use App\Livewire\Referentiels\Intrants as IntrantsReferentiel;
 use App\Livewire\Referentiels\Magasins;
 use App\Livewire\Referentiels\Parametres;
+use App\Livewire\Referentiels\Pisteurs;
 use App\Livewire\Referentiels\PointsCollecte;
 use App\Livewire\Referentiels\Produits;
 use App\Livewire\Referentiels\Villages;
 use App\Livewire\Referentiels\Zones;
+use App\Livewire\Stock\FicheLot;
+use App\Livewire\Stock\ListeLots;
 use App\Livewire\TableauDeBord;
 use App\Livewire\Tresorerie\Comptes;
 use App\Livewire\Tresorerie\ReleveCompte;
 use App\Livewire\Utilisateurs\GestionUtilisateurs;
+use App\Livewire\Ventes\FicheVente;
+use App\Livewire\Ventes\FormulaireVente;
+use App\Livewire\Ventes\ListeVentes;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/tableau-de-bord');
@@ -79,12 +92,41 @@ Route::middleware('auth')->group(function () {
         Route::get('/parametres', Parametres::class)->middleware('can:gerer-parametres')->name('parametres');
         Route::get('/categories-depense', CategoriesDepense::class)->middleware('can:gerer-tresorerie')->name('categories-depense');
         Route::get('/intrants', IntrantsReferentiel::class)->middleware('can:gerer-intrants')->name('intrants');
+        Route::get('/pisteurs', Pisteurs::class)->middleware('can:gerer-referentiels')->name('pisteurs');
+    });
+
+    // Achats : la liste vérifie elle-même le droit (saisir OU valider).
+    Route::prefix('achats')->name('achats')->group(function () {
+        Route::get('/', ListeAchats::class)->name('');
+        Route::get('/nouveau', FormulaireAchat::class)->middleware('can:saisir-achats')->name('.nouveau');
+        Route::get('/{achat}/bon', [AchatController::class, 'bon'])->name('.bon');
+    });
+
+    // Photos du terrain (pesée, justificatifs) : le contrôleur vérifie le droit.
+    Route::get('/photos-terrain/{photo}', [PhotoTerrainController::class, 'afficher'])->name('photos-terrain');
+
+    // Ventes : négociées au bureau (direction, comptabilité) ; l'encaissement est séparé.
+    Route::prefix('ventes')->name('ventes')->group(function () {
+        Route::get('/', ListeVentes::class)->middleware('can:voir-ventes')->name('');
+        Route::get('/nouvelle', FormulaireVente::class)->middleware('can:saisir-ventes')->name('.nouvelle');
+        Route::get('/{vente}', FicheVente::class)->middleware('can:voir-ventes')->name('.fiche');
+    });
+
+    Route::prefix('lots')->name('lots')->middleware('can:gerer-stock')->group(function () {
+        Route::get('/', ListeLots::class)->name('');
+        Route::get('/{lot}', FicheLot::class)->name('.fiche');
     });
 
     Route::prefix('tresorerie')->name('tresorerie')->middleware('can:gerer-tresorerie')->group(function () {
         Route::get('/', Comptes::class)->name('');
         Route::get('/comptes/{compte}', ReleveCompte::class)->name('.releve');
     });
+
+    // Apports de campagne (direction, comptabilité) et portail en lecture seule de
+    // l'investisseur (deux écrans distincts : pas les mêmes droits ni la même vue).
+    Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
+    Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
+    Route::get('/budget', SuiviBudget::class)->middleware('can:voir-budget')->name('budget');
 
     Route::prefix('prets')->name('prets')->group(function () {
         Route::get('/', ListePrets::class)->middleware('can:voir-prets')->name('');

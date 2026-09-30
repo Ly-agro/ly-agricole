@@ -5,7 +5,512 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
-## 2026-09-28 — Front : menu latéral, barre du haut, page d'accueil analytique — FINI, NON COMMITÉ
+## 2026-09-29 — Phase 2 : budget de campagne, prévu contre réel — FINI, branche `phase-2-budget`
+
+> Session `ly-agricole-45`, branche `phase-2-budget` (depuis `ad360cd`), dans un
+> **worktree séparé** `../ly-agricole-budget` : une autre session (`ly-agricole-05`)
+> codait les rendements au même moment dans `ly-agricole/`. Pour lancer ce worktree :
+> `vendor/` et `node_modules/` y ont été copiés, `.env` aussi, `npm run build` fait ;
+> servi sur le port **8001**.
+
+**Fichiers nouveaux.** `app/Enums/PosteBudget.php`, `app/Models/LigneBudget.php`,
+`app/Services/Budgets.php`, `database/migrations/2026_12_19_000001_create_lignes_budget_table.php`,
+`app/Livewire/Budget/SuiviBudget.php` + sa vue, `tests/Feature/Budget/{BudgetsTest,EcranBudgetTest}.php`
+(21 tests).
+
+**Fichiers modifiés (additifs).** `AppServiceProvider` (droits `voir-budget` : direction
+et comptable, `gerer-budget` : direction ; morph map `ligne_budget`), `routes/web.php`
+(+ `/budget`), menu (+ Budget sous Argent, icône `budget`), `MODELE_DE_DONNEES.md`,
+question ouverte n° 29.
+
+**Choix.** Le prévu est saisi par poste : chaque catégorie de dépense, plus « achats »
+et « prêts », qui ne passent pas par les dépenses. Le réel **n'est pas stocké** : il est
+recalculé depuis les registres, en **argent sorti** pour ne rien compter deux fois —
+dépenses payées rattachées à la campagne ; espèces payées sur les achats validés (la
+part retenue sur un prêt a déjà été comptée au décaissement) ; décaissements des prêts
+non contre-passés (les intrants remis à crédit sont déjà comptés à leur achat). Une
+catégorie dépensée sans budget apparaît en « Non prévu » ; ce qui attend une validation
+est montré à part. Une ligne se modifie (l'ancien montant reste au journal), jamais sur
+une campagne clôturée ; une catégorie exclue par l'art. 10.3 ne se budgète pas.
+
+**Vérifié.** `php artisan test` : 367 → **388 tests**, tous verts ; Larastan 0 erreur ;
+Pint propre ; `npm run build` OK ; migration appliquée sur la base MySQL partagée
+(table nouvelle seulement).
+**Dans Chrome** (localhost:8001, base MySQL partagée, compte direction) : sans budget,
+les réels affichés recoupent la base à la main (SQL) — achats validés 85 000 FCFA payés
+en espèces (valeur 255 000, dont 170 000 retenus sur des prêts : pas comptés deux fois),
+159 340 FCFA d'achats à valider en attente, 21 630 000 FCFA décaissés sur les prêts ;
+les dépenses existantes, sans campagne, n'y sont pas. Prêts prévus à 20 000 000 →
+« 108,1 % », « Dépassé de 1 630 000 FCFA » en rouge ; « Modifier » reprend montant et
+note ; passé à 22 000 000 → « 98,3 % », reste 370 000 FCFA ; une seule ligne en base,
+journal « 20000000 → 22000000 ». **Pas fait dans Chrome** : la vue du comptable (lecture
+seule) et le refus pour l'agent — la déconnexion n'a pas abouti (menu du profil
+inaccessible, une extension d'émulation de téléphone s'est ouverte par-dessus) ; ces
+droits sont couverts par `EcranBudgetTest`.
+
+**Corrigé après Chrome.** « Réel » n'est plus en rouge quand rien n'est prévu ; le
+message « Budget enregistré. » disparaît quand on rouvre le formulaire.
+
+**Surprises.** `php artisan serve` répond lentement ici (22 s pour la connexion) : un
+clic sans effet visible est souvent une requête en cours, pas un bug. Dans le worktree,
+`vendor/bin/pint` échoue (conflit d'archive phar avec la copie de `ly-agricole/`) : le
+lancer depuis `ly-agricole/` sur les fichiers du worktree.
+
+**Précision du responsable projet** (pendant la session) : l'anacarde n'est pas seul,
+plusieurs produits entrent selon la période et le prix. Le budget est déjà par campagne,
+donc par produit ; plusieurs campagnes ouvertes en même temps ont chacune le leur. Un
+budget **global toutes campagnes** (ou par période) n'existe pas : ajouté à la question
+29.
+
+**Reste.** Vue comptable dans Chrome ; question 29 ; fusion avec `phase-2-reventes` (conflit attendu dans `QUESTIONS_OUVERTES.md` : garder la 28 et la 29).
+
+---
+
+## 2026-09-29 — Phase 2 : apports de campagne et portail investisseur — FINI, commit `ad360cd`
+
+> Session `ly-agricole-fb`, branche `phase-2-reventes` (suite du commit `a3dc68f`,
+> poussé sur `origin`). Deuxième bloc de la phase 2, après les reventes.
+
+**Pourquoi ce périmètre.** Le bloc naturel suivant était le portail investisseurs et le
+calcul du résultat/quotes-parts (contrat art. 10 à 14). **Le texte exact de ces
+articles n'est pas disponible** (demandé au responsable projet, réponse : « j'ai pas
+les articles ») : coder un partage financier destiné aux investisseurs à partir d'un
+souvenir approximatif (« 40 % / 60 % ») aurait été irresponsable. Le périmètre a donc
+été réduit à ce qui ne dépend pas du texte du contrat : tracer les apports et donner à
+chaque investisseur sa part de l'ensemble des apports — objectif, calculable, sans
+supposer la formule de partage. Noté en question ouverte n° 15 bis.
+
+**Fichiers nouveaux.** `app/Models/Apport.php`, `app/Services/Apports.php`,
+`database/migrations/2026_12_12_000001_create_apports_table.php`,
+`app/Livewire/Investisseurs/{GestionApports,PortailInvestisseur}.php` + leurs vues,
+`tests/Feature/Investisseurs/{ApportsTest,EcransApportsTest}.php` (21 tests).
+
+**Fichiers modifiés (additifs).** `NatureMouvement` (+ `ApportCampagne`),
+`Tresorerie::enregistrerApport()` (mirroir de `encaisserVente()`, garde de
+contre-passation), `AppServiceProvider` (droits `gerer-apports`,
+`voir-portail-investisseur` ; morph map), `routes/web.php` (+ `/apports`,
+`/mon-investissement`), menu latéral (+ lien Apports sous Argent ; section
+« Investisseur » à part, avec « Mon investissement », pour le rôle `Investisseur` qui
+n'avait jusqu'ici **aucun écran**).
+
+**Modèle.** `apports` 🔒 (montant **signé**, contre-passable) impose le **compte dédié
+de la campagne** (art. 5) : un apport sur un autre compte est refusé. `investisseur_id`
+nullable = apport de LY elle-même (art. 9, facultatif). Piège technique rencontré :
+l'enregistrement en une transaction demande de créer le mouvement de trésorerie
+**avant** la ligne immuable (elle ne peut pas être mise à jour après coup pour y ajouter
+`mouvement_id`) ; comme l'apport n'existe pas encore à ce moment, le mouvement prend la
+**campagne** comme source (elle existe déjà), pas l'apport — différent du schéma des
+achats/ventes/remboursements, qui utilisent l'entité déjà mutable comme source.
+
+**Ce que `Apports::repartition()` donne, et ce qu'il ne donne PAS.** Pour chaque
+investisseur d'une campagne : son apport net et sa part en millièmes de l'ensemble des
+apports **d'investisseurs** (l'apport de LY n'entre pas dans ce total). Ce n'est PAS une
+quote-part du résultat : les deux écrans (gestion des apports, portail investisseur)
+l'affichent en toutes lettres pour ne rien laisser croire de plus que ce qui est garanti.
+
+**Portail investisseur.** Premier écran du rôle `Investisseur` (créé en semaine 1, resté
+sans aucun écran jusqu'ici). Lecture seule, un investisseur ne voit que ses propres
+apports (`investisseur_id = auth()->id()`), jamais ceux des autres ni les données
+personnelles des producteurs.
+
+**Vérifié.** `php artisan test` : 346 tests avant ce bloc → **367 tests** (346 + 21 :
+`ApportsTest` 9, `EcransApportsTest` 12), tous verts ; Larastan 0 erreur sur tout le
+projet (un faux positif Larastan croisé en route : `nullsafe.neverNull` sur un
+paramètre pourtant `?User` — contourné avec un `===  null ? ... : ...` explicite plutôt
+qu'un `?->`/`??`, sans changer le comportement) ; Pint propre ; `npm run build` OK.
+**Dans Chrome**, sur la vraie base MySQL partagée : compte « Fonds campagne Anacarde
+2026-2027 » créé (dédié, type banque), apport de 3 000 000 FCFA enregistré pour
+l'investisseur de démo par la direction, répartition affichée (100 %, un seul
+investisseur), connexion avec le compte investisseur → menu réduit à « Mon
+investissement » seul, apport et part affichés, aucune donnée d'un autre investisseur
+visible (il n'y en avait qu'un, donc pas testé à plusieurs — à refaire avec un second
+investisseur si on veut vérifier l'isolation pour de vrai).
+
+**Reste.** Commit. Le calcul du résultat net et des quotes-parts (art. 10 à 14) reste
+entièrement à faire, dès que le texte du contrat sera fourni — c'est la pièce qui manque
+pour le rapport de campagne final (art. 18).
+
+---
+
+## 2026-09-29 — Phase 2 : reventes, encaissements, marge par lot — FINI, commit `a3dc68f`
+
+> Session `ly-agricole-fb`, branche `phase-2-reventes` (depuis `66f10d2`, avant les
+> semaines 6 à 10 de `ly-agricole-f9`, restées sur ses propres branches). À la demande
+> de l'utilisateur : « laisse l'autre s'occuper de la phase 1, toi fais la phase 2 ».
+> Premier bloc choisi : reventes et marge par lot (cahier §7, module 5, stade Revente +
+> Encaissement).
+
+**Fichiers nouveaux.** `app/Enums/{TypeAcheteur,StatutVente}.php`,
+`app/Models/{Vente,Encaissement}.php`, `app/Services/{Ventes,Encaissements}.php`,
+`database/migrations/2026_12_05_000001_create_ventes_tables.php`,
+`app/Livewire/Ventes/{ListeVentes,FormulaireVente,FicheVente}.php` + leurs vues,
+`tests/Feature/Ventes/{VentesTest,EcransVentesTest}.php` (23 tests).
+
+**Fichiers modifiés (peu, tous additifs).** `StatutLot` (+ `Vendu`),
+`TypeMouvementStock` (+ `SortieVente`), `NatureMouvement` (+ `EncaissementVente`),
+`CleParametre` (+ `SeuilValidationVente`), `Lot` (relations `achats()`/`ventes()`),
+`Stock::sortieVente()` (mirroir de `entreeAchat()`, garde de contre-passation),
+`Tresorerie::encaisserVente()` (mirroir de `encaisserRemboursement()`),
+`AppServiceProvider` (droits `voir/saisir/valider-ventes`, `encaisser-ventes` ; morph
+map), `routes/web.php` (+ `/ventes`), menu latéral (+ lien Ventes, sous Argent).
+
+**Modèle.** `ventes` (statut `a_valider`/`valide`/`refuse`, comme les achats) et
+`encaissements` 🔒 (montant **signé**, une contre-passation est négative) sont deux
+tables séparées, comme le cahier le prévoit déjà (stade Revente ≠ stade Encaissement) :
+la question 15 (acheteur, paiement à la livraison ou à terme) reste ouverte, mais le
+modèle n'a pas besoin de trancher — une vente peut être encaissée en une fois, en
+plusieurs, ou pas encore ; le reste à encaisser est sur sa fiche. `mouvements_stock`
+gagne une colonne `vente_id` (nullable, ajoutée après coup par migration : la table est
+de la semaine 6). Un lot dont le stock (tous magasins) tombe à 0 après une vente passe
+automatiquement `vendu`.
+
+**Marge par lot** (`Ventes::margeLot()`) = revenu des ventes validées − coût des achats
+validés. **Limite documentée** (dans le modèle de données et à l'écran) : les frais de
+transport, taxes et commissions à la revente ne sont pas rattachés au lot (pas de
+`lot_id` sur `depenses`) — la marge affichée est une borne haute, pas le résultat net
+exact du contrat (art. 10 à 14, qui restent à coder pour le rapport de campagne).
+
+**Vérifié.** `php artisan test` : 323 tests avant ce module → **346 tests** (323 + 23 :
+`VentesTest` 12, `EcransVentesTest` 11), tous verts ; Larastan 0 erreur sur tout le
+projet ; Pint propre ; `npm run build` OK.
+**Dans Chrome**, sur la vraie base MySQL partagée : vente VTE-000001 de 400 kg sur
+LOT-00001 (600 → 200 kg), créée en comptable (« à valider »), validée en direction
+(séparation des tâches respectée), encaissement partiel de 200 000 FCFA sur la caisse
+centrale, contre-passé (motif obligatoire) → reste à encaisser revenu à 360 000 FCFA ;
+marge du lot affichée (105 000 FCFA, frais non compris, l'écran le précise).
+
+**Piège rencontré.** Le bouton « Valider » d'une vente porte un `wire:confirm` (boîte de
+dialogue native) : un clic direct bloque l'automatisation du navigateur. Contournement
+en Chrome : appeler la méthode Livewire par JS (`Livewire.find(id).call(...)`) plutôt
+que de cliquer le bouton. Sans rapport avec le code : quelques captures d'écran ont
+expiré (30 s) juste après un clic réel, alors que la page répondait normalement en JS —
+lenteur ponctuelle de l'outil de capture, pas un blocage de l'application.
+
+**Coordination.** `ly-agricole-f9` fait la phase 1 (semaines 6 à 10, branches
+`semaine-6` à `semaine-10`, worktree séparé `ly-agricole-phase1`) ; je n'ai touché à
+aucun de ses fichiers. Elle confirme que `sortie_vente` est bien exclu de son calcul
+d'écart de poids (semaine 10) et n'est pas compté comme une anomalie.
+
+**Reste.** Commit (proposé : un commit sur `phase-2-reventes`, à faire pointer sur
+`main` ou à fusionner avec les branches `semaine-*` selon ce que décide l'utilisateur —
+les deux travaux sont indépendants en fichiers mais partagent le même schéma de base).
+Écran dédié « Reventes » sur la fiche du lot (`FicheLot`, propriété de la session f9) :
+pas fait, pour ne pas toucher à son fichier sans coordination — la marge est visible
+depuis la fiche de la vente à la place.
+
+---
+
+## 2026-09-28 — Semaine 9 (en avance) : parcelle au GPS, photos, dépense terrain, rejets — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, branche `semaine-9` (depuis `semaine-8`). Décisions de
+> l'utilisateur : **question 26 en suspens** (pas d'APK pour l'instant) ; **question 27
+> « selon la recommandation »** ⇒ serveur en ligne en HTTPS (décision D11).
+
+**Fait — serveur.**
+
+- Migration `2026_11_14_000001` : table `photos_terrain` (UUID du téléphone, disque
+  privé, heure et position de la prise) ; `parcelles.contour_origine` (`import` posé
+  par le modèle pour tout contour du bureau, `gps` pour un relevé du téléphone).
+- `POST /api/photos` (multipart, image ≤ 5 Mo, **idempotent** : renvoi ⇒ `deja_recu`).
+- `/api/sync` : types `parcelle` (contour Polygon revérifié par `Contour` — fermé, en
+  Côte d'Ivoire —, **surface recalculée au serveur**, celle du téléphone ignorée) et
+  `depense` (même service que le bureau ; justificatif = photo déjà reçue, du même
+  utilisateur ; montant entier strict) ; `achat.photo_pesee` (UUID, la photo peut
+  arriver après). Référentiels : `categories_depense`.
+- Bureau : fiche producteur « relevé GPS en marchant » ; liste des achats « Photo
+  pesée » ou « photo attendue » ; `GET /photos-terrain/{photo}` (valideur d'achats,
+  trésorerie, ou l'agent auteur).
+
+**Fait — appli terrain.**
+
+- Onglets Accueil · Achat · **Saisir** · À envoyer. Écrans : **Relevé de parcelle**
+  (suivi GPS, point gardé si précision ≤ 15 m et à ≥ 3 m du précédent, « point ici »
+  aux coins, pause, périmètre et surface en aperçu), **Dépense terrain** (photo du reçu
+  obligatoire), **Nouveau producteur** (accord obligatoire ; fiche utilisable hors ligne
+  tout de suite), **photo de pesée** facultative sur l'achat. `ChoixProducteur` et
+  `PrisePhoto` partagés.
+- Photos compressées sur le téléphone (JPEG, 1600 px, qualité 0,7) avec position ;
+  envoyées **avant** les opérations, puis le fichier quitte le téléphone.
+- Rejets : « Renvoyer » (même UUID), « Confirmer (même famille) et renvoyer » pour un
+  doublon de téléphone, « Abandonner » (gardé pour la trace, statut `abandonne`).
+- Base locale v2 : la montée de version force un téléchargement **complet** (sinon la
+  nouvelle table des catégories resterait vide) ; un téléchargement complet garde les
+  producteurs créés sur le téléphone et pas encore envoyés.
+- Question 27 : l'appli refuse une adresse `http://` publique (http permis seulement
+  localhost / réseau privé / `.test` / `.local`) ; build Android en HTTPS sauf
+  `LY_TERRAIN_DEV=1` ; permissions de position ajoutées au manifeste.
+
+**Vérifié en l'exécutant.**
+
+- Laravel : **323 tests** (315 → 323), Larastan 0, Pint propre. Terrain : **24 tests**
+  vitest, svelte-check 0, build OK.
+- **Livrable, dans l'émulateur de téléphone de Chrome lancé par l'utilisateur** (appli
+  `localhost:4173`, API `localhost:8000`, MySQL) : base locale v1 de la veille ⇒ passée
+  en v2, « mis à jour : jamais », téléchargement complet ; relevé de parcelle pour Soro
+  Yacouba avec un **GPS simulé** (marche autour d'un carré de 80 m, 82 relevés dont 2 à
+  ± 40 m) ⇒ **80 points gardés, périmètre 320 m, 0,64 ha** ; dépense Carburant 15 000
+  avec photo (36 Ko → 28 Ko, position gardée) ; envoi ⇒ « 2 nouveau(x), 1 photo » ;
+  MySQL : parcelle `gps`, **surface 6 401 m² recalculée par le serveur**, dépense
+  `payee` avec la photo comme justificatif ; **fiche du producteur au bureau :
+  « Champ relevé GPS — 0,64 ha — relevé GPS en marchant »**. Rejet : Coulibaly Adama
+  créé avec le téléphone de Coulibaly Awa ⇒ « Rejeté — À confirmer : le téléphone
+  0711223344 figure déjà… » ⇒ « Confirmer et renvoyer » ⇒ accepté, LYP-000009,
+  `doublon_confirme` au journal.
+- **Pas vérifié** : vrai GPS en marchant, vraie caméra (photo injectée par script),
+  vrai téléphone (question 26 en suspens). Le navigateur bride les minuteries de
+  l'onglet : la marche simulée a dû livrer ses points d'un coup.
+
+**Données de dev ajoutées** : parcelle « Champ relevé GPS » (LYP-000006), dépense
+Carburant 15 000 (caisse agent), photo terrain, producteur LYP-000009.
+
+**Reste.** Semaine 10 (tableaux de bord, exports) ; correction d'un achat rejeté =
+nouvelle saisie (pas d'édition d'une opération sur le téléphone, par principe) ;
+questions 22, 24, 25, 26 (en suspens).
+
+---
+
+## 2026-09-28 — Semaine 8 (en avance) : appli terrain hors ligne — FINI, COMMITÉ (APK non construit)
+
+> Session `ly-agricole-f9`, branche `semaine-8` (depuis 66f10d2). Tout est dans
+> `terrain/` ; aucun fichier Laravel de code modifié cette semaine.
+
+**Fait.**
+
+- `terrain/` : SvelteKit 2 statique (Svelte 5, adapter-static, SPA), Tailwind 4, Dexie 4
+  (IndexedDB), uuid v7, qr-scanner, Capacitor 8 (`ci.lyagricole.terrain`, projet
+  `android/` généré, permission CAMERA, http autorisé pour le pilote). TypeScript 6
+  (svelte-check refuse le 7).
+- `src/lib/mesure.ts` : saisies en entiers par lecture du texte (miroir de
+  `App\Support\Mesure` / `Montant`), montant en BigInt `(net × prix + 500) / 1000`,
+  affichage comme `Format`.
+- `src/lib/db.ts` : référentiels + **file d'envoi** (`operations` : uuid v7, type,
+  cree_at, donnees, statut `en_attente`/`envoye`/`rejete`, motif, résumé lisible).
+- `src/lib/synchro.ts` : connexion (jeton par appareil, `appareil_id` v7 gardé),
+  référentiels complets puis delta (`depuis`), comptes et prêts toujours remplacés ;
+  `envoyer()` par paquets de 100 dans l'ordre de saisie ; échec réseau ⇒ tout reste en
+  attente ; `accepte`/`deja_recu` ⇒ « Au bureau » ; `rejete` ⇒ motif affiché, pas
+  renvoyé tout seul (correction : semaine 9) ; 401 ⇒ reconnexion, la file reste.
+- Écrans : Connexion (adresse du serveur), Accueil (campagne, prix officiel,
+  téléchargement, déconnexion refusée s'il reste des saisies), **Achat** (recherche
+  nom/code/téléphone ou **scan QR** de la carte, lot, caisse, point de collecte, pesée,
+  humidité, prix pré-rempli au prix officiel et refusé en dessous, prêt en cours avec
+  kilos retenus par défaut pour solder, aperçu net / valeur / espèces), **À envoyer**
+  (liste, statuts, motifs, « Envoyer maintenant »). Badge « N à envoyer » partout.
+
+**Vérifié en l'exécutant.**
+
+- `npm test` : 13 tests (saisies, montants au-delà de 2⁵³ en intermédiaire, file :
+  hors réseau ⇒ rien ne part ; réponse perdue puis renvoi ⇒ 5 « deja_recu », le faux
+  serveur n'a chaque achat qu'une fois ; rejet isolé avec motif ; ordre UUID v7 ; 401 ;
+  delta des référentiels). `npm run check` 0 erreur ; `npm run build` OK.
+- **Livrable, dans Chrome** (appli sur `localhost:4173`, API sur `localhost:8000`,
+  MySQL) : connexion `agent@` ⇒ 8 producteurs téléchargés ; **serveur arrêté** ;
+  5 achats saisis (Coulibaly Awa sous prêt : 120 kg tous retenus, espèces 0 ; Soro
+  Yacouba 79 kg × 430 = 33 970 ; Coulibaly Mariam 55 kg ; Ouattara Siaka 198 kg × 440 =
+  87 120 ; Traoré Mariam 35 kg) ; « Envoyer » ⇒ « Serveur injoignable : rien n'est
+  perdu », 5 en attente ; **page rechargée : toujours 5** ; serveur relancé ⇒
+  « Envoyé : 5 nouveau(x), 0 déjà reçu(s), 0 rejeté(s) » ; MySQL : ACH-000003 à
+  ACH-000007, montants identiques à l'aperçu du téléphone, `a_valider` (seuil non
+  défini) ; synchronisation n° 3 : 5/5 acceptées ; **écran Achats du bureau** : les 5,
+  « À valider », avec Bon PDF.
+- **Pas vérifié** : APK et vrai téléphone en mode avion (veille, redémarrage) — Android
+  Studio absent du poste (question 26) ; scan QR réel (caméra) ; « mode avion » simulé
+  en arrêtant le serveur, pas en coupant le réseau du navigateur.
+
+**Données de dev ajoutées** : achats ACH-000003 à 007 (à valider), synchronisation 3.
+
+**Reste.** Semaine 9 (relevé GPS, photos, dépense terrain, correction des rejets) ;
+fiche producteur créée sur le téléphone (l'API l'accepte déjà, pas encore d'écran) ;
+producteurs limités à la zone de l'agent (question 22) ; questions 26, 27.
+
+---
+
+## 2026-09-28 — Semaine 7 (en avance) : API terrain, `/api/sync` idempotent, SMS, bon d'achat — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, branche `semaine-7` (depuis `semaine-6`, c66136a). La
+> modification de `.claude/skills/ly-agricole-metier/SKILL.md` est celle de
+> l'utilisateur : **hors commit**, à lui de décider.
+
+**Fait.**
+
+- **Sanctum 4.3** (`composer require`, ~15 min en tâche de fond) ; `HasApiTokens` sur
+  `User` ; migration `personal_access_tokens` renommée `2026_11_07_000002`.
+- `routes/api.php` : `POST /api/connexion` (email, mot de passe, nom de l'appareil ⇒ un
+  jeton ; mêmes règles que l'écran : compte actif, 5 essais puis blocage, même message
+  pour compte désactivé et mauvais mot de passe ; connexion journalisée), `POST
+  /api/deconnexion` (révoque le jeton), `GET /api/referentiels` (villages, groupes,
+  produits, campagnes, lots, points de collecte, pisteurs, producteurs — **delta par
+  `depuis`**, désactivés renvoyés avec `actif=false` ; comptes d'où l'utilisateur peut
+  payer ; prêts en cours toujours en entier avec leur restant dû), `POST /api/sync`.
+  `CompteActif` ajouté au groupe `api` : compte désactivé ⇒ 401 même avec un jeton.
+- `App\Services\Synchronisation` : opérations `producteur` et `achat`, **dans l'ordre
+  reçu, chacune dans sa transaction** ; l'UUID du téléphone **est** l'id créé ;
+  `operations_recues` (une ligne par UUID) : acceptée ⇒ `deja_recu` au renvoi, rejetée ⇒
+  renvoyable corrigée ; UUID déjà servi pour un autre type ⇒ rejet ; collision
+  simultanée (contrainte unique) ⇒ `deja_recu`. Revalidation par les **mêmes services**
+  que le bureau (`Achats::enregistrer`, doublons, consentement) ; poids et prix en
+  **entiers stricts** (`integer:strict` : `505000.5` ou `"425"` refusés, jamais
+  arrondis). Doublon « alerte » (même téléphone) ⇒ rejet « À confirmer » jusqu'à
+  `doublons_confirmes: true`, puis journal `doublon_confirme`. Erreur imprévue ⇒ rejet
+  avec motif + log, jamais perdue en silence. Trace de chaque appel dans
+  `synchronisations`.
+- **SMS (D10)** : interface `App\Services\Sms\EnvoyeurSms`, pilote `journal`
+  (`SMS_PILOTE`, `?:` pour une clé vide) ; `ConfirmationsSms` écrit la ligne dans la
+  transaction de l'achat (à l'exécution : donc à la validation s'il était à valider),
+  du décaissement et du remboursement en espèces ; job `EnvoyerConfirmationSms`
+  **`afterCommit`**, 3 essais, statut `envoye`/`echec` + erreur. Texte sans accents
+  (question 24).
+- **Bon d'achat PDF** (A5, dompdf, sous-ensemble de police) : `GET /achats/{achat}/bon`,
+  lien « Bon PDF » dans la liste des achats ; pesée, qualité (sans float), règlement,
+  kilos retenus, restant dû, signatures ; « EN ATTENTE DE VALIDATION » / « ACHAT
+  REFUSÉ » en rouge. Visible par qui valide les achats, ou par l'agent qui l'a saisi.
+- Docs : `MODELE_DE_DONNEES.md` (confirmations_sms, synchronisations, operations_recues,
+  personal_access_tokens), `QUESTIONS_OUVERTES.md` (24 texte des SMS, 25 expiration des
+  jetons), `CLAUDE.md` (commande `queue:work`, API, 2 pièges).
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **315 tests** verts (294 → 315 : 9 synchronisation, 5 API, 6 SMS,
+  1 bon PDF), Larastan 0, Pint propre.
+- **Livrable de la semaine 7** (`SynchronisationTest`) : le même lot (2 producteurs +
+  2 achats) envoyé deux fois ⇒ 4 `deja_recu`, producteurs, achats, stock, mouvements de
+  trésorerie, SMS et caisse **identiques** ; envoi coupé en deux puis renvoyé en entier
+  ⇒ même résultat ; une opération invalide (prix sous le prix officiel) ⇒ les trois
+  autres passent, puis corrigée et renvoyée avec le même UUID ⇒ acceptée.
+- Mutation : sans `afterCommit()` dans le job, le test « aucun SMS avant le commit ni
+  pour une opération annulée » **échoue** (vérifié, puis remis).
+- **Parcours réel (MySQL + `artisan serve`, à la demande de l'utilisateur)** :
+  migrations 2026_11_07 lancées ; script PHP/curl : connexion `agent@` ⇒ jeton ;
+  référentiels : 7 producteurs, comptes = « Caisse agent de terrain » seule, 8 prêts en
+  cours ; delta immédiat = 0 producteur ; `/api/sync` (producteur Traoré Mariam + achat
+  100 kg à 425) ⇒ `accepte` ×2, **renvoi ⇒ `deja_recu` ×2** ; MySQL : producteurs 7 → 8,
+  achats 1 → 2 (pas 3) ; achat `a_valider` (seuil non défini) ⇒ stock, caisse et SMS
+  inchangés ; déconnexion ⇒ le jeton rend 401. Chrome (comptable) : ACH-000002 « À
+  valider » ⇒ Valider ⇒ **lot 500 → 600 kg, caisse agent 957 500 → 915 000**, SMS
+  `en_attente` puis `queue:work --once` ⇒ `envoye`, texte dans `laravel.log`. Bon PDF
+  ACH-000002 ouvert dans Chrome : en-tête, fournisseur (carte LYP-000008), pesée
+  101 − 1 = 100 kg, humidité 7,5 %, règlement 42 500, une page.
+- Données de dev ajoutées par ce parcours : producteur LYP-000008 (Traoré Mariam),
+  achat ACH-000002, 2 lignes `synchronisations`, 1 SMS.
+
+**Surpris.**
+
+- `Queue::fake()` ignore `afterCommit` (le job apparaît même après un rollback) : test
+  refait avec la file `sync` et un faux envoyeur.
+- Un `php -r … preg_replace` raté a vidé `TerrainController.php` (0 octet) : réécrit ;
+  piège ajouté à `CLAUDE.md`.
+
+**Reste.** Semaine 8 : l'appli terrain (SvelteKit + Dexie) qui
+consomme cette API ; questions 22, 24, 25.
+
+---
+
+## 2026-09-28 — Semaine 6 (en avance) : achats bord-champ, lots, stock, remboursements — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, branche `semaine-6`. Le tableau de bord qui lit ces tables
+> est de la session `ly-agricole-fb` (entrée juste en dessous), commité à part.
+
+**Fait.**
+
+- Tables `pisteurs`, `lots`, `achats` 📱, `mouvements_stock` 🔒, `remboursements` 🔒 ;
+  natures de trésorerie `achat_bord_champ`, `remboursement_pret` ; statut de prêt `solde`.
+- `App\Services\Achats` : pesée en grammes (brut − tare), qualité en entiers (humidité ‰,
+  KOR centièmes de lbs, grainage), montant `intdiv(net × prix + 500, 1000)` ; **prix sous
+  le prix officiel de la campagne ⇒ refus** ; lot ouvert de la campagne ouverte ;
+  l'agent paie depuis **sa** caisse. Au-dessus du seuil **ou seuil non défini** :
+  `a_valider`, **rien ne bouge** avant la validation par un autre (stock, remboursement,
+  paiement en une transaction à ce moment).
+- Producteur sous prêt : kilos retenus (par défaut ce qu'il faut pour solder, arrondi au
+  gramme supérieur) → remboursement en nature ; reste payé en espèces.
+- **Question 3 non tranchée par le code** : paramètre « Valorisation des remboursements
+  en kilos » (prix de l'achat du jour / prix de référence du prêt), nouveau type de
+  paramètre « choix » ; **sans choix, un achat ne rembourse pas de prêt** (l'écran
+  l'explique). La règle est figée sur chaque remboursement.
+- `App\Services\Remboursements` : en nature (plafonné au restant dû : **invariant 1**) et
+  en espèces (entrée de trésorerie) ; contre-passation d'un remboursement en espèces
+  (et de son mouvement) ; `solde` ↔ `decaisse` / `valide`. La trésorerie **refuse** de
+  contre-passer seule un paiement d'achat ou un remboursement (corrigés depuis leur
+  origine) ; une contre-passation de remboursement ne rouvre plus le « reste à
+  décaisser » (seuls les versements le font).
+- `App\Services\Stock` : entrée d'achat, transfert (deux jambes liées), perte,
+  **inventaire = poids compté** (l'écart devient un mouvement motivé), contre-passation ;
+  stock ≥ 0 par magasin (**invariant 2**). Table `inventaires` du modèle remplacée.
+- `App\Support\Mesure` : « 500,250 » kg → 500 250 g, « 8,5 » % → 85 ‰, sans float ;
+  plus de décimales que prévu = refus.
+- Écrans : Achats (liste + validation / refus, formulaire avec aperçu en direct : net,
+  valeur, retenu sur le prêt, espèces), Lots (liste, création), fiche de lot
+  (transfert, perte, inventaire, contre-passation, achats du lot avec qualité), Pisteurs
+  (référentiel), section Remboursements de la fiche prêt (encaisser, contre-passer).
+  Menu : « Achats » (Terrain), « Lots » (Stock), « Achat bord-champ » dans « Nouveau ».
+- Droits : `saisir-achats` (+ agent), `valider-achats`, `gerer-stock`,
+  `encaisser-remboursements` (direction, comptable).
+
+**Vérifié en l'exécutant.**
+
+- `php artisan test` : **290 tests** (266 → 290 pour la semaine 6 seule ; 294 avec le
+  tableau de bord de `fb`), Larastan 0, Pint propre ; invariants 1, 2, 5, 6 ; sommes de
+  grammes au-delà de 2³¹ (3,1 × 10⁹ g).
+- **Livrable de la semaine 6, dans Chrome** (MySQL) : direction → règle « prix de l'achat
+  du jour » (**valeur d'essai**, question 3) ; comptable → « Caisse agent de terrain »,
+  avance 1 000 000, lot LOT-00001 ; agent → achat à Coulibaly Awa (prêt LYPR-000001
+  proposé d'office, restant dû 3 000 000), 505 kg brut, 5 kg de tare, 425 FCFA/kg,
+  400 kg retenus : aperçu « 500 kg · 212 500 · retenu 400 kg · 170 000 · espèces
+  42 500 » ; enregistré **à valider** (seuil non défini) — MySQL : stock 0, aucun
+  remboursement, caisse 1 000 000 ; comptable → Valider. Résultat, à l'écran et dans
+  MySQL : **restant dû 3 000 000 → 2 830 000**, **lot 0 → 500 kg**, **caisse de l'agent
+  1 000 000 → 957 500**.
+
+**Surprise.** Le serveur de dev met ~3 s à répondre : une lecture de la page juste après
+un clic peut tomber au milieu du rafraîchissement Livewire (vu sur la création d'un lot,
+vérifié en relisant à 0,5 / 1,5 / 3 s : pas un bug). Un lot de contrôle LOT-00002 reste
+dans la base locale.
+
+**Reste.** Questions 3, 5 et 6 ; photo de la pesée et GPS de l'achat (appli terrain,
+semaines 8-9) ; SMS de confirmation au producteur (semaine 7).
+
+---
+
+## 2026-09-28 — Tableau de bord branché sur la semaine 6 (achats, stock, remboursements) — FINI, NON COMMITÉ
+
+> Session `ly-agricole-fb`, à la demande de `f9` (qui a écrit la semaine 6 : ne pas la
+> retoucher). Je n'ai modifié **que** le tableau de bord ; à commiter **après** le
+> commit de la semaine 6, en un commit séparé.
+
+**Fichiers modifiés.** `app/Services/Indicateurs.php`, `app/Livewire/TableauDeBord.php`,
+`resources/views/livewire/tableau-de-bord/accueil.blade.php`,
+`resources/views/components/graphiques/barres.blade.php` (format `kg`).
+**Nouveau :** `tests/Feature/TableauDeBordFiliereTest.php` (4 tests).
+
+**Ce qui change.** Les quatre cases « Bientôt » sont remplacées par des chiffres réels :
+kilos achetés (achats **validés** seulement), stock en magasin (Σ `mouvements_stock`,
+réservé à `gerer-stock`), remboursé (argent + kilos rendus) et restant dû
+(`max(0, remis − remboursé)`), graphique des kilos achetés par mois, colonne « Remboursé »
+dans le bilan par campagne, « achats à valider » dans les actions à mener, achats dans les
+dernières nouvelles. Seule « Marge par lot » reste en « Bientôt » (reventes, phase 2).
+
+**Choix à connaître.**
+
+- Lecture par `DB::table()` de `achats`, `mouvements_stock`, `lots`, `remboursements` :
+  **si `f9` renomme ces colonnes, `Indicateurs` casse** (`statut`, `poids_net_g`,
+  `montant_fcfa`, `grammes`, `type`, `annule_id`, `cree_par`, `campagne_id`, `lot_id`).
+- Les remboursements sont signés (contre-passation négative) : la somme se compense.
+  Les **grammes** ne sont pas signés : les kilos rendus excluent les remboursements en
+  nature annulés (`NOT EXISTS` sur `annule_id`).
+- « Revenus » n'inclut plus une entrée d'argent **contre-passée** (défaut trouvé en
+  écrivant les tests : un remboursement annulé restait compté).
+- Les prêts `solde` comptent dans « prêts accordés » (ils disparaîtraient sinon).
+
+**Vérifié.** `php artisan test` : **294 tests** verts ; Larastan 0 erreur sur mes deux
+fichiers ; Pint propre. **Dans Chrome** (`localhost:8000`, base réelle, sans achat ni
+remboursement) : la section s'affiche, restant dû 22 000 000 FCFA = 21 000 000 (7 prêts)
++ 1 000 000 (prêt mixte de `f9`), menu avec Achats et Lots, aucune exception.
+
+**Pas vérifié dans Chrome.** Les chiffres non nuls (aucun achat en base) : couverts par les
+tests avec les vrais services (`Achats`, `Remboursements`), pas à l'écran.
+
+---
+
+## 2026-09-28 — Front : menu latéral, barre du haut, page d'accueil analytique — FINI, COMMITÉ (`3c36505`)
 
 > Session `ly-agricole-fb`. Le front est **terminé et vérifié** ; ne pas le refaire. Il
 > reste à le commiter (voir « Reste »).

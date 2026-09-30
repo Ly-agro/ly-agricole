@@ -18,6 +18,11 @@ class CompteActif
         $user = $request->user();
 
         if ($user !== null && ! $user->actif) {
+            // Appli terrain (jeton, sans session) : refus net, le jeton ne sert plus à rien.
+            if (! $request->hasSession()) {
+                return response()->json(['message' => 'Ce compte a été désactivé.'], 401);
+            }
+
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

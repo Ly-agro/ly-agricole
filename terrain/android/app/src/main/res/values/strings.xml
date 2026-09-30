@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LY Terrain</string>
+    <string name="title_activity_main">LY Terrain</string>
+    <string name="package_name">ci.lyagricole.terrain</string>
+    <string name="custom_url_scheme">ci.lyagricole.terrain</string>
+</resources>

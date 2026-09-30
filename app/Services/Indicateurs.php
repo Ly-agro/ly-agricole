@@ -47,20 +47,101 @@ class Indicateurs
     }
 
     /**
-     * @return array{accordes: int, nombre: int, remis: int, depenses: int, producteurs: int}
+     * @return array{accordes: int, nombre: int, remis: int, rembourse: int, restant: int, depenses: int, producteurs: int}
      */
     public function chiffresCampagne(Campagne $campagne): array
     {
-        $prets = Pret::query()->where('campagne_id', $campagne->id)->whereIn('statut', self::STATUTS_ACCORDES);
+        $prets = Pret::query()->where('campagne_id', $campagne->id)->whereIn('statut', [...self::STATUTS_ACCORDES, StatutPret::Solde->value]);
+        $remis = $this->remisParCampagne()[$campagne->id] ?? 0;
+        $rembourse = $this->rembourseParCampagne()[$campagne->id] ?? 0;
 
         return [
             'accordes' => (int) (clone $prets)->sum('montant_fcfa'),
             'nombre' => (clone $prets)->count(),
-            'remis' => $this->remisParCampagne()[$campagne->id] ?? 0,
+            'remis' => $remis,
+            'rembourse' => $rembourse,
+            // Jamais négatif : un trop-perçu est un crédit du producteur, pas une dette inversée.
+            'restant' => max(0, $remis - $rembourse),
             'depenses' => (int) Depense::query()->where('campagne_id', $campagne->id)
                 ->where('statut', StatutDepense::Payee)->sum('montant_fcfa'),
             'producteurs' => (clone $prets)->distinct()->count('producteur_id'),
         ];
+    }
+
+    /**
+     * Remboursé par campagne, en FCFA : argent + valeur des kilos rendus. Les montants
+     * sont signés (une contre-passation est négative), la somme les compense d'elle-même.
+     *
+     * @return array<int, int>
+     */
+    private function rembourseParCampagne(): array
+    {
+        return DB::table('remboursements')
+            ->join('prets', 'prets.id', '=', 'remboursements.pret_id')
+            ->groupBy('prets.campagne_id')
+            ->selectRaw('prets.campagne_id AS campagne_id, SUM(remboursements.montant_fcfa) AS total')
+            ->pluck('total', 'campagne_id')
+            ->map(fn ($t) => (int) $t)->all();
+    }
+
+    /**
+     * Achats validés et stock d'une campagne. Poids en grammes, montants en FCFA.
+     * Les remboursements en kilos annulés par une contre-passation ne comptent pas.
+     *
+     * @return array{achats: int, kilos_achetes: int, montant_achats: int, stock: int, kilos_rembourses: int}
+     */
+    public function achatsEtStock(Campagne $campagne): array
+    {
+        $achats = DB::table('achats')->where('campagne_id', $campagne->id)->where('statut', 'valide')
+            ->selectRaw('COUNT(*) AS n, COALESCE(SUM(poids_net_g), 0) AS grammes, COALESCE(SUM(montant_fcfa), 0) AS montant')->first();
+
+        $stock = DB::table('mouvements_stock')
+            ->join('lots', 'lots.id', '=', 'mouvements_stock.lot_id')
+            ->where('lots.campagne_id', $campagne->id)
+            ->sum('mouvements_stock.grammes');
+
+        $rendus = DB::table('remboursements')
+            ->join('prets', 'prets.id', '=', 'remboursements.pret_id')
+            ->where('prets.campagne_id', $campagne->id)
+            ->where('remboursements.type', 'nature')
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('remboursements AS annulation')
+                ->whereColumn('annulation.annule_id', 'remboursements.id'))
+            ->sum('remboursements.grammes');
+
+        return [
+            'achats' => (int) ($achats->n ?? 0),
+            'kilos_achetes' => (int) ($achats->grammes ?? 0),
+            'montant_achats' => (int) ($achats->montant ?? 0),
+            'stock' => (int) $stock,
+            'kilos_rembourses' => (int) $rendus,
+        ];
+    }
+
+    /**
+     * Kilos achetés (validés) par mois, sur les `$mois` derniers mois, pour une campagne.
+     *
+     * @return Collection<int, array{label: string, valeur: int}>
+     */
+    public function achatsParMois(Campagne $campagne, int $mois = 6): Collection
+    {
+        $debut = Carbon::today()->startOfMonth()->subMonths($mois - 1);
+        $serie = [];
+        for ($i = 0; $i < $mois; $i++) {
+            $m = $debut->copy()->addMonths($i);
+            $serie[$m->format('Y-m')] = ['label' => ucfirst($m->locale('fr')->isoFormat('MMM YYYY')), 'valeur' => 0];
+        }
+
+        DB::table('achats')->where('campagne_id', $campagne->id)->where('statut', 'valide')
+            ->where('date_achat', '>=', $debut->toDateTimeString())
+            ->get(['date_achat', 'poids_net_g'])
+            ->each(function ($a) use (&$serie) {
+                $cle = Carbon::parse($a->date_achat)->format('Y-m');
+                if (isset($serie[$cle])) {
+                    $serie[$cle]['valeur'] += (int) $a->poids_net_g;
+                }
+            });
+
+        return collect(array_values($serie));
     }
 
     /**
@@ -96,12 +177,13 @@ class Indicateurs
      * Une ligne par campagne, pour « ce qui a été fait ».
      *
      * @param  Collection<int, Campagne>  $campagnes
-     * @return Collection<int, array{campagne: Campagne, prets: int, accordes: int, remis: int, depenses: int, producteurs: int}>
+     * @return Collection<int, array{campagne: Campagne, prets: int, accordes: int, remis: int, rembourse: int, depenses: int, producteurs: int}>
      */
     public function bilanParCampagne(Collection $campagnes): Collection
     {
         $remis = $this->remisParCampagne();
-        $prets = DB::table('prets')->whereIn('statut', self::STATUTS_ACCORDES)->groupBy('campagne_id')
+        $rembourse = $this->rembourseParCampagne();
+        $prets = DB::table('prets')->whereIn('statut', [...self::STATUTS_ACCORDES, StatutPret::Solde->value])->groupBy('campagne_id')
             ->selectRaw('campagne_id, COUNT(*) AS n, SUM(montant_fcfa) AS total, COUNT(DISTINCT producteur_id) AS producteurs')
             ->get()->keyBy('campagne_id');
         $depenses = DB::table('depenses')->where('statut', StatutDepense::Payee->value)->whereNotNull('campagne_id')
@@ -112,6 +194,7 @@ class Indicateurs
             'prets' => (int) ($prets[$c->id]->n ?? 0),
             'accordes' => (int) ($prets[$c->id]->total ?? 0),
             'remis' => $remis[$c->id] ?? 0,
+            'rembourse' => $rembourse[$c->id] ?? 0,
             'depenses' => (int) ($depenses[$c->id] ?? 0),
             'producteurs' => (int) ($prets[$c->id]->producteurs ?? 0),
         ]);
@@ -176,6 +259,9 @@ class Indicateurs
             ->where('date_operation', '>=', $debut->toDateString())
             ->where('sens', SensMouvement::Entree->value)
             ->whereNotIn('nature', [NatureMouvement::Virement->value, NatureMouvement::ContrePassation->value])
+            // Une entrée contre-passée n'est pas un revenu : la contre-passation la compense.
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))->from('mouvements_tresorerie AS annulation')
+                ->whereColumn('annulation.annule_id', 'mouvements_tresorerie.id'))
             ->groupBy('nature')->selectRaw('nature, SUM(montant_fcfa) AS total')->get()
             ->map(fn ($l) => [
                 'label' => NatureMouvement::from((string) $l->nature)->libelle(),
@@ -231,6 +317,11 @@ class Indicateurs
             $n > 0 && $taches[] = ['texte' => $n > 1 ? 'dépenses à valider' : 'dépense à valider', 'nombre' => $n, 'lien' => route('depenses')];
         }
 
+        if ($user->can('valider-achats')) {
+            $n = DB::table('achats')->where('statut', 'a_valider')->where('cree_par', '!=', $user->id)->count();
+            $n > 0 && $taches[] = ['texte' => $n > 1 ? 'achats à valider' : 'achat à valider', 'nombre' => $n, 'lien' => route('achats')];
+        }
+
         if ($user->can('voir-prets')) {
             $n = Pret::query()->whereIn('statut', self::STATUTS_ACCORDES)->where('echeance', '<', Carbon::today())->count();
             $n > 0 && $taches[] = ['texte' => $n > 1 ? 'prêts dont l\'échéance est passée' : 'prêt dont l\'échéance est passée', 'nombre' => $n, 'lien' => route('prets')];
@@ -281,6 +372,19 @@ class Indicateurs
                     'genre' => 'depense',
                 ]);
             });
+        }
+
+        if ($user->can('saisir-achats') || $user->can('valider-achats')) {
+            DB::table('achats')->orderByDesc('date_achat')->limit($limite)->get(['reference', 'poids_net_g', 'montant_fcfa', 'fournisseur_nom', 'date_achat'])
+                ->each(function ($a) use ($faits) {
+                    $faits->push([
+                        'quand' => Carbon::parse($a->date_achat),
+                        'texte' => 'Achat '.$a->reference,
+                        'detail' => Format::kg((int) $a->poids_net_g).' · '.Format::fcfa((int) $a->montant_fcfa).($a->fournisseur_nom ? ' · '.$a->fournisseur_nom : ''),
+                        'lien' => route('achats'),
+                        'genre' => 'achat',
+                    ]);
+                });
         }
 
         if ($user->can('voir-producteurs')) {

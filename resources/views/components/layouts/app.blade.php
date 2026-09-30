@@ -35,24 +35,38 @@
                     <x-nav-lien route="tableau-de-bord" motif="tableau-de-bord" icone="accueil">Tableau de bord</x-nav-lien>
                 </div>
 
-                @can('voir-producteurs')
+                @canany(['voir-producteurs', 'saisir-achats', 'valider-achats'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Terrain</p>
                         <div class="space-y-1">
-                            <x-nav-lien route="producteurs" motif="producteurs*" icone="producteurs">Producteurs</x-nav-lien>
+                            @can('voir-producteurs')
+                                <x-nav-lien route="producteurs" motif="producteurs*" icone="producteurs">Producteurs</x-nav-lien>
+                            @endcan
+                            @canany(['saisir-achats', 'valider-achats'])
+                                <x-nav-lien route="achats" motif="achats*" icone="achats">Achats</x-nav-lien>
+                            @endcanany
                         </div>
                     </div>
-                @endcan
+                @endcanany
 
-                @canany(['voir-prets', 'gerer-tresorerie', 'saisir-depenses', 'valider-depenses'])
+                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'voir-budget', 'saisir-depenses', 'valider-depenses'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Argent</p>
                         <div class="space-y-1">
                             @can('voir-prets')
                                 <x-nav-lien route="prets" motif="prets*" icone="prets">Prêts</x-nav-lien>
                             @endcan
+                            @can('voir-ventes')
+                                <x-nav-lien route="ventes" motif="ventes*" icone="ventes">Ventes</x-nav-lien>
+                            @endcan
                             @can('gerer-tresorerie')
                                 <x-nav-lien route="tresorerie" motif="tresorerie*" icone="tresorerie">Trésorerie</x-nav-lien>
+                            @endcan
+                            @can('gerer-apports')
+                                <x-nav-lien route="apports" motif="apports" icone="apports">Apports</x-nav-lien>
+                            @endcan
+                            @can('voir-budget')
+                                <x-nav-lien route="budget" motif="budget" icone="budget">Budget</x-nav-lien>
                             @endcan
                             @canany(['saisir-depenses', 'valider-depenses'])
                                 <x-nav-lien route="depenses" motif="depenses*" icone="depenses">Dépenses</x-nav-lien>
@@ -61,14 +75,28 @@
                     </div>
                 @endcanany
 
-                @can('gerer-intrants')
+                @can('voir-portail-investisseur')
                     <div>
-                        <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Stock</p>
+                        <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Investisseur</p>
                         <div class="space-y-1">
-                            <x-nav-lien route="intrants" motif="intrants*" icone="intrants">Intrants</x-nav-lien>
+                            <x-nav-lien route="mon-investissement" motif="mon-investissement" icone="apports">Mon investissement</x-nav-lien>
                         </div>
                     </div>
                 @endcan
+
+                @canany(['gerer-intrants', 'gerer-stock'])
+                    <div>
+                        <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Stock</p>
+                        <div class="space-y-1">
+                            @can('gerer-stock')
+                                <x-nav-lien route="lots" motif="lots*" icone="lots">Lots</x-nav-lien>
+                            @endcan
+                            @can('gerer-intrants')
+                                <x-nav-lien route="intrants" motif="intrants*" icone="intrants">Intrants</x-nav-lien>
+                            @endcan
+                        </div>
+                    </div>
+                @endcanany
 
                 @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie', 'gerer-intrants', 'voir-journal', 'gerer-utilisateurs'])
                     <div>
@@ -115,7 +143,7 @@
                         </a>
                     @endif
 
-                    @canany(['saisir-prets', 'gerer-producteurs', 'saisir-depenses'])
+                    @canany(['saisir-prets', 'gerer-producteurs', 'saisir-depenses', 'saisir-achats'])
                         <details class="relative" data-deroulant>
                             <summary class="flex cursor-pointer list-none items-center gap-1.5 rounded-lg bg-emerald-800 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-900 [&::-webkit-details-marker]:hidden">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-4 w-4" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
@@ -130,6 +158,9 @@
                                 @endcan
                                 @can('saisir-depenses')
                                     <a href="{{ route('depenses.nouvelle') }}" class="block rounded-lg px-3 py-2 hover:bg-stone-100">Dépense</a>
+                                @endcan
+                                @can('saisir-achats')
+                                    <a href="{{ route('achats.nouveau') }}" class="block rounded-lg px-3 py-2 hover:bg-stone-100">Achat bord-champ</a>
                                 @endcan
                             </div>
                         </details>

@@ -32,7 +32,7 @@
         <div>
             <dt class="text-stone-500">Restant dû</dt>
             <dd class="text-base font-semibold tabular-nums text-emerald-900" id="restant-du">{{ \App\Support\Format::fcfa($pret->restantDu()) }}</dd>
-            <dd class="text-xs text-stone-500">ce qui a été remis, moins les remboursements (sans intérêt)</dd>
+            <dd class="text-xs text-stone-500" id="detail-du">remis − remboursé {{ \App\Support\Format::fcfa($rembourse) }} (sans intérêt)</dd>
         </div>
         <div><dt class="text-stone-500">Forme</dt><dd>{{ $pret->forme->libelle() }}</dd></div>
         <div><dt class="text-stone-500">Échéance</dt><dd>{{ $pret->echeance->format('d/m/Y') }}</dd></div>
@@ -244,6 +244,95 @@
                 @if ($pret->decaissements->isEmpty() && $pret->mouvementsIntrants->isEmpty())
                     <tr><td colspan="6" class="py-4 text-stone-500">Rien n'a encore été remis.</td></tr>
                 @endif
+            </tbody>
+        </table>
+    </section>
+
+    <section class="mt-6 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="font-semibold">Remboursements <span class="text-sm font-normal text-stone-500">({{ \App\Support\Format::fcfa($rembourse) }})</span></h2>
+            @if ($peutEncaisser)
+                <button type="button" wire:click="ouvrirRemboursement" class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">Encaisser un remboursement</button>
+            @endif
+        </div>
+        <p class="mt-1 text-xs text-stone-500">Les remboursements en kilos se font à l'achat (Achats › Nouvel achat, avec le prêt du producteur).</p>
+
+        @if ($remboursementOuvert)
+            <form wire:submit="encaisserRemboursement" class="mt-4 rounded-md border border-stone-200 bg-stone-50 p-4">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="compteRemboursementId" class="mb-1 block text-sm font-medium text-stone-700">Encaissé sur le compte</label>
+                        <select wire:model="compteRemboursementId" id="compteRemboursementId" class="{{ $champ }}">
+                            <option value="">— Choisir —</option>
+                            @foreach ($comptesRemboursement as $c)
+                                <option value="{{ $c->id }}">{{ $c->nom }}</option>
+                            @endforeach
+                        </select>
+                        @error('compteRemboursementId') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="montantRemboursement" class="mb-1 block text-sm font-medium text-stone-700">Montant (FCFA)</label>
+                        <input wire:model="montantRemboursement" id="montantRemboursement" type="text" inputmode="numeric" class="{{ $champ }} text-right">
+                        @error('montantRemboursement') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="dateRemboursement" class="mb-1 block text-sm font-medium text-stone-700">Date</label>
+                        <input wire:model="dateRemboursement" id="dateRemboursement" type="date" class="{{ $champ }}">
+                        @error('dateRemboursement') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="referenceRemboursement" class="mb-1 block text-sm font-medium text-stone-700">Référence <span class="font-normal text-stone-500">(reçu, n° Wave…)</span></label>
+                        <input wire:model="referenceRemboursement" id="referenceRemboursement" type="text" class="{{ $champ }}">
+                    </div>
+                </div>
+                <button type="submit" wire:loading.attr="disabled" class="mt-4 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-60">Encaisser</button>
+            </form>
+        @endif
+
+        @if ($remboursementAContrePasser !== null)
+            <form wire:submit="contrePasserRemboursement" class="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4">
+                <label for="motifContrePassation" class="block text-sm font-medium text-amber-950">Motif de la contre-passation</label>
+                <input wire:model="motifContrePassation" id="motifContrePassation" type="text" class="mt-1 block w-full rounded-md border border-amber-300 px-3 py-2 focus:outline-none">
+                @error('motifContrePassation') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                <button type="submit" class="mt-3 rounded-md bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-800">Contre-passer</button>
+            </form>
+        @endif
+
+        <table class="mt-4 min-w-full text-sm">
+            <thead class="text-left text-stone-600">
+                <tr>
+                    <th class="py-2 pr-4 font-medium">Date</th>
+                    <th class="py-2 pr-4 font-medium">Type</th>
+                    <th class="py-2 pr-4 font-medium">Détail</th>
+                    <th class="py-2 pr-4 text-right font-medium">Montant</th>
+                    <th class="py-2 pr-4 font-medium">Par</th>
+                    <th class="py-2 pr-4"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-100">
+                @forelse ($pret->remboursements as $r)
+                    <tr @class(['text-stone-400 line-through' => $r->contrePassation !== null, 'text-amber-800' => $r->type->value === 'contre_passation'])>
+                        <td class="py-2 pr-4">{{ $r->date_remboursement->format('d/m/Y') }}</td>
+                        <td class="py-2 pr-4">{{ $r->type->libelle() }}</td>
+                        <td class="py-2 pr-4">
+                            @if ($r->type->value === 'nature')
+                                {{ \App\Support\Format::kg((int) $r->grammes) }} à {{ \App\Support\Format::fcfa((int) $r->prix_kg_fcfa) }}/kg
+                                <span class="text-xs text-stone-500">({{ $r->regle_valorisation?->libelle() }}, achat {{ $r->achat?->reference }})</span>
+                            @elseif ($r->motif)
+                                <span class="text-xs">{{ $r->motif }}</span>
+                            @endif
+                        </td>
+                        <td class="py-2 pr-4 text-right tabular-nums">{{ \App\Support\Format::fcfa($r->montant_fcfa) }}</td>
+                        <td class="py-2 pr-4">{{ $r->auteur->nom }}</td>
+                        <td class="py-2 pr-4 text-right">
+                            @if ($r->type->value === 'especes' && $r->contrePassation === null && auth()->user()->can('encaisser-remboursements'))
+                                <button type="button" wire:click="preparerContrePassationRemboursement({{ $r->id }})" class="text-xs text-amber-800 hover:underline">Contre-passer</button>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6" class="py-4 text-stone-500">Aucun remboursement.</td></tr>
+                @endforelse
             </tbody>
         </table>
     </section>

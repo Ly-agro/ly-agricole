@@ -34,6 +34,9 @@ class TableauDeBord extends Component
         // Les totaux de dépenses sont réservés à ceux qui les valident : un agent les saisit, il ne voit pas le total.
         $voitDepenses = $user->can('valider-depenses');
 
+        $voitFiliere = $user->can('saisir-achats') || $user->can('valider-achats');
+        $voitStock = $user->can('gerer-stock');
+
         return view('livewire.tableau-de-bord.accueil', [
             'campagnes' => $campagnes,
             'campagne' => $campagne,
@@ -47,6 +50,10 @@ class TableauDeBord extends Component
             'depensesParCategorie' => $campagne && $voitDepenses ? $indicateurs->depensesParCategorie($campagne) : collect(),
             'pretsParStatut' => $campagne && $voitPrets ? $indicateurs->pretsParStatut($campagne) : collect(),
             'bilan' => $voitPrets || $voitDepenses ? $indicateurs->bilanParCampagne($campagnes) : collect(),
+            'voitFiliere' => $voitFiliere,
+            'voitStock' => $voitStock,
+            'filiere' => $campagne && $voitFiliere ? $indicateurs->achatsEtStock($campagne) : null,
+            'achatsParMois' => $campagne && $voitFiliere ? $indicateurs->achatsParMois($campagne) : collect(),
             'aFaire' => $indicateurs->aFaire($user),
             'actualite' => $indicateurs->actualite($user),
         ]);

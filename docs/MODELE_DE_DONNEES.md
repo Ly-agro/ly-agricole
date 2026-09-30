@@ -40,7 +40,7 @@ flowchart TD
 | `producteurs` 📱 | id (UUID v7), code (carte QR), nom, prenoms, sexe, annee_naissance, telephone, numero_mobile_money, operateur_mm, piece_type, piece_numero, photo, village_id, groupe_id, consentement_at, consentement_par, cree_par, actif | `code` = `LYP-000001`, attribué par le **serveur** (table `compteurs`), jamais par le téléphone ; le QR ne contient que lui. Téléphones stockés en 10 chiffres. Pièce identique = **refus** (index unique) ; téléphone / Mobile Money identique = **alerte à confirmer**, confirmation journalisée (`doublon_confirme`). Pas de fiche sans consentement. Photo sur le disque **privé**. |
 | `compteurs` | nom, valeur | numéros lisibles attribués par le serveur, sous verrou de ligne ; pas de trou si la création échoue |
 | `groupes_producteurs` | nom, village_id, responsable_id, actif | nom unique par village ; responsable = producteur du village |
-| `parcelles` 📱 | id (UUID v7), producteur_id, nom, contour, surface_m2 (calculée), produit_id, annee_plantation, nb_arbres, sol, acces_eau, cree_par, actif | `contour` = géométrie GeoJSON (Polygon/MultiPolygon, WGS84) ; `surface_m2` recalculée par le modèle à chaque changement de contour, **non affectable** ; sans contour : vide (« non relevée »). Culture = `produit_id` (au lieu de `culture` texte). |
+| `parcelles` 📱 | id (UUID v7), producteur_id, nom, contour, surface_m2 (calculée), **contour_origine** (`import` : fichier au bureau ; `gps` : relevé en marchant, sem. 9), produit_id, annee_plantation, nb_arbres, sol, acces_eau, cree_par, actif | `contour` = géométrie GeoJSON (Polygon/MultiPolygon, WGS84) ; `surface_m2` recalculée par le modèle à chaque changement de contour, **non affectable** ; sans contour : vide (« non relevée »). Culture = `produit_id` (au lieu de `culture` texte). |
 
 ## Prêts
 
@@ -50,7 +50,7 @@ flowchart TD
 | `validations_pret` 🔒 | pret_id, user_id, created_at | une ligne par validation ; unique (prêt, personne) ; aucune par l'auteur ; 2 au-dessus du seuil **ou si le seuil n'est pas défini**, 1 sinon |
 | `pret_parcelle` | pret_id, parcelle_id | hectares financés = somme des surfaces relevées ; plafond par hectare vérifié sur elles |
 | `decaissements` 🔒 | pret_id, montant_fcfa, mode, reference_paiement, compte_id, date_decaissement, justificatif, mouvement_id, cree_par | chaque tranche = une sortie de trésorerie (nature `decaissement_pret`) ; Σ tranches non contre-passées ≤ montant ; espèces : caisse + reçu signé ; Mobile Money : compte Mobile Money + référence |
-| `remboursements` 🔒 | pret_id, type (`especes`, `nature`), montant_fcfa, achat_id (si nature), mouvement_tresorerie_id (si espèces), date, annule_id | restant dû = montant − somme des remboursements |
+| `remboursements` 🔒 | pret_id, type (`especes`, `nature`, `contre_passation`), montant_fcfa (**signé** : une contre-passation est négative), grammes, prix_kg_fcfa, regle_valorisation (figée), achat_id (si nature), mouvement_id (si espèces), date_remboursement, motif, annule_id, cree_par | **restant dû = remis (argent + intrants) − Σ montant_fcfa**, jamais négatif (le service plafonne / refuse) ; en kilos : valorisés selon le paramètre `regle_remboursement_nature` (question 3), **sans règle choisie : refus** ; prêt `solde` quand tout est remis et remboursé |
 
 ## Intrants
 
@@ -63,11 +63,29 @@ flowchart TD
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `achats` 📱 | uuid, reference, campagne_id, produit_id, fournisseur_type (`producteur`, `pisteur`, `cooperative`), producteur_id, fournisseur_nom, point_collecte_id, agent_id, date_heure, lat, lng, poids_brut_g, tare_g, poids_net_g, humidite_pour_mille, kor_centieme_lbs, grainage_noix_kg, prix_kg_fcfa, montant_fcfa, mode_paiement, pret_id, lot_id, photo_pesee, statut | un achat lié à un prêt génère un remboursement en nature |
-| `pisteurs` | nom, telephone, taux_commission | |
-| `lots` | code, produit_id, campagne_id, magasin_id, statut, cree_at | statut : `ouvert`, `en_stock`, `vendu`, `transforme` |
-| `mouvements_stock` 🔒 | lot_id, magasin_id, type (`entree_achat`, `transfert_sortie`, `transfert_entree`, `perte`, `ajustement_inventaire`, `sortie_vente`), grammes (signé), date, motif, achat_id, annule_id, cree_par | stock d'un lot = somme des grammes |
-| `inventaires` | magasin_id, date, compte_par, valide_par | lignes : lot_id, grammes_comptes, ecart |
+| `achats` 📱 | id (UUID v7), reference (`ACH-000001`), campagne_id, lot_id, fournisseur_type (`producteur`, `pisteur`, `cooperative`), producteur_id, pisteur_id, fournisseur_nom, point_collecte_id, date_achat, lat, lng, poids_brut_g, tare_g, poids_net_g, humidite_pour_mille, kor_centieme_lbs, grainage_noix_kg, prix_kg_fcfa, montant_fcfa, pret_id, **grammes_rembourses**, **montant_especes_fcfa**, compte_id, mouvement_id, photo_pesee, statut (`a_valider`, `valide`, `refuse`), cree_par, valide_par, valide_at, motif_refus | montant = `intdiv(net × prix + 500, 1000)` ; prix < prix officiel de la campagne ⇒ refus ; au-dessus du seuil **ou seuil non défini** ⇒ validation par un autre, et stock + remboursement + paiement **à la validation** ; `produit_id` retiré (celui de la campagne) ; `agent_id` = `cree_par` |
+| `pisteurs` | nom, telephone, actif | vendeurs seulement ; **commission : question 6** (pas de `taux_commission` pour l'instant) |
+| `lots` | code (`LOT-00001`), produit_id, campagne_id, magasin_id (d'origine), statut (`ouvert`, `ferme` ; `vendu`/`transforme` en phase 2), description, cree_par | stock par magasin = Σ mouvements |
+| `mouvements_stock` 🔒 | lot_id, magasin_id, type (`entree_achat`, `transfert_sortie`, `transfert_entree`, `perte`, `ajustement_inventaire`, `contre_passation` ; `sortie_vente` en phase 2), grammes (signé), date_mouvement, motif, achat_id, lien (transfert), annule_id, cree_par | stock d'un lot = Σ grammes ≥ 0 par magasin ; l'entrée d'un achat ne se contre-passe pas depuis le stock |
+| ~~`inventaires`~~ | — | **remplacée (2026-10-31)** : un inventaire saisit le poids compté ; l'écart devient un mouvement `ajustement_inventaire` motivé (le poids compté est dans le motif) |
+
+## Reventes (phase 2, ajoutée le 2026-12-05)
+
+| Table | Colonnes principales | Remarques |
+| --- | --- | --- |
+| `ventes` | id (UUID v7), reference (`VTE-000001`), campagne_id, lot_id, type_acheteur (`exportateur`, `grossiste`, `autre`), acheteur_nom, date_vente, poids_net_g, prix_kg_fcfa, montant_fcfa, qualite_acceptee, facture, statut (`a_valider`, `valide`, `refuse`), cree_par, valide_par, valide_at, motif_refus | montant = `intdiv(poids × prix + 500, 1000)` ; au-dessus du seuil `seuil_validation_vente_fcfa` — **ou seuil non défini** — validation par un autre avant que le stock ne sorte ; un lot dont le stock tombe à 0 (tous magasins) passe `vendu` |
+| `encaissements` 🔒 | vente_id, montant_fcfa (**signé**), compte_id, date_encaissement, reference_paiement, mouvement_id, motif, annule_id, cree_par | **stade séparé de la vente** (cahier §7) : l'acheteur peut payer à la livraison ou à terme (question 15, non tranchée) ; reste à encaisser = montant − Σ montant_fcfa, jamais négatif |
+| `mouvements_stock` | + colonne `vente_id` (nullable) | sortie d'une vente (`sortie_vente`), au même titre que l'entrée d'un achat ; ne se contre-passe pas seule, elle suit la vente |
+
+**Limite connue.** La marge par lot (`App\Services\Ventes::margeLot()`) ne compte que les achats et les ventes : les frais de transport, taxes et commissions à la revente ne sont pas rattachés au lot (pas de `lot_id` sur `depenses`). La marge affichée est donc une borne haute, et l'écran le dit.
+
+## Apports de campagne (phase 2, ajoutée le 2026-12-12)
+
+| Table | Colonnes principales | Remarques |
+| --- | --- | --- |
+| `apports` 🔒 | investisseur_id (nullable = apport de LY), campagne_id, montant_fcfa (**signé**), date_apport, motif, mouvement_id, annule_id, cree_par | contrat art. 5 (compte dédié) et art. 9 (apport de LY facultatif) ; un apport hors du compte dédié de la campagne est refusé |
+
+**Limite connue, volontaire.** `App\Services\Apports` ne calcule **aucun résultat net ni quote-part** (contrat art. 10 à 14) : le texte exact de ces articles n'est pas disponible (question 15 bis, `docs/QUESTIONS_OUVERTES.md`). `Apports::repartition()` donne seulement la part de chaque investisseur dans l'ensemble des apports d'investisseurs — un calcul objectif, pas le partage du résultat prévu par le contrat. Le portail investisseur (`/mon-investissement`) l'indique explicitement à l'écran.
 
 ## Trésorerie et dépenses
 
@@ -78,14 +96,18 @@ flowchart TD
 | `categories_depense` | nom, code_syscohada, exclue_fonds_campagne, actif | art. 10.3 du contrat : refusée sur un compte de campagne et sur une dépense rattachée à une campagne |
 | `depenses` 📱 | id (UUID v7), categorie_id, compte_id, montant_fcfa, date_depense, beneficiaire, description, justificatif (disque privé, obligatoire), campagne_id, parcelle_id, statut (`a_valider`, `payee`, `refusee`, `annulee`), cree_par, valide_par, valide_at, motif_refus, mouvement_id | au-dessus du seuil — **ou seuil non défini** — validation par une autre personne, l'argent sort à la validation ; `lot_id`, `pret_id` viendront avec leurs tables |
 | ~~`avances_agents`~~ | — | **remplacée (2026-10-10)** : une avance est un virement de nature `avance_agent` vers la caisse de l'agent (compte avec titulaire) ; le **reste à justifier est le solde de sa caisse**, sans table à tenir d'accord |
+| `lignes_budget` | campagne_id, poste (`achats`, `prets`, `categorie`), categorie_id, montant_fcfa (prévu, ≥ 0), note, cree_par, modifie_par | budget de campagne (cahier §8), **pas un registre** : une ligne se modifie (journalisée), jamais sur une campagne clôturée ; un poste une fois par campagne ; catégorie exclue par l'art. 10.3 refusée. **Le réel n'est pas stocké** : `App\Services\Budgets::suivi()` le recalcule — dépenses payées rattachées à la campagne, argent payé sur les achats validés (pas la part retenue sur un prêt), argent décaissé sur les prêts (hors contre-passés ; les intrants remis sont déjà comptés à leur achat) |
 
 ## Transverse
 
 | Table | Colonnes principales | Remarques |
 | --- | --- | --- |
-| `confirmations_sms` | producteur_id, objet_type, objet_id, message, envoye_at, statut, reponse | preuve envoyée au producteur |
+| `confirmations_sms` | producteur_id, objet_type (`achat`, `decaissement`, `remboursement`), objet_id, telephone, message, statut (`en_attente`, `envoye`, `echec`), pilote, envoye_at, erreur | preuve envoyée au producteur ; **une par opération** (unique objet_type + objet_id) ; écrite dans la transaction de l'opération, envoyée **après le commit** (job `EnvoyerConfirmationSms`, `afterCommit`) ; pas de téléphone ⇒ pas de ligne ; achat à valider ⇒ SMS seulement à la validation. `reponse` retirée (pas de réponse du producteur en phase 1) |
 | `journal_activite` 🔒 | user_id, action, objet_type, objet_id, avant, apres, ip, appareil, at | qui a fait quoi |
-| `synchronisations` | appareil_id, user_id, recu_at, nb_operations, nb_rejetees, erreurs | trace des envois de l'appli terrain |
+| `synchronisations` | appareil_id, user_id, recu_at, nb_operations, nb_acceptees, nb_deja_recues, nb_rejetees | un appel à `POST /api/sync` ; `erreurs` remplacée par `operations_recues.motif` |
+| `photos_terrain` | **id** (UUID v7 du téléphone), user_id, appareil_id, chemin (disque privé), mime, taille_octets, prise_at, lat, lng, recu_at | reçues par `POST /api/photos`, **à part** des opérations, idempotent ; référencées par `achats.photo_pesee` (peut arriver après l'achat) et comme justificatif d'une dépense terrain (doit arriver avant : l'appli l'envoie d'abord) |
+| `operations_recues` | **uuid** (clé primaire = UUID du téléphone = id de ce qui est créé), type (`producteur`, `achat`, `parcelle`, `depense`), synchronisation_id, appareil_id, user_id, statut (`accepte`, `rejete`), motif, cree_at (heure du téléphone), recu_at (heure du serveur) | clé d'idempotence : acceptée ⇒ un renvoi répond `deja_recu` sans rien refaire ; rejetée ⇒ renvoyable corrigée avec le même UUID |
+| `personal_access_tokens` | (Sanctum) tokenable, name (= appareil), token, abilities, last_used_at, expires_at | un jeton par téléphone ; révoqué à la déconnexion ; un compte désactivé est refusé même avec un jeton valide |
 | `parametres` | cle, valeur | clés connues du code (`App\Enums\CleParametre`) ; **pas de valeur par défaut** : non défini ≠ 0, le code applique la règle prudente |
 
 ## Invariants à tester dès la semaine où la table naît

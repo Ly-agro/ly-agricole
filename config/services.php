@@ -28,6 +28,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Confirmations SMS aux producteurs (D10). « ?: » et non la valeur par défaut d'env() :
+    // une clé déclarée vide (SMS_PILOTE=) vaut '' et non null (piège de CLAUDE.md).
+    'sms' => [
+        'pilote' => env('SMS_PILOTE') ?: 'journal',
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

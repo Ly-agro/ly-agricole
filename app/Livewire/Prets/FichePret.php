@@ -10,8 +10,10 @@ use App\Models\CompteTresorerie;
 use App\Models\Intrant;
 use App\Models\Magasin;
 use App\Models\Pret;
+use App\Models\Remboursement;
 use App\Models\User;
 use App\Services\Prets;
+use App\Services\Remboursements;
 use App\Services\StockIntrants;
 use App\Support\Montant;
 use Illuminate\Contracts\View\View;
@@ -66,6 +68,20 @@ class FichePret extends Component
     public string $quantiteIntrant = '';
 
     public string $dateRemise = '';
+
+    public bool $remboursementOuvert = false;
+
+    public string $compteRemboursementId = '';
+
+    public string $montantRemboursement = '';
+
+    public string $dateRemboursement = '';
+
+    public string $referenceRemboursement = '';
+
+    public ?int $remboursementAContrePasser = null;
+
+    public string $motifContrePassation = '';
 
     public function mount(Pret $pret): void
     {
@@ -180,6 +196,71 @@ class FichePret extends Component
         $this->statut = 'Intrants remis ; le stock et le restant dû sont à jour.';
     }
 
+    public function ouvrirRemboursement(): void
+    {
+        $this->authorize('encaisser-remboursements');
+        $this->resetErrorBag();
+        $this->reset('compteRemboursementId', 'referenceRemboursement');
+        $this->montantRemboursement = (string) $this->pret()->restantDu();
+        $this->dateRemboursement = Carbon::today()->toDateString();
+        $this->decaissementOuvert = false;
+        $this->remiseOuverte = false;
+        $this->remboursementOuvert = true;
+    }
+
+    public function encaisserRemboursement(): void
+    {
+        $this->authorize('encaisser-remboursements');
+        $this->resetErrorBag();
+
+        $this->validate([
+            'compteRemboursementId' => ['required', 'integer', Rule::exists('comptes_tresorerie', 'id')->where('actif', true)],
+            'montantRemboursement' => ['required', Montant::regle()],
+            'dateRemboursement' => ['required', 'date', 'before_or_equal:today'],
+            'referenceRemboursement' => ['nullable', 'string', 'max:100'],
+        ], ['dateRemboursement.before_or_equal' => 'La date ne peut pas être dans le futur.'],
+            ['compteRemboursementId' => 'compte', 'montantRemboursement' => 'montant', 'dateRemboursement' => 'date']);
+
+        try {
+            Remboursements::especes(
+                $this->pret(), CompteTresorerie::query()->findOrFail((int) $this->compteRemboursementId),
+                (int) Montant::depuisSaisie($this->montantRemboursement), Carbon::parse($this->dateRemboursement),
+                $this->moi(), $this->referenceRemboursement ?: null,
+            );
+        } catch (OperationRefusee $e) {
+            throw ValidationException::withMessages(['montantRemboursement' => $e->getMessage()]);
+        }
+
+        $this->remboursementOuvert = false;
+        $this->statut = 'Remboursement encaissé ; la trésorerie et le restant dû sont à jour.';
+    }
+
+    public function preparerContrePassationRemboursement(int $id): void
+    {
+        $this->authorize('encaisser-remboursements');
+        $this->resetErrorBag();
+        $this->motifContrePassation = '';
+        $this->remboursementAContrePasser = Remboursement::query()->where('pret_id', $this->pretId)->findOrFail($id)->id;
+    }
+
+    public function contrePasserRemboursement(): void
+    {
+        $this->authorize('encaisser-remboursements');
+        $this->resetErrorBag();
+
+        try {
+            Remboursements::contrePasser(
+                Remboursement::query()->where('pret_id', $this->pretId)->findOrFail((int) $this->remboursementAContrePasser),
+                $this->motifContrePassation, $this->moi(),
+            );
+        } catch (OperationRefusee $e) {
+            throw ValidationException::withMessages(['motifContrePassation' => $e->getMessage()]);
+        }
+
+        $this->remboursementAContrePasser = null;
+        $this->statut = 'Remboursement contre-passé.';
+    }
+
     public function decaisser(): void
     {
         $this->authorize('decaisser-prets');
@@ -226,7 +307,8 @@ class FichePret extends Component
         $pret = Pret::query()
             ->with(['producteur.village.zone', 'campagne.produit', 'auteur', 'validations.user', 'parcelles',
                 'decaissements' => fn ($q) => $q->with('compte', 'auteur', 'mouvement.contrePassation')->orderBy('id'),
-                'mouvementsIntrants' => fn ($q) => $q->with('intrant', 'magasin', 'auteur', 'contrePassation')->orderBy('id')])
+                'mouvementsIntrants' => fn ($q) => $q->with('intrant', 'magasin', 'auteur', 'contrePassation')->orderBy('id'),
+                'remboursements' => fn ($q) => $q->with('achat', 'auteur', 'contrePassation')->orderBy('id')])
             ->findOrFail($this->pretId);
         $mode = ModeDecaissement::tryFrom($this->modeVersement)
             ?? ($pret->forme === FormePret::MobileMoney ? ModeDecaissement::MobileMoney : ModeDecaissement::Especes);
@@ -246,6 +328,10 @@ class FichePret extends Component
             // Aperçu de la valeur d'une remise, au prix du jour (le service la recalcule).
             'valeurApercu' => $intrant !== null && ctype_digit($this->quantiteIntrant) ? (int) $this->quantiteIntrant * $intrant->prix_unitaire_fcfa : null,
             'peutRemettreIntrants' => $pret->statut === StatutPret::Valide && $pret->forme->accepteIntrants() && $moi->can('decaisser-prets'),
+            'rembourse' => $pret->montantRembourse(),
+            'comptesRemboursement' => CompteTresorerie::query()->where('actif', true)->orderBy('nom')->get(),
+            'peutEncaisser' => in_array($pret->statut, [StatutPret::Valide, StatutPret::Decaisse], true)
+                && $pret->restantDu() > 0 && $moi->can('encaisser-remboursements'),
             'peutVerserArgent' => $pret->statut === StatutPret::Valide && $pret->forme !== FormePret::Intrants && $moi->can('decaisser-prets'),
             'peutValider' => $pret->statut === StatutPret::Demande && $moi->can('valider-prets')
                 && $pret->cree_par !== $moi->id && ! $pret->validations->contains('user_id', $moi->id),
