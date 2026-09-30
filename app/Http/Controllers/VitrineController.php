@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Actualite;
+use App\Models\Produit;
 use App\Services\Publications;
 use Illuminate\Contracts\View\View;
 
@@ -11,8 +12,14 @@ class VitrineController extends Controller
 {
     public function accueil(): View
     {
+        $prix = Publications::prixCourants();
+        $avecPrix = $prix->map(fn (array $ligne) => $ligne['produit']->id)->all();
+
         return view('vitrine', [
-            'prix' => Publications::prixCourants(),
+            'prix' => $prix,
+            // Cultures suivies mais sans prix publié : affichées, avec « prix à venir », jamais un prix inventé.
+            'cultures' => Produit::query()->where('actif', true)->orderBy('nom')->get(),
+            'sansPrix' => Produit::query()->where('actif', true)->whereNotIn('id', $avecPrix)->orderBy('nom')->get(),
             'actualites' => Publications::actualitesVisibles(3),
         ]);
     }

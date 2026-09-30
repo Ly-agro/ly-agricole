@@ -5,5 +5,10 @@
         <h1 class="mt-2 text-3xl font-semibold tracking-tight">{{ $actualite->titre }}</h1>
         {{-- Texte simple, échappé : jamais du HTML. --}}
         <div class="mt-6 whitespace-pre-line text-lg leading-relaxed">{{ $actualite->contenu }}</div>
+        @if ($actualite->origine === 'externe' && $actualite->lien_source)
+            {{-- Extrait d'une source externe : on renvoie à l'article d'origine, on ne le recopie pas. --}}
+            <p class="v-texte-doux mt-8 text-sm">Source : {{ $actualite->source_nom }} —
+                <a href="{{ $actualite->lien_source }}" rel="noopener noreferrer nofollow" target="_blank" class="v-lien underline">lire l'article d'origine</a></p>
+        @endif
     </article>
 </x-vitrine.page>

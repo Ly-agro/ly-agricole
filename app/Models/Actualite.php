@@ -18,10 +18,14 @@ use Illuminate\Support\Carbon;
  * @property string $contenu
  * @property bool $publie
  * @property Carbon|null $publie_le
+ * @property string $origine interne (écrite par la direction) ou externe (venue d'un flux, à relire)
+ * @property string|null $source_nom
+ * @property string|null $lien_source
+ * @property Carbon|null $date_source
  * @property int $cree_par
  * @property-read User $auteur
  */
-#[Fillable(['titre', 'contenu', 'publie', 'publie_le', 'cree_par'])]
+#[Fillable(['titre', 'contenu', 'publie', 'publie_le', 'origine', 'source_nom', 'lien_source', 'date_source', 'identifiant_externe', 'cree_par'])]
 class Actualite extends Model
 {
     use Journalise;
@@ -45,6 +49,6 @@ class Actualite extends Model
 
     protected function casts(): array
     {
-        return ['publie' => 'boolean', 'publie_le' => 'date'];
+        return ['publie' => 'boolean', 'publie_le' => 'date', 'date_source' => 'date'];
     }
 }

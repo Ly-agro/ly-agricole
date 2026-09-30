@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\DeconnexionController;
 use App\Http\Controllers\DepenseController;
 use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
+use App\Http\Controllers\PrixController;
 use App\Http\Controllers\ProducteurController;
 use App\Http\Controllers\RapportCampagneController;
 use App\Http\Controllers\RapportController;
@@ -66,6 +67,7 @@ use Illuminate\Support\Facades\Route;
 // de l'application, et sans mention de l'opération d'investissement (contrat art. 2.3 :
 // aucune publicité).
 Route::get('/', [VitrineController::class, 'accueil'])->name('accueil');
+Route::get('/prix', [PrixController::class, 'evolution'])->name('prix.evolution');
 Route::get('/actualites', [VitrineController::class, 'actualites'])->name('actualites');
 Route::get('/actualites/{actualite}', [VitrineController::class, 'actualite'])->name('actualites.voir');
 

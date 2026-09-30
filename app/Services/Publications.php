@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\OperationRefusee;
 use App\Models\Actualite;
+use App\Models\Campagne;
 use App\Models\PrixMarche;
 use App\Models\Produit;
 use App\Models\User;
@@ -84,6 +85,95 @@ class Publications
                 'ecart' => $precedent === null ? null : $prix->prix_kg_fcfa - $precedent->prix_kg_fcfa,
             ];
         })->sortBy(fn (array $l) => mb_strtolower($l['produit']->nom))->values();
+    }
+
+    /**
+     * Évolution du prix d'un produit sur une période : le prix en vigueur au début (s'il y en a un
+     * avant), puis chaque changement jusqu'à la fin. Une seule valeur par date (la plus récemment
+     * saisie). Sans borne, de la première publication à aujourd'hui.
+     *
+     * @return array{
+     *     points: list<array{date: Carbon, prix: int, source: string, url: string|null, report: bool}>,
+     *     debut: Carbon, fin: Carbon,
+     *     resume: array{premier: int, dernier: int, min: int, max: int, variation: int, changements: int}|null
+     * }
+     */
+    public static function serie(Produit $produit, ?Carbon $debut = null, ?Carbon $fin = null): array
+    {
+        $fin = ($fin ?? Carbon::today())->copy()->startOfDay();
+
+        // Une valeur par date d'effet : la plus récemment saisie.
+        $parDate = [];
+        foreach (PrixMarche::query()->where('produit_id', $produit->id)->orderBy('date_effet')->orderBy('id')->get() as $ligne) {
+            $parDate[$ligne->date_effet->toDateString()] = $ligne;
+        }
+        $lignes = array_values($parDate);
+
+        $debut = ($debut ?? ($lignes === [] ? $fin : $lignes[0]->date_effet))->copy()->startOfDay();
+        if ($debut->greaterThan($fin)) {
+            [$debut, $fin] = [$fin, $debut];
+        }
+
+        $points = [];
+        $enVigueur = null;
+        foreach ($lignes as $ligne) {
+            if ($ligne->date_effet->lessThan($debut)) {
+                $enVigueur = $ligne;
+
+                continue;
+            }
+            if ($ligne->date_effet->greaterThan($fin)) {
+                break;
+            }
+            $points[] = ['date' => $ligne->date_effet->copy(), 'prix' => $ligne->prix_kg_fcfa, 'source' => $ligne->source, 'url' => $ligne->source_url, 'report' => false];
+        }
+        // Le prix déjà en vigueur au début de la période, s'il n'y a pas de changement ce jour-là.
+        if ($enVigueur !== null && ($points === [] || ! $points[0]['date']->isSameDay($debut))) {
+            array_unshift($points, ['date' => $debut->copy(), 'prix' => $enVigueur->prix_kg_fcfa, 'source' => $enVigueur->source, 'url' => $enVigueur->source_url, 'report' => true]);
+        }
+
+        $prix = array_column($points, 'prix');
+
+        return [
+            'points' => $points,
+            'debut' => $debut,
+            'fin' => $fin,
+            'resume' => $points === [] ? null : [
+                'premier' => $prix[0], 'dernier' => $prix[count($prix) - 1], 'min' => min($prix), 'max' => max($prix),
+                'variation' => $prix[count($prix) - 1] - $prix[0], 'changements' => count($points) - 1,
+            ],
+        ];
+    }
+
+    /**
+     * Résumé du prix d'un produit campagne par campagne (les plus récentes d'abord), pour comparer :
+     * seules comptent les campagnes de CE produit qui ont commencé et pour lesquelles un prix a été
+     * publié au cours de la campagne ou avant.
+     *
+     * `depuis_precedente` : écart entre le dernier prix de la campagne et le dernier prix de la campagne
+     * précédente connue (null pour la plus ancienne). `$limite` : nombre de campagnes rendues.
+     *
+     * @return list<array{campagne: Campagne, resume: array{premier: int, dernier: int, min: int, max: int, variation: int, changements: int}, depuis_precedente: int|null}>
+     */
+    public static function parCampagne(Produit $produit, int $limite = 7): array
+    {
+        $resultat = [];
+        foreach (Campagne::query()->where('produit_id', $produit->id)->orderByDesc('debut')->get() as $campagne) {
+            if ($campagne->debut->isFuture()) {
+                continue;
+            }
+            $serie = self::serie($produit, $campagne->debut, $campagne->fin->isFuture() ? Carbon::today() : $campagne->fin);
+            if ($serie['resume'] !== null) {
+                $resultat[] = ['campagne' => $campagne, 'resume' => $serie['resume'], 'depuis_precedente' => null];
+            }
+        }
+        foreach ($resultat as $i => $ligne) {
+            if (isset($resultat[$i + 1])) {
+                $resultat[$i]['depuis_precedente'] = $ligne['resume']['dernier'] - $resultat[$i + 1]['resume']['dernier'];
+            }
+        }
+
+        return array_slice($resultat, 0, max($limite, 1));
     }
 
     /** @return Collection<int, PrixMarche> Du plus récent au plus ancien. */

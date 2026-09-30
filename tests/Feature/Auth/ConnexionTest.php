@@ -31,7 +31,7 @@ class ConnexionTest extends TestCase
             ->assertSee('LY AGRICOLE')
             ->assertSee('Du champ')
             ->assertSee('Cultiver – Élever – Durer')
-            ->assertSee('Anacarde')
+            ->assertSee('anacarde')->assertSee('Cacao, café, anacarde')
             ->assertSeeHtml('href="'.route('login').'"')
             ->assertSeeHtml('images/logo-yl-agro.png')
             ->assertDontSeeLivewire(Connexion::class);

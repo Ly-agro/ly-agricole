@@ -5,6 +5,37 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-09-29 — Courbes d'évolution des prix et actualités depuis internet — FINI
+
+**Demande.** « Les actualités et les prix bord-champ ne peuvent pas être récupérés depuis
+internet, avec courbe d'évolution par campagne et période ? »
+
+**Fait.**
+
+- **Courbes** : page publique `/prix` (lien depuis la vitrine). Un graphique par produit
+  (café, cacao, anacarde…), courbe en escalier (un prix vaut jusqu'au changement suivant),
+  filtre par produit et par période (tout, 6 mois, 12 mois, une campagne, dates libres),
+  tableau des valeurs et tableau « campagne par campagne ». SVG fait côté serveur
+  (`Support/CourbeSvg`), infobulle au survol et au clavier, une seule échelle par graphique.
+- **Actualités depuis internet** : flux RSS / Atom choisis par la direction (onglet
+  « Sources d'actualités », bouton « Récupérer maintenant », commande
+  `vitrine:actualites` planifiée à 06:00). Tout arrive en **brouillon « à relire »** avec
+  titre, court extrait en texte simple et lien vers l'article d'origine ; rien n'est public
+  sans publication par la direction. Pas de doublon (empreinte source + lien), adresses
+  internes refusées (localhost, réseau privé, métadonnées cloud), pas de redirection, flux
+  avec déclaration d'entités refusé, une source en panne n'arrête pas les autres.
+- **Prix : pas de récupération automatique.** Aucun flux officiel n'existe (les sites
+  consultés refusent les robots ou n'ont pas de flux) et un prix faux affiché publiquement
+  est pire que pas de prix : les prix restent saisis avec source et date (question 39).
+
+**Vérifié.** 730 tests verts (+ 11 courbe, 18 évolution, 23 récupération), Larastan 0, Pint.
+Courbe vue dans Chrome sur `/prix?produit=1`.
+
+**Reste à décider (question 39).** Quelles sources de flux ajouter ; si une saisie assistée
+d'un prix à partir d'un article est souhaitée.
+
+---
+
 ## 2026-09-29 — Vitrine : prix bord-champ et actualités — FINI
 
 > Branche `phase-2-suite`. Demande du responsable projet : « un onglet actualités et l'affichage des prix

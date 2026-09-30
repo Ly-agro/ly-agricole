@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>LY AGRICOLE — Du champ à l'acheteur</title>
-        <meta name="description" content="LY AGRICOLE, entreprise agricole ivoirienne : achat bord-champ, stockage et commercialisation d'anacarde, de beurre de karité, de tomate et d'autres produits.">
+        <meta name="description" content="LY AGRICOLE, entreprise agricole ivoirienne : achat bord-champ, stockage et commercialisation de cacao, de café, d'anacarde, de karité, de tomate et de nombreuses autres cultures, selon les saisons.">
         <meta name="theme-color" content="#123524">
         <link rel="icon" type="image/png" href="{{ asset('images/logo-yl-agro.png') }}">
 
@@ -31,8 +31,8 @@
                             Du champ<br class="hidden sm:block"> à l'acheteur.
                         </h1>
                         <p class="v-entree mt-6 max-w-xl text-lg leading-relaxed text-emerald-50/90" style="--d: .4s">
-                            LY AGRICOLE achète au plus près des producteurs, stocke, et commercialise l'anacarde,
-                            le beurre de karité, la tomate et d'autres produits de la terre ivoirienne.
+                            LY AGRICOLE achète au plus près des producteurs, stocke, et commercialise le cacao, le café,
+                            l'anacarde, le karité, la tomate et bien d'autres produits de la terre ivoirienne, au fil des saisons.
                         </p>
                         <div class="v-entree mt-9 flex flex-wrap gap-3" style="--d: .6s">
                             <a href="#filieres" class="v-bouton rounded-md bg-amber-400 px-6 py-3 font-semibold text-[#123524] hover:bg-amber-300">Nos filières <span class="v-fleche" aria-hidden="true">→</span></a>
@@ -52,9 +52,9 @@
                 <div class="v-bandeau-piste text-sm font-medium uppercase tracking-[0.25em]">
                     @for ($k = 0; $k < 2; $k++)
                         <span class="flex shrink-0 items-center gap-8 px-4 py-3">
-                            <span>Anacarde</span><span class="text-amber-300">✦</span>
-                            <span>Beurre de karité</span><span class="text-amber-300">✦</span>
-                            <span>Tomate</span><span class="text-amber-300">✦</span>
+                            @foreach ($cultures as $culture)
+                                <span>{{ $culture->nom }}</span><span class="text-amber-300">✦</span>
+                            @endforeach
                             <span>Achat bord-champ</span><span class="text-amber-300">✦</span>
                             <span>Stockage</span><span class="text-amber-300">✦</span>
                             <span>Commercialisation</span><span class="text-amber-300">✦</span>
@@ -69,28 +69,28 @@
                 <h2 data-reveal style="--d: .1s" class="mt-2 max-w-2xl text-3xl font-semibold tracking-tight">Des produits de la terre ivoirienne, suivis de la parcelle à la vente.</h2>
 
                 <div class="mt-10 grid gap-5 lg:grid-cols-3">
-                    <article data-reveal style="--d: .1s" class="v-carte rounded-2xl border-2 !border-emerald-800 p-6" >
-                        <p class="text-xs font-semibold uppercase tracking-widest text-emerald-800">Filière principale</p>
-                        <h3 class="mt-2 text-2xl font-semibold">Anacarde</h3>
+                    <article data-reveal style="--d: .1s" class="v-carte rounded-2xl p-6">
+                        <p class="v-texte-doux text-xs font-semibold uppercase tracking-widest">Cultures de rente</p>
+                        <h3 class="mt-2 text-2xl font-semibold">Cacao, café, anacarde</h3>
                         <p class="v-texte-doux mt-3 leading-relaxed">
-                            Noix de cajou achetées bord-champ, pesées et contrôlées (qualité, humidité), regroupées puis vendues
-                            aux exportateurs, aux usines et aux grossistes.
+                            Achetés bord-champ, pesés et contrôlés (qualité, humidité), regroupés puis vendus aux exportateurs,
+                            aux usines et aux grossistes. Hévéa, palmier à huile et coton complètent la gamme.
                         </p>
                     </article>
                     <article data-reveal style="--d: .25s" class="v-carte rounded-2xl p-6">
-                        <p class="v-texte-doux text-xs font-semibold uppercase tracking-widest">Filière</p>
-                        <h3 class="mt-2 text-2xl font-semibold">Beurre de karité</h3>
-                        <p class="v-texte-doux mt-3 leading-relaxed">Un produit du terroir, à collecter et à valoriser avec les producteurs de la zone.</p>
+                        <p class="v-texte-doux text-xs font-semibold uppercase tracking-widest">Produits du terroir</p>
+                        <h3 class="mt-2 text-2xl font-semibold">Karité, sésame, cola, gingembre</h3>
+                        <p class="v-texte-doux mt-3 leading-relaxed">Des produits à collecter et à valoriser avec les producteurs de la zone, au rythme de leurs saisons.</p>
                     </article>
                     <article data-reveal style="--d: .4s" class="v-carte rounded-2xl p-6">
-                        <p class="v-texte-doux text-xs font-semibold uppercase tracking-widest">Filière</p>
-                        <h3 class="mt-2 text-2xl font-semibold">Tomate</h3>
-                        <p class="v-texte-doux mt-3 leading-relaxed">Une culture de saison, suivie avec la même rigueur que les filières longues.</p>
+                        <p class="v-texte-doux text-xs font-semibold uppercase tracking-widest">Vivriers et maraîchers</p>
+                        <h3 class="mt-2 text-2xl font-semibold">Tomate, maïs, riz, manioc…</h3>
+                        <p class="v-texte-doux mt-3 leading-relaxed">Des cultures de saison, suivies avec la même rigueur que les filières longues : tomate, maïs, riz, manioc, igname, banane plantain, piment, gombo, oignon.</p>
                     </article>
                 </div>
 
                 <p data-reveal style="--d: .1s" class="v-carte mt-6 rounded-xl px-5 py-4">
-                    <span class="font-medium">Et d'autres produits</span>, selon les saisons et les prix du marché : nous nous adaptons à ce que la terre et la demande offrent.
+                    <span class="font-medium">Selon les saisons et les prix du marché</span>, les produits que nous suivons changent : nous nous adaptons à ce que la terre et la demande offrent. La liste complète des cultures suivies figure ci-dessous, avec leurs prix.
                 </p>
             </section>
 
@@ -124,6 +124,20 @@
                             </article>
                         @endforeach
                     </div>
+                @endif
+                @if ($sansPrix->isNotEmpty())
+                    <div data-reveal class="mt-8">
+                        <h3 class="text-base font-semibold">Autres cultures suivies</h3>
+                        <p class="v-texte-doux mt-1 text-sm">Leur prix s'affichera ici dès qu'il sera relevé, avec sa source.</p>
+                        <ul class="mt-3 flex flex-wrap gap-2">
+                            @foreach ($sansPrix as $culture)
+                                <li class="v-carte rounded-full px-3 py-1 text-sm">{{ $culture->nom }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+                @if ($prix->isNotEmpty())
+                    <p data-reveal class="mt-5"><a href="{{ route('prix.evolution') }}" class="v-lien text-sm font-medium">Voir l'évolution des prix, par campagne et par période →</a></p>
                 @endif
                 <p data-reveal class="v-texte-doux mt-5 text-xs">Prix indicatifs relevés à la date indiquée, avec leur source. Ils ne remplacent pas le prix officiel fixé pour la campagne.</p>
             </section>

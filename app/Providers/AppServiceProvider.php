@@ -32,6 +32,7 @@ use App\Models\PrixMarche;
 use App\Models\Producteur;
 use App\Models\Produit;
 use App\Models\Remboursement;
+use App\Models\SourceActualites;
 use App\Models\User;
 use App\Models\ValidationPret;
 use App\Models\ValorisationStock;
@@ -115,6 +116,7 @@ class AppServiceProvider extends ServiceProvider
             'langue' => Langue::class,
             'prix_marche' => PrixMarche::class,
             'actualite' => Actualite::class,
+            'source_actualites' => SourceActualites::class,
             'valorisation_stock' => ValorisationStock::class,
             'decision_plafond' => DecisionPlafond::class,
         ]);

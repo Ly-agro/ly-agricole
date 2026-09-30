@@ -7,8 +7,10 @@ use App\Exceptions\OperationRefusee;
 use App\Models\Actualite;
 use App\Models\Campagne;
 use App\Models\Produit;
+use App\Models\SourceActualites;
 use App\Models\User;
 use App\Services\Publications;
+use App\Services\RecuperationActualites;
 use App\Support\Montant;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
@@ -53,6 +55,10 @@ class GestionPublications extends Component
 
     public bool $publie = false;
 
+    public string $fluxNom = '';
+
+    public string $fluxUrl = '';
+
     public string $statut = '';
 
     public function mount(): void
@@ -63,7 +69,7 @@ class GestionPublications extends Component
 
     public function updatedOnglet(): void
     {
-        if (! in_array($this->onglet, ['prix', 'actualites'], true)) {
+        if (! in_array($this->onglet, ['prix', 'actualites', 'sources'], true)) {
             $this->onglet = 'prix';
         }
         $this->statut = '';
@@ -181,6 +187,48 @@ class GestionPublications extends Component
         $this->statut = $etaitPubliee ? 'Actualité retirée de la vitrine (elle reste en brouillon).' : 'Actualité publiée sur la vitrine.';
     }
 
+    public function ajouterSource(): void
+    {
+        $this->authorize('gerer-publications');
+        $this->resetErrorBag();
+        $this->validate(['fluxNom' => ['required', 'string', 'max:150'], 'fluxUrl' => ['required', 'string', 'max:500']], [], ['fluxNom' => 'nom', 'fluxUrl' => 'adresse']);
+
+        try {
+            RecuperationActualites::ajouterSource($this->fluxNom, $this->fluxUrl, $this->moi());
+        } catch (OperationRefusee $e) {
+            throw ValidationException::withMessages(['fluxUrl' => $e->getMessage()]);
+        }
+
+        $this->reset('fluxNom', 'fluxUrl');
+        $this->statut = 'Source ajoutée. Cliquez sur « Récupérer » pour la lire.';
+    }
+
+    public function recupererSource(int $id): void
+    {
+        $this->authorize('gerer-publications');
+        $source = SourceActualites::query()->findOrFail($id);
+        try {
+            $r = RecuperationActualites::recuperer($source, $this->moi());
+            $this->statut = $r['nouveaux'].' nouvelle(s) actualité(s) en brouillon à relire ('.$r['ignores'].' déjà connue(s)).';
+        } catch (OperationRefusee $e) {
+            $this->statut = 'Récupération impossible : '.$e->getMessage();
+        }
+    }
+
+    public function recupererTout(): void
+    {
+        $this->authorize('gerer-publications');
+        $r = RecuperationActualites::toutesLesSources($this->moi());
+        $this->statut = $r['nouveaux'].' nouvelle(s) actualité(s) en brouillon à relire'.($r['erreurs'] > 0 ? ' ; '.$r['erreurs'].' source(s) en erreur.' : '.');
+    }
+
+    public function basculerSource(int $id): void
+    {
+        $this->authorize('gerer-publications');
+        $source = SourceActualites::query()->findOrFail($id);
+        $source->update(['actif' => ! $source->actif]);
+    }
+
     private function moi(): User
     {
         /** @var User $user */
@@ -198,6 +246,7 @@ class GestionPublications extends Component
             'courants' => Publications::prixCourants(),
             'historique' => $produit === null ? collect() : Publications::historiquePrix($produit),
             'produitChoisi' => $produit,
+            'sources' => SourceActualites::query()->orderBy('nom')->get(),
             'actualites' => Actualite::query()->orderByDesc('publie')->orderByDesc('publie_le')->orderByDesc('id')->get(),
         ]);
     }

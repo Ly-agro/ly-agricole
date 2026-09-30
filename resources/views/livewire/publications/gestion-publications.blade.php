@@ -13,6 +13,8 @@
             class="-mb-px border-b-2 px-4 py-2 {{ $onglet === 'prix' ? 'border-emerald-700 font-medium text-emerald-900' : 'border-transparent text-stone-600 hover:text-stone-900' }}">Prix bord-champ</button>
         <button type="button" role="tab" wire:click="$set('onglet', 'actualites')" aria-selected="{{ $onglet === 'actualites' ? 'true' : 'false' }}"
             class="-mb-px border-b-2 px-4 py-2 {{ $onglet === 'actualites' ? 'border-emerald-700 font-medium text-emerald-900' : 'border-transparent text-stone-600 hover:text-stone-900' }}">Actualités</button>
+        <button type="button" role="tab" wire:click="$set('onglet', 'sources')" aria-selected="{{ $onglet === 'sources' ? 'true' : 'false' }}"
+            class="-mb-px border-b-2 px-4 py-2 {{ $onglet === 'sources' ? 'border-emerald-700 font-medium text-emerald-900' : 'border-transparent text-stone-600 hover:text-stone-900' }}">Sources d'actualités</button>
     </div>
 
     @if ($statut !== '')
@@ -147,7 +149,9 @@
                 <tbody class="divide-y divide-stone-100">
                     @forelse ($actualites as $a)
                         <tr wire:key="actualite-{{ $a->id }}">
-                            <td class="px-4 py-2">{{ $a->titre }}</td>
+                            <td class="px-4 py-2">{{ $a->titre }}
+                                @if ($a->origine === 'externe')<span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">À relire · {{ $a->source_nom }}</span>@endif
+                            </td>
                             <td class="px-4 py-2 text-xs">
                                 @if ($a->publie)<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-800">Publiée</span>@else<span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-700">Brouillon</span>@endif
                             </td>
@@ -162,6 +166,57 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+    @endif
+
+    @if ($onglet === 'sources')
+        <div class="space-y-4">
+            <p class="text-sm text-stone-600">Flux RSS ou Atom de sites d'actualités agricoles. Ce qui est récupéré (titre, court extrait, lien vers l'article) arrive en <strong>brouillon « à relire »</strong> dans l'onglet Actualités : rien n'est public sans votre publication. Les prix ne sont pas récupérés ici : ils se saisissent avec leur source.</p>
+
+            <form wire:submit="ajouterSource" class="grid gap-3 rounded-xl border border-stone-200 bg-white p-5 sm:grid-cols-[1fr_2fr_auto] sm:items-end">
+                <div>
+                    <label for="source-nom" class="mb-1 block text-sm text-stone-700">Nom de la source</label>
+                    <input wire:model="fluxNom" id="source-nom" type="text" maxlength="150" class="w-full rounded-md border border-stone-300 px-3 py-2">
+                    @error('fluxNom') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="source-url" class="mb-1 block text-sm text-stone-700">Adresse du flux (https://…)</label>
+                    <input wire:model="fluxUrl" id="source-url" type="url" maxlength="500" class="w-full rounded-md border border-stone-300 px-3 py-2">
+                    @error('fluxUrl') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">Ajouter</button>
+            </form>
+
+            <div class="flex justify-end">
+                <button type="button" wire:click="recupererTout" wire:loading.attr="disabled" class="rounded-md border border-emerald-700 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50">Récupérer maintenant</button>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+                <table class="w-full text-sm">
+                    <thead class="bg-stone-50 text-left text-xs text-stone-500">
+                        <tr><th class="px-4 py-2">Source</th><th class="px-4 py-2">Dernière récupération</th><th class="px-4 py-2">État</th><th class="px-4 py-2"></th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100">
+                        @forelse ($sources as $s)
+                            <tr wire:key="source-{{ $s->id }}">
+                                <td class="px-4 py-2">{{ $s->nom }}<div class="break-all text-xs text-stone-500">{{ $s->url }}</div></td>
+                                <td class="px-4 py-2 tabular-nums">{{ $s->derniere_recuperation_at?->format('d/m/Y H:i') ?? 'jamais' }}@if ($s->dernier_statut === 'ok') <span class="text-xs text-stone-500">· {{ $s->dernier_nb }} nouveau(x)</span>@endif</td>
+                                <td class="px-4 py-2 text-xs">
+                                    @if ($s->dernier_statut === 'erreur')<span class="rounded-full bg-red-100 px-2 py-0.5 text-red-800">{{ $s->dernier_message }}</span>
+                                    @elseif (! $s->actif)<span class="rounded-full bg-stone-100 px-2 py-0.5 text-stone-700">Désactivée</span>
+                                    @else<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-800">Active</span>@endif
+                                </td>
+                                <td class="whitespace-nowrap px-4 py-2 text-right text-xs">
+                                    <button type="button" wire:click="recupererSource({{ $s->id }})" class="text-emerald-800 underline">Récupérer</button>
+                                    <button type="button" wire:click="basculerSource({{ $s->id }})" class="ml-2 text-stone-600 underline">{{ $s->actif ? 'Désactiver' : 'Réactiver' }}</button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="px-4 py-6 text-center text-stone-500">Aucune source. Ajoutez l'adresse d'un flux RSS.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     @endif
 </div>
