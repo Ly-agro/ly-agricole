@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SourcePoids;
 use App\Enums\StatutAchat;
 use App\Enums\TypeFournisseur;
 use App\Models\Concerns\Journalise;
@@ -28,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property int $poids_brut_g
  * @property int $tare_g
  * @property int $poids_net_g
+ * @property SourcePoids|null $poids_source balance Bluetooth ou saisie à la main ; null = avant cette fonction
  * @property int|null $humidite_pour_mille
  * @property int|null $kor_centieme_lbs
  * @property int|null $grainage_noix_kg
@@ -36,6 +38,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $pret_id
  * @property int $grammes_rembourses
  * @property int $montant_especes_fcfa
+ * @property int|null $commission_pisteur_fcfa commission DUE au pisteur (calcul activé par la direction) ; null = non calculée
  * @property int $compte_id
  * @property int|null $mouvement_id
  * @property StatutAchat $statut
@@ -56,10 +59,10 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable([
     'id', 'campagne_id', 'lot_id', 'fournisseur_type', 'producteur_id', 'pisteur_id', 'fournisseur_nom',
-    'point_collecte_id', 'date_achat', 'lat', 'lng', 'poids_brut_g', 'tare_g', 'poids_net_g', 'humidite_pour_mille',
+    'point_collecte_id', 'date_achat', 'lat', 'lng', 'poids_brut_g', 'tare_g', 'poids_net_g', 'poids_source', 'humidite_pour_mille',
     'kor_centieme_lbs', 'grainage_noix_kg', 'prix_kg_fcfa', 'montant_fcfa', 'pret_id', 'grammes_rembourses',
-    'montant_especes_fcfa', 'compte_id', 'mouvement_id', 'photo_pesee', 'statut', 'cree_par', 'valide_par',
-    'valide_at', 'motif_refus',
+    'montant_especes_fcfa', 'commission_pisteur_fcfa', 'compte_id', 'mouvement_id', 'photo_pesee', 'statut', 'cree_par', 'valide_par',
+    'valide_at', 'motif_refus', 'annule_par', 'annule_at', 'motif_annulation',
 ])]
 class Achat extends Model
 {
@@ -144,9 +147,11 @@ class Achat extends Model
             'statut' => StatutAchat::class,
             'date_achat' => 'datetime',
             'valide_at' => 'datetime',
+            'annule_at' => 'datetime',
             'poids_brut_g' => 'integer',
             'tare_g' => 'integer',
             'poids_net_g' => 'integer',
+            'poids_source' => SourcePoids::class,
             'humidite_pour_mille' => 'integer',
             'kor_centieme_lbs' => 'integer',
             'grainage_noix_kg' => 'integer',
@@ -154,6 +159,7 @@ class Achat extends Model
             'montant_fcfa' => 'integer',
             'grammes_rembourses' => 'integer',
             'montant_especes_fcfa' => 'integer',
+            'commission_pisteur_fcfa' => 'integer',
             'lat' => 'decimal:7',
             'lng' => 'decimal:7',
         ];

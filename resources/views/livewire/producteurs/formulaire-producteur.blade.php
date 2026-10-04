@@ -110,6 +110,16 @@
                     </select>
                     @error('groupeId') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
                 </div>
+                <div>
+                    <label for="langueId" class="mb-1 block text-sm font-medium text-stone-700">Langue des messages <span class="font-normal text-stone-500">(facultatif)</span></label>
+                    <select wire:model="langueId" id="langueId" class="{{ $champ }}">
+                        <option value="">Français (par défaut)</option>
+                        @foreach ($langues as $l)
+                            <option value="{{ $l->id }}">{{ $l->nom }}</option>
+                        @endforeach
+                    </select>
+                    @error('langueId') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                </div>
             </div>
         </section>
 

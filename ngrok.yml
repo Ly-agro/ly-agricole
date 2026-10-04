@@ -1,0 +1,24 @@
+# Tunnel ngrok vers le serveur local (php artisan serve --host=localhost --port=8000), pour montrer
+# la vitrine ou tester l'appli terrain sur un téléphone en HTTPS.
+#
+# Le jeton (authtoken) N'EST PAS ici : c'est celui du compte ngrok de LY AGRICOLE (pas celui de
+# Tharamotors, rangé dans %LOCALAPPDATA%\ngrok\ngrok.yml), gardé hors du dépôt dans
+# %LOCALAPPDATA%\ngrok\ly-agricole.yml. Une seule fois, pour l'y enregistrer (Git Bash) :
+#
+#   ngrok config add-authtoken <JETON_LY> --config "$LOCALAPPDATA/ngrok/ly-agricole.yml"
+#
+# Puis, à chaque fois :
+#
+#   ngrok start --config "$LOCALAPPDATA/ngrok/ly-agricole.yml" --config ngrok.yml ly-agricole
+#
+# L'adresse publique s'affiche dans le terminal ; inspecteur des requêtes sur http://127.0.0.1:4042.
+# Laravel génère les liens en https grâce à l'en-tête X-Forwarded-Proto du tunnel (proxy local de
+# confiance, bootstrap/app.php). Tout ce qui est servi devient public : ne pas laisser tourner le
+# tunnel sur une base de vraies données.
+version: "2"
+web_addr: 127.0.0.1:4042
+
+tunnels:
+  ly-agricole:
+    proto: http
+    addr: localhost:8000

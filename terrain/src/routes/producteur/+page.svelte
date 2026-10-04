@@ -10,11 +10,14 @@
      */
 
     const villages = liveQuery(() => db.villages.filter((v) => v.actif).sortBy('nom'));
+    const langues = liveQuery(() => db.langues.filter((l) => l.actif).sortBy('nom'));
 
     let nom = $state('');
     let prenoms = $state('');
     let telephone = $state('');
     let villageId = $state<number | null>(null);
+    /** Langue des messages (question 12) ; vide = français. */
+    let langueId = $state<number | null>(null);
     let consentement = $state(false);
     let erreur = $state('');
     let succes = $state('');
@@ -33,6 +36,7 @@
             prenoms: prenoms.trim(),
             telephone: tel || null,
             village_id: villageId,
+            langue_id: langueId,
             consentement: true,
         }, `Nouveau producteur ${nom.trim()} ${prenoms.trim()}`);
         // Utilisable tout de suite sur le téléphone ; le code (LYP-…) viendra du bureau.
@@ -41,6 +45,7 @@
         succes = `Fiche de ${nom.trim()} ${prenoms.trim()} enregistrée. Il peut déjà vendre ; sa carte sera imprimée au bureau.`;
         nom = prenoms = telephone = '';
         consentement = false;
+        langueId = null;
     }
 
     const champ = 'mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2';
@@ -61,6 +66,14 @@
                 {#each $villages ?? [] as v (v.id)}<option value={v.id}>{v.nom}</option>{/each}
             </select>
         </label>
+        {#if ($langues?.length ?? 0) > 0}
+            <label class="block"><span class="text-sm text-stone-600">Langue des messages (facultatif)</span>
+                <select bind:value={langueId} class={champ}>
+                    <option value={null}>Français (par défaut)</option>
+                    {#each $langues ?? [] as l (l.id)}<option value={l.id}>{l.nom}</option>{/each}
+                </select>
+            </label>
+        {/if}
     </fieldset>
 
     <label class="flex gap-3 rounded-lg bg-amber-50 p-4 text-sm">

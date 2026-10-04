@@ -1,8 +1,11 @@
 <script lang="ts">
     import { liveQuery } from 'dexie';
-    import { db, type Producteur } from '$lib/db';
+    import BoutonImprimer from '$lib/BoutonImprimer.svelte';
+    import { db, type Operation, type Producteur } from '$lib/db';
     import { depuisSaisie, fcfa, fcfaDepuisSaisie, grammesPourSolder, kg, montantAchat } from '$lib/mesure';
     import ChoixProducteur from '$lib/ChoixProducteur.svelte';
+    import { grammesEnKgTexte, sourcePoids } from '$lib/balance';
+    import PeseeBalance from '$lib/PeseeBalance.svelte';
     import PrisePhoto from '$lib/PrisePhoto.svelte';
     import { mettreEnFile } from '$lib/synchro';
 
@@ -31,12 +34,16 @@
     let pointId = $state<number | null>(null);
     let brut = $state('');
     let tare = $state('0');
+    /** Poids brut (g) pris sur la balance ; le champ ne compte comme « balance » que s'il n'a pas été retouché. */
+    let brutPris = $state<number | null>(null);
     let humidite = $state('');
     let prix = $state('');
     let pretId = $state('');
     let kilosRetenus = $state('');
     let erreur = $state('');
     let succes = $state('');
+    /** Dernier achat enregistré : son bon de pesée peut être imprimé tout de suite. */
+    let dernier = $state<Operation | null>(null);
 
     // $derived ne suit pas un liveQuery recréé : on relit les prêts à chaque changement.
     let prets = $state<{ id: string; reference: string; restant_du_fcfa: number }[]>([]);
@@ -99,7 +106,7 @@
         if (officiel && apercu.prix < officiel) return (erreur = `Prix inférieur au prix officiel (${fcfa(officiel)}/kg) : le bureau le refusera.`);
         if (apercu.pret && apercu.retenus <= 0) return (erreur = 'Kilos retenus pour le prêt : au moins 1 g, ou choisir « aucun prêt ».');
 
-        await mettreEnFile(db, 'achat', {
+        dernier = await mettreEnFile(db, 'achat', {
             campagne_id: lot.campagne_id,
             lot_id: lot.id,
             compte_id: compteId,
@@ -108,6 +115,7 @@
             point_collecte_id: pointId,
             date_achat: new Date().toISOString(),
             poids_brut_g: apercu.brut,
+            poids_source: sourcePoids(brut, brutPris),
             tare_g: apercu.tare,
             humidite_pour_mille: humiditePourMille,
             prix_kg_fcfa: apercu.prix,
@@ -119,6 +127,7 @@
         succes = `Achat enregistré sur le téléphone : ${producteur.nom} ${producteur.prenoms}, ${kg(apercu.net)}, payer ${fcfa(apercu.especes)}. Il partira au prochain envoi.`;
         producteur = null;
         brut = humidite = kilosRetenus = '';
+        brutPris = null;
         photoPesee = null;
         tare = '0';
         window.scrollTo(0, 0);
@@ -131,6 +140,7 @@
     <h1 class="text-lg font-semibold">Achat bord-champ</h1>
 
     {#if succes}<p class="rounded-md bg-emerald-50 p-3 text-sm text-emerald-900">{succes}</p>{/if}
+    {#if dernier}<BoutonImprimer operation={dernier} />{/if}
 
     <ChoixProducteur bind:producteur />
 
@@ -168,6 +178,11 @@
         <label class="block"><span class="text-sm text-stone-600">Prix (FCFA / kg)</span>
             <input bind:value={prix} inputmode="numeric" required class={champ} /></label>
     </fieldset>
+
+    <PeseeBalance
+        onbrut={(g) => { brut = grammesEnKgTexte(g); brutPris = g; }}
+        ontare={(g) => { tare = grammesEnKgTexte(g); }}
+    />
 
     {#if prets.length > 0}
         <fieldset class="space-y-3 rounded-lg bg-amber-50 p-4 shadow-sm">

@@ -13,10 +13,12 @@ enum ActionJournal: string
     case BlocageConnexion = 'blocage_connexion';
     case DoublonConfirme = 'doublon_confirme';
     case ImpressionCarte = 'impression_carte';
+    case RevocationAppareil = 'revocation_appareil';
 
     public function libelle(): string
     {
         return match ($this) {
+            self::RevocationAppareil => 'Appareil coupé',
             self::ImpressionCarte => 'Impression de carte',
             self::DoublonConfirme => 'Doublon possible confirmé',
             self::Creation => 'Création',

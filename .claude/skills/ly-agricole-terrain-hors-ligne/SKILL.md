@@ -51,6 +51,12 @@ suivant ne demande que ce qui a changé depuis.
 
 ## Pièges
 
+- **IndexedDB refuse les tableaux réactifs de Svelte 5** (`$state` = Proxy) : `DataCloneError`,
+  la saisie n'est pas gardée et, sans `try/catch`, rien ne s'affiche. Passer
+  `$state.snapshot(...)` à `mettreEnFile` (vu le 2026-09-29 sur la visite).
+- **Question « Autoriser la position ? » laissée sans réponse** : le `timeout` du GPS ne
+  court pas pendant la question ; `positionActuelle()` a donc son propre délai, sinon
+  la saisie reste bloquée (« Compression… ») pour toujours.
 - `navigator.onLine === true` ne veut pas dire « internet fonctionne » ; seul `false`
   est fiable. Tenter l'envoi et traiter l'échec, c'est la seule vérité.
 - L'heure du téléphone peut être fausse : garder `cree_at` (téléphone) **et**

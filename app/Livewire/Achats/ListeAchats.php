@@ -33,6 +33,10 @@ class ListeAchats extends Component
 
     public string $motifRefus = '';
 
+    public ?string $aAnnuler = null;
+
+    public string $motifAnnulation = '';
+
     public string $statut = '';
 
     public function mount(): void
@@ -83,6 +87,30 @@ class ListeAchats extends Component
         $this->statut = 'Achat refusé.';
     }
 
+    public function preparerAnnulation(string $id): void
+    {
+        $this->authorize('annuler-operations');
+        $this->resetErrorBag();
+        $this->motifAnnulation = '';
+        $this->aAnnuler = Achat::query()->findOrFail($id)->id;
+    }
+
+    /** « Supprimer » : annulation par contre-passation (le service revérifie droit, motif et stock). */
+    public function annulerAchat(): void
+    {
+        $this->authorize('annuler-operations');
+        $this->resetErrorBag();
+
+        try {
+            $achat = Achats::annuler(Achat::query()->findOrFail((string) $this->aAnnuler), $this->moi(), $this->motifAnnulation);
+        } catch (OperationRefusee $e) {
+            throw ValidationException::withMessages(['motifAnnulation' => $e->getMessage()]);
+        }
+
+        $this->aAnnuler = null;
+        $this->statut = "Achat {$achat->reference} supprimé (annulé) : stock, caisse et prêt remis comme avant.";
+    }
+
     private function moi(): User
     {
         /** @var User $user */
@@ -105,6 +133,8 @@ class ListeAchats extends Component
                 ->orderByDesc('date_achat')->paginate(self::PAR_PAGE),
             'statuts' => StatutAchat::cases(),
             'peutValider' => $toutVoir,
+            'peutAnnuler' => $moi->can('annuler-operations'),
+            'achatAAnnuler' => $this->aAnnuler === null ? null : Achat::query()->find($this->aAnnuler),
             'moi' => $moi->id,
         ]);
     }

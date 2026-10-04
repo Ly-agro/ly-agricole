@@ -67,6 +67,14 @@ vérité).
 (contrat art. 18) et ce qui empêche un agent d'effacer une trace. Un solde stocké
 dans une colonne modifiable peut diverger en silence ; une somme de mouvements non.
 
+**Complément (2026-10-01, demande du responsable projet : « la direction doit pouvoir
+supprimer »).** Le bouton « Supprimer » de la direction **annule** : une opération qui a déjà
+eu un effet (achat validé, dépense payée) est contre-passée sur tous ses registres d'un coup,
+avec motif, et reste visible marquée « annulée » ; une opération en attente passe « annulée »
+sans effet. Seule une **fiche qui n'a encore servi à rien** (producteur sans prêt, achat,
+visite…) est vraiment effacée, trace gardée au journal. Choix fait par le responsable projet
+parmi trois options ; « tout effacer vraiment » a été écarté.
+
 ## D6 — Séparation des tâches appliquée par le code (2026-09-25)
 
 **Choix.** Les validations (prêt, dépense au-dessus du seuil, clôture de campagne)

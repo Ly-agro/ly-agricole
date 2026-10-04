@@ -5,17 +5,30 @@ use App\Http\Controllers\Auth\DeconnexionController;
 use App\Http\Controllers\DepenseController;
 use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
+use App\Http\Controllers\PrixController;
 use App\Http\Controllers\ProducteurController;
+use App\Http\Controllers\RapportCampagneController;
+use App\Http\Controllers\RapportController;
+use App\Http\Controllers\TicketController;
+use App\Http\Controllers\VitrineController;
 use App\Livewire\Achats\FormulaireAchat;
 use App\Livewire\Achats\ListeAchats;
+use App\Livewire\Appareils\ListeAppareils;
 use App\Livewire\Auth\Connexion;
 use App\Livewire\Budget\SuiviBudget;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
+use App\Livewire\Fiabilite\FicheFiabilite;
+use App\Livewire\Fiabilite\ListeFiabilite;
+use App\Livewire\Fiabilite\ListeGroupes;
+use App\Livewire\Fiabilite\SituationGroupe;
+use App\Livewire\Ia\ListeDiagnostics;
+use App\Livewire\Ia\ReferentielTraitements;
 use App\Livewire\Intrants\StockIntrant;
 use App\Livewire\Investisseurs\GestionApports;
 use App\Livewire\Investisseurs\PortailInvestisseur;
 use App\Livewire\Journal\ConsultationJournal;
+use App\Livewire\Notifications\ListeNotifications;
 use App\Livewire\Prets\FichePret;
 use App\Livewire\Prets\FormulairePret;
 use App\Livewire\Prets\ListePrets;
@@ -23,10 +36,13 @@ use App\Livewire\Producteurs\FormulaireParcelle;
 use App\Livewire\Producteurs\FormulaireProducteur;
 use App\Livewire\Producteurs\Groupes;
 use App\Livewire\Producteurs\ListeProducteurs;
+use App\Livewire\Publications\GestionPublications;
+use App\Livewire\RapportCampagne\PointEtape;
 use App\Livewire\Referentiels\Campagnes;
 use App\Livewire\Referentiels\CategoriesDepense;
 use App\Livewire\Referentiels\EcranReferentiel;
 use App\Livewire\Referentiels\Intrants as IntrantsReferentiel;
+use App\Livewire\Referentiels\Langues;
 use App\Livewire\Referentiels\Magasins;
 use App\Livewire\Referentiels\Parametres;
 use App\Livewire\Referentiels\Pisteurs;
@@ -34,6 +50,9 @@ use App\Livewire\Referentiels\PointsCollecte;
 use App\Livewire\Referentiels\Produits;
 use App\Livewire\Referentiels\Villages;
 use App\Livewire\Referentiels\Zones;
+use App\Livewire\Rendements\ClassementRendements;
+use App\Livewire\Rendements\EvolutionProducteur;
+use App\Livewire\Resultat\ResultatDeCampagne;
 use App\Livewire\Stock\FicheLot;
 use App\Livewire\Stock\ListeLots;
 use App\Livewire\TableauDeBord;
@@ -43,9 +62,16 @@ use App\Livewire\Utilisateurs\GestionUtilisateurs;
 use App\Livewire\Ventes\FicheVente;
 use App\Livewire\Ventes\FormulaireVente;
 use App\Livewire\Ventes\ListeVentes;
+use App\Livewire\Visites\ListeVisites;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/tableau-de-bord');
+// Vitrine publique : on n'atterrit plus directement sur la connexion. Sans aucune donnée
+// de l'application, et sans mention de l'opération d'investissement (contrat art. 2.3 :
+// aucune publicité).
+Route::get('/', [VitrineController::class, 'accueil'])->name('accueil');
+Route::get('/prix', [PrixController::class, 'evolution'])->name('prix.evolution');
+Route::get('/actualites', [VitrineController::class, 'actualites'])->name('actualites');
+Route::get('/actualites/{actualite}', [VitrineController::class, 'actualite'])->name('actualites.voir');
 
 // Nommée `login` : c'est la route où Laravel renvoie un visiteur non connecté.
 Route::get('/connexion', Connexion::class)->middleware('guest')->name('login');
@@ -54,8 +80,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/tableau-de-bord', TableauDeBord::class)->name('tableau-de-bord');
 
     Route::get('/utilisateurs', GestionUtilisateurs::class)
-        ->middleware('can:gerer-utilisateurs')
+        ->middleware('can:ouvrir-comptes')
         ->name('utilisateurs');
+
+    // Rapports de la direction et exports (semaine 10).
+    Route::get('/rapports', [RapportController::class, 'index'])->middleware('can:voir-rapports')->name('rapports');
+    Route::get('/rapports/{rapport}', [RapportController::class, 'afficher'])->middleware('can:voir-rapports')
+        ->whereIn('rapport', array_keys(RapportController::RAPPORTS))->name('rapports.voir');
 
     Route::get('/journal', ConsultationJournal::class)
         ->middleware('can:voir-journal')
@@ -66,6 +97,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/nouveau', FormulaireProducteur::class)->middleware('can:gerer-producteurs')->name('.nouveau');
         Route::get('/groupes', Groupes::class)->middleware('can:gerer-producteurs')->name('.groupes');
         Route::get('/{producteur}', [ProducteurController::class, 'fiche'])->middleware('can:voir-producteurs')->name('.fiche');
+        Route::delete('/{producteur}', [ProducteurController::class, 'supprimer'])->middleware('can:annuler-operations')->name('.supprimer');
         Route::get('/{producteur}/modifier', FormulaireProducteur::class)->middleware('can:gerer-producteurs')->name('.modifier');
         Route::get('/{producteur}/photo', [ProducteurController::class, 'photo'])->middleware('can:voir-producteurs')->name('.photo');
         Route::get('/{producteur}/carte', [ProducteurController::class, 'carte'])->middleware('can:gerer-producteurs')->name('.carte');
@@ -93,6 +125,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/categories-depense', CategoriesDepense::class)->middleware('can:gerer-tresorerie')->name('categories-depense');
         Route::get('/intrants', IntrantsReferentiel::class)->middleware('can:gerer-intrants')->name('intrants');
         Route::get('/pisteurs', Pisteurs::class)->middleware('can:gerer-referentiels')->name('pisteurs');
+        Route::get('/langues', Langues::class)->middleware('can:gerer-referentiels')->name('langues');
     });
 
     // Achats : la liste vérifie elle-même le droit (saisir OU valider).
@@ -125,7 +158,29 @@ Route::middleware('auth')->group(function () {
     // Apports de campagne (direction, comptabilité) et portail en lecture seule de
     // l'investisseur (deux écrans distincts : pas les mêmes droits ni la même vue).
     Route::get('/apports', GestionApports::class)->middleware('can:gerer-apports')->name('apports');
+    Route::get('/rendements', ClassementRendements::class)->middleware('can:voir-rendements')->name('rendements');
+    Route::get('/rendements/producteurs/{producteur}', EvolutionProducteur::class)->middleware('can:voir-rendements')->name('rendements.producteur');
+    // Les groupes AVANT `/fiabilite/{producteur}` : sinon « groupes » serait pris pour un producteur.
+    Route::get('/publications', GestionPublications::class)->middleware('can:gerer-publications')->name('publications');
+    Route::get('/appareils', ListeAppareils::class)->middleware('can:gerer-appareils')->name('appareils');
+    Route::get('/fiabilite/groupes', ListeGroupes::class)->middleware('can:voir-fiabilite')->name('fiabilite.groupes');
+    Route::get('/fiabilite/groupes/{groupe}', SituationGroupe::class)->middleware('can:voir-fiabilite')->name('fiabilite.groupe');
+    Route::get('/fiabilite', ListeFiabilite::class)->middleware('can:voir-fiabilite')->name('fiabilite');
+    Route::get('/fiabilite/{producteur}', FicheFiabilite::class)->middleware('can:voir-fiabilite')->name('fiabilite.fiche');
+    Route::get('/rapport-campagne', PointEtape::class)->middleware('can:voir-rapport-campagne')->name('rapport-campagne');
+    Route::post('/rapport-campagne/point-etape', [RapportCampagneController::class, 'pointEtape'])->middleware('can:voir-rapport-campagne')->name('rapport-campagne.point-etape');
+    Route::get('/resultat', ResultatDeCampagne::class)->middleware('can:voir-resultat-campagne')->name('resultat');
     Route::get('/mon-investissement', PortailInvestisseur::class)->middleware('can:voir-portail-investisseur')->name('mon-investissement');
+    Route::get('/visites', ListeVisites::class)->middleware('can:voir-visites')->name('visites');
+    // IA (phase 3) : diagnostics des photos et référentiel des traitements (agronome).
+    Route::get('/ia/diagnostics', ListeDiagnostics::class)->middleware('can:voir-ia')->name('ia.diagnostics');
+    Route::get('/ia/referentiel', ReferentielTraitements::class)->middleware('can:voir-ia')->name('ia.referentiel');
+    // Avis de chacun (tout utilisateur connecté, les siens seulement).
+    Route::get('/notifications', ListeNotifications::class)->name('notifications');
+    // Tickets 58 mm (imprimante thermique) ; droits vérifiés dans le contrôleur.
+    Route::get('/tickets/achats/{achat}', [TicketController::class, 'achat'])->name('tickets.achat');
+    Route::get('/tickets/prets/{pret}/{type}/{id}', [TicketController::class, 'remise'])
+        ->whereIn('type', ['argent', 'intrants'])->whereNumber('id')->name('tickets.remise');
     Route::get('/budget', SuiviBudget::class)->middleware('can:voir-budget')->name('budget');
 
     Route::prefix('prets')->name('prets')->group(function () {

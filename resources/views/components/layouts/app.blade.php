@@ -9,6 +9,11 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        {{-- Avis en direct (Reverb) : Echo s'abonne au canal privé de cet utilisateur. --}}
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        @auth
+            <meta name="ly-utilisateur" content="{{ auth()->id() }}">
+        @endauth
 
         <title>{{ $title ?? config('app.name') }} — {{ config('app.name') }}</title>
 
@@ -22,7 +27,7 @@
         <aside data-menu id="menu"
             class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-stone-200 bg-stone-50 transition-transform duration-200 lg:translate-x-0">
             <div class="flex h-16 shrink-0 items-center gap-3 border-b border-stone-200 px-5">
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-800 text-sm font-bold text-white" aria-hidden="true">LY</span>
+                <img src="{{ asset('images/logo-yl-agro.png') }}" alt="" width="36" height="36" class="h-9 w-9 shrink-0">
                 <a href="{{ route('tableau-de-bord') }}" class="leading-tight">
                     <span class="block text-sm font-semibold tracking-wide">LY AGRICOLE</span>
                     <span class="block text-xs text-stone-500">Gestion de campagne</span>
@@ -33,9 +38,12 @@
             <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Menu principal">
                 <div class="space-y-1">
                     <x-nav-lien route="tableau-de-bord" motif="tableau-de-bord" icone="accueil">Tableau de bord</x-nav-lien>
+                    @can('voir-rapports')
+                        <x-nav-lien route="rapports" motif="rapports*" icone="rapports">Rapports</x-nav-lien>
+                    @endcan
                 </div>
 
-                @canany(['voir-producteurs', 'saisir-achats', 'valider-achats'])
+                @canany(['voir-producteurs', 'saisir-achats', 'valider-achats', 'voir-rendements', 'voir-fiabilite', 'voir-visites'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Terrain</p>
                         <div class="space-y-1">
@@ -45,11 +53,24 @@
                             @canany(['saisir-achats', 'valider-achats'])
                                 <x-nav-lien route="achats" motif="achats*" icone="achats">Achats</x-nav-lien>
                             @endcanany
+                            @can('voir-fiabilite')
+                                <x-nav-lien route="fiabilite" motif="fiabilite*" icone="fiabilite">Fiabilité</x-nav-lien>
+                            @endcan
+                            @can('voir-rendements')
+                                <x-nav-lien route="rendements" motif="rendements" icone="rendements">Rendements</x-nav-lien>
+                            @endcan
+                            @can('voir-visites')
+                                <x-nav-lien route="visites" motif="visites" icone="visites">Visites</x-nav-lien>
+                            @endcan
+                            @can('voir-ia')
+                                <x-nav-lien route="ia.diagnostics" motif="ia.diagnostics" icone="ia">Diagnostics IA</x-nav-lien>
+                                <x-nav-lien route="ia.referentiel" motif="ia.referentiel" icone="traitements">Traitements</x-nav-lien>
+                            @endcan
                         </div>
                     </div>
                 @endcanany
 
-                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'voir-budget', 'saisir-depenses', 'valider-depenses'])
+                @canany(['voir-prets', 'voir-ventes', 'gerer-tresorerie', 'gerer-apports', 'voir-resultat-campagne', 'voir-rapport-campagne', 'voir-budget', 'saisir-depenses', 'valider-depenses'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Argent</p>
                         <div class="space-y-1">
@@ -64,6 +85,12 @@
                             @endcan
                             @can('gerer-apports')
                                 <x-nav-lien route="apports" motif="apports" icone="apports">Apports</x-nav-lien>
+                            @endcan
+                            @can('voir-rapport-campagne')
+                                <x-nav-lien route="rapport-campagne" motif="rapport-campagne*" icone="rapport">Rapport de campagne</x-nav-lien>
+                            @endcan
+                            @can('voir-resultat-campagne')
+                                <x-nav-lien route="resultat" motif="resultat" icone="resultat">Résultat</x-nav-lien>
                             @endcan
                             @can('voir-budget')
                                 <x-nav-lien route="budget" motif="budget" icone="budget">Budget</x-nav-lien>
@@ -98,7 +125,7 @@
                     </div>
                 @endcanany
 
-                @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie', 'gerer-intrants', 'voir-journal', 'gerer-utilisateurs'])
+                @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie', 'gerer-intrants', 'voir-journal', 'ouvrir-comptes', 'gerer-appareils', 'gerer-publications'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Administration</p>
                         <div class="space-y-1">
@@ -110,6 +137,14 @@
                             @endcan
                             @can('gerer-utilisateurs')
                                 <x-nav-lien route="utilisateurs" motif="utilisateurs" icone="utilisateurs">Utilisateurs</x-nav-lien>
+                            @elsecan('gerer-agents')
+                                <x-nav-lien route="utilisateurs" motif="utilisateurs" icone="utilisateurs">Agents</x-nav-lien>
+                            @endcan
+                            @can('gerer-publications')
+                                <x-nav-lien route="publications" motif="publications" icone="publications">Vitrine</x-nav-lien>
+                            @endcan
+                            @can('gerer-appareils')
+                                <x-nav-lien route="appareils" motif="appareils" icone="appareils">Appareils</x-nav-lien>
                             @endcan
                         </div>
                     </div>
@@ -165,6 +200,17 @@
                             </div>
                         </details>
                     @endcanany
+
+                    @auth
+                        @php $nonLues = auth()->user()->unreadNotifications()->count(); @endphp
+                        <a href="{{ route('notifications') }}" data-cloche class="relative inline-flex items-center justify-center rounded-lg p-2 text-stone-700 hover:bg-stone-100"
+                            aria-label="Notifications{{ $nonLues > 0 ? ' : '.$nonLues.' non lue(s)' : '' }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20a2 2 0 0 0 4 0" /></svg>
+                            @if ($nonLues > 0)
+                                <span data-cloche-compte class="absolute -right-0.5 -top-0.5 min-w-5 rounded-full bg-red-600 px-1 text-center text-[11px] font-semibold leading-5 text-white tabular-nums">{{ $nonLues > 99 ? '99+' : $nonLues }}</span>
+                            @endif
+                        </a>
+                    @endauth
 
                     <details class="relative" data-deroulant>
                         <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg p-1 hover:bg-stone-100 [&::-webkit-details-marker]:hidden">

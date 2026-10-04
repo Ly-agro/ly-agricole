@@ -153,6 +153,38 @@ class Remboursements
         });
     }
 
+    /**
+     * Annule le remboursement en kilos d'un achat (ligne négative, mêmes kilos) : appelé par
+     * App\Services\Achats::annuler, dans sa transaction. Rien à faire si l'achat n'en avait pas.
+     */
+    public static function annulerNature(Achat $achat, string $motif, User $auteur): ?Remboursement
+    {
+        $original = Remboursement::query()->lockForUpdate()
+            ->where('achat_id', $achat->id)->where('type', TypeRemboursement::Nature)->first();
+        if ($original === null) {
+            return null;
+        }
+        if (Remboursement::query()->where('annule_id', $original->id)->exists()) {
+            throw new OperationRefusee('Le remboursement en kilos de cet achat a déjà été annulé.');
+        }
+
+        $inverse = Remboursement::query()->create([
+            'pret_id' => $original->pret_id,
+            'type' => TypeRemboursement::ContrePassation,
+            'montant_fcfa' => -$original->montant_fcfa,
+            'grammes' => $original->grammes === null ? null : -$original->grammes,
+            'prix_kg_fcfa' => $original->prix_kg_fcfa,
+            'achat_id' => $achat->id,
+            'date_remboursement' => Carbon::today()->toDateString(),
+            'motif' => trim($motif),
+            'annule_id' => $original->id,
+            'cree_par' => $auteur->id,
+        ]);
+        self::mettreAJourStatut(Pret::query()->findOrFail($original->pret_id));
+
+        return $inverse;
+    }
+
     /** Soldé quand tout est remis et tout est remboursé ; sinon retour à l'état d'avant. */
     public static function mettreAJourStatut(Pret $pret): void
     {

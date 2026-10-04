@@ -38,6 +38,26 @@ class Stock
         });
     }
 
+    /**
+     * Annule l'entrée en stock d'un achat par son inverse : appelé par App\Services\Achats::annuler,
+     * dans sa transaction. Refusé si le lot n'a plus ces kilos (déjà vendus ou transférés).
+     */
+    public static function annulerEntreeAchat(Achat $achat, string $motif, User $auteur): MouvementStock
+    {
+        self::exigerMotif($motif);
+        $lot = self::verrouiller($achat->lot);
+        $entree = MouvementStock::query()->where('achat_id', $achat->id)->where('type', TypeMouvementStock::EntreeAchat)->first();
+        if ($entree === null) {
+            throw new OperationRefusee("L'achat {$achat->reference} n'a pas d'entrée en stock à annuler.");
+        }
+        if (MouvementStock::query()->where('annule_id', $entree->id)->exists()) {
+            throw new OperationRefusee('Cette entrée en stock a déjà été annulée.');
+        }
+
+        return self::ecrire($lot, $entree->magasin, TypeMouvementStock::ContrePassation, -$entree->grammes, Carbon::today(), $auteur,
+            achat: $achat, motif: trim($motif), annule: $entree);
+    }
+
     /** Sortie d'une vente, dans le magasin du lot : appelé par App\Services\Ventes. */
     public static function sortieVente(Vente $vente, User $auteur): MouvementStock
     {

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { liveQuery } from 'dexie';
+    import BoutonImprimer from '$lib/BoutonImprimer.svelte';
     import { db, type Operation, type StatutOperation } from '$lib/db';
     import { abandonner, envoyer, renvoyer, SessionExpiree, telechargerReferentiels } from '$lib/synchro';
 
@@ -70,6 +71,9 @@
                 </div>
                 <p class="mt-1 text-xs text-stone-500">Saisi le {new Date(o.cree_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</p>
                 {#if o.motif}<p class="mt-1 text-sm text-red-800">{o.motif}</p>{/if}
+                {#if o.type === 'achat' && o.statut !== 'abandonne'}
+                    <div class="mt-2"><BoutonImprimer operation={o} libelle="Réimprimer le bon de pesée" /></div>
+                {/if}
                 {#if o.statut === 'rejete'}
                     <div class="mt-2 flex flex-wrap gap-2">
                         {#if doublonAConfirmer(o)}

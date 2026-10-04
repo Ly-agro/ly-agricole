@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Enums\ActionJournal;
 use App\Enums\OperateurMobileMoney;
+use App\Enums\PratiqueCulturale;
 use App\Enums\Sexe;
+use App\Enums\SourcePoids;
 use App\Enums\TypeFournisseur;
 use App\Enums\TypePiece;
 use App\Exceptions\OperationRefusee;
@@ -14,6 +16,7 @@ use App\Models\PhotoTerrain;
 use App\Models\Producteur;
 use App\Models\Synchronisation as Envoi;
 use App\Models\User;
+use App\Models\Visite;
 use App\Services\Geo\Contour;
 use App\Support\Telephone;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -41,7 +44,7 @@ use Throwable;
  */
 class Synchronisation
 {
-    public const TYPES = ['producteur', 'achat', 'parcelle', 'depense'];
+    public const TYPES = ['producteur', 'achat', 'parcelle', 'depense', 'visite'];
 
     public const MAX_OPERATIONS = 500;
 
@@ -106,6 +109,7 @@ class Synchronisation
                     'achat' => self::creerAchat($uuid, $donnees, $auteur),
                     'parcelle' => self::creerParcelle($uuid, $donnees, $auteur),
                     'depense' => self::creerDepense($uuid, $donnees, $auteur),
+                    'visite' => self::creerVisite($uuid, $donnees, $auteur, $creeAt),
                     default => throw new OperationRefusee("Type d'opération inconnu : « {$type} »."),
                 };
 
@@ -202,6 +206,7 @@ class Synchronisation
             'piece_numero' => ['nullable', 'string', 'max:50', 'required_with:piece_type'],
             'village_id' => ['required', 'integer', Rule::exists('villages', 'id')],
             'groupe_id' => ['nullable', 'integer', Rule::exists('groupes_producteurs', 'id')->where('village_id', $d['village_id'] ?? null)],
+            'langue_id' => ['nullable', 'integer:strict', Rule::exists('langues', 'id')->where('actif', true)],
             'consentement' => ['accepted'],
         ], [
             'consentement.accepted' => 'Sans l\'accord du producteur, sa fiche ne peut pas être créée.',
@@ -234,6 +239,7 @@ class Synchronisation
             'piece_numero' => $d['piece_numero'],
             'village_id' => (int) $d['village_id'],
             'groupe_id' => $d['groupe_id'] ?? null,
+            'langue_id' => $d['langue_id'] ?? null,
             'consentement_at' => now(),
             'consentement_par' => $auteur->id,
             'cree_par' => $auteur->id,
@@ -272,6 +278,7 @@ class Synchronisation
             'prix_kg_fcfa' => ['required', 'integer:strict'],
             'pret_id' => ['nullable', 'uuid'],
             'photo_pesee' => ['nullable', 'uuid'],
+            'poids_source' => ['nullable', Rule::enum(SourcePoids::class)],
             'grammes_rembourses' => ['nullable', 'integer:strict'],
         ]);
         $v->validate();
@@ -288,6 +295,7 @@ class Synchronisation
             'point_collecte_id' => $d['point_collecte_id'] ?? null,
             'date_achat' => Carbon::parse($d['date_achat']),
             'poids_brut_g' => $d['poids_brut_g'],
+            'poids_source' => $d['poids_source'] ?? null,
             'tare_g' => $d['tare_g'],
             'humidite_pour_mille' => $d['humidite_pour_mille'] ?? null,
             'kor_centieme_lbs' => $d['kor_centieme_lbs'] ?? null,
@@ -386,6 +394,66 @@ class Synchronisation
             'description' => $d['description'] ?? null,
             'campagne_id' => $d['campagne_id'] ?? null,
         ], $photo->chemin, $auteur);
+    }
+
+    /**
+     * Visite de parcelle : un constat, ni argent ni poids. Les photos sont envoyées AVANT
+     * la fiche (comme le justificatif d'une dépense) et y sont rattachées par leur UUID.
+     * La parcelle peut avoir été relevée dans le même envoi : elle est traitée avant.
+     *
+     * @param  array<string, mixed>  $d
+     */
+    private static function creerVisite(string $uuid, array $d, User $auteur, ?Carbon $creeAt): void
+    {
+        if (! $auteur->can('saisir-visites')) {
+            throw new OperationRefusee('Votre rôle ne permet pas de saisir une visite.');
+        }
+
+        Validator::make($d, [
+            'parcelle_id' => ['required', 'uuid', Rule::exists('parcelles', 'id')->where('actif', true)],
+            'date_visite' => ['required', 'date', 'before_or_equal:today'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90', 'required_with:lng'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:lat'],
+            'pratiques' => ['nullable', 'array', 'max:20'],
+            'pratiques.*' => ['string', 'distinct', Rule::enum(PratiqueCulturale::class)],
+            'observations' => ['nullable', 'string', 'max:2000'],
+            'photos' => ['nullable', 'array', 'max:10'],
+            'photos.*' => ['uuid', 'distinct'],
+        ], [
+            'parcelle_id.exists' => 'Parcelle introuvable ou désactivée (relevée sur un autre téléphone et pas encore envoyée ?).',
+            'date_visite.before_or_equal' => 'La date d\'une visite ne peut pas être dans le futur.',
+            'pratiques.*.enum' => 'Pratique inconnue : mettre l\'appli à jour.',
+        ])->validate();
+
+        /** @var list<string> $pratiques */
+        $pratiques = array_values($d['pratiques'] ?? []);
+        $observations = filled($d['observations'] ?? null) ? trim((string) $d['observations']) : null;
+        $idsPhotos = array_map(fn ($id) => strtolower((string) $id), array_values($d['photos'] ?? []));
+
+        if ($pratiques === [] && $observations === null && $idsPhotos === []) {
+            throw new OperationRefusee('Fiche de visite vide : cocher une pratique, écrire une observation ou prendre une photo.');
+        }
+
+        $photos = PhotoTerrain::query()->whereKey($idsPhotos)->get();
+        if ($photos->count() !== count($idsPhotos)) {
+            throw new OperationRefusee('Une photo de la visite n\'est pas encore arrivée : renvoyer quand elle sera partie.');
+        }
+        if ($photos->contains(fn (PhotoTerrain $p) => $p->user_id !== $auteur->id)) {
+            throw new OperationRefusee('Une photo de la visite a été envoyée par un autre utilisateur.');
+        }
+
+        $visite = Visite::query()->create([
+            'id' => $uuid,
+            'parcelle_id' => strtolower((string) $d['parcelle_id']),
+            'date_visite' => Carbon::parse((string) $d['date_visite'])->toDateString(),
+            'lat' => $d['lat'] ?? null,
+            'lng' => $d['lng'] ?? null,
+            'pratiques' => $pratiques === [] ? null : $pratiques,
+            'observations' => $observations,
+            'cree_par' => $auteur->id,
+            'cree_at' => $creeAt,
+        ]);
+        $visite->photos()->attach($idsPhotos);
     }
 
     private static function texte(mixed $valeur): ?string

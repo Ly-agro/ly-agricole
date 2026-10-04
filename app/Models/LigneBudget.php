@@ -18,12 +18,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $categorie_id
  * @property int $montant_fcfa
  * @property string|null $note
+ * @property string|null $motif_modification motif de la dernière modification (facultatif)
  * @property int $cree_par
  * @property int|null $modifie_par
  * @property-read Campagne $campagne
  * @property-read CategorieDepense|null $categorie
  */
-#[Fillable(['campagne_id', 'poste', 'categorie_id', 'montant_fcfa', 'note', 'cree_par', 'modifie_par'])]
+#[Fillable(['campagne_id', 'poste', 'categorie_id', 'montant_fcfa', 'note', 'motif_modification', 'cree_par', 'modifie_par'])]
 class LigneBudget extends Model
 {
     use Journalise;

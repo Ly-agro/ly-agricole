@@ -166,7 +166,8 @@ class GestionUtilisateursTest extends TestCase
     #[Test]
     public function un_non_admin_ne_peut_pas_monter_le_composant(): void
     {
-        Livewire::actingAs(User::factory()->role(Role::Direction)->create())
+        // La direction l'ouvre pour les agents (AgentsParLaDirectionTest) ; le comptable, non.
+        Livewire::actingAs(User::factory()->role(Role::Comptable)->create())
             ->test(GestionUtilisateurs::class)
             ->assertForbidden();
     }

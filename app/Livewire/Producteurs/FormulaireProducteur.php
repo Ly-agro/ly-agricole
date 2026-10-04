@@ -7,6 +7,7 @@ use App\Enums\OperateurMobileMoney;
 use App\Enums\Sexe;
 use App\Enums\TypePiece;
 use App\Models\GroupeProducteur;
+use App\Models\Langue;
 use App\Models\Producteur;
 use App\Models\Village;
 use App\Services\DetectionDoublons;
@@ -58,6 +59,9 @@ class FormulaireProducteur extends Component
 
     public string $groupeId = '';
 
+    /** Langue des messages (question 12) ; vide = français. */
+    public string $langueId = '';
+
     /** @var TemporaryUploadedFile|null */
     public $photo = null;
 
@@ -86,6 +90,7 @@ class FormulaireProducteur extends Component
             $this->pieceNumero = $producteur->piece_numero ?? '';
             $this->villageId = (string) $producteur->village_id;
             $this->groupeId = (string) ($producteur->groupe_id ?? '');
+            $this->langueId = (string) ($producteur->langue_id ?? '');
         }
     }
 
@@ -136,6 +141,7 @@ class FormulaireProducteur extends Component
             'villageId' => ['required', 'integer', Rule::exists('villages', 'id')],
             'groupeId' => ['nullable', 'integer',
                 Rule::exists('groupes_producteurs', 'id')->where('village_id', $this->villageId ?: null)],
+            'langueId' => ['nullable', 'integer', Rule::exists('langues', 'id')->where('actif', true)],
             'photo' => $this->reglePhoto(),
             'consentement' => $existant ? [] : ['accepted'],
         ], [
@@ -153,6 +159,7 @@ class FormulaireProducteur extends Component
             'pieceNumero' => 'numéro de pièce',
             'villageId' => 'village',
             'groupeId' => 'groupe',
+            'langueId' => 'langue',
         ]);
 
         $doublons = DetectionDoublons::verifier([
@@ -184,6 +191,7 @@ class FormulaireProducteur extends Component
             'piece_numero' => $this->pieceNumero ?: null,
             'village_id' => (int) $this->villageId,
             'groupe_id' => $this->groupeId === '' ? null : (int) $this->groupeId,
+            'langue_id' => $this->langueId === '' ? null : (int) $this->langueId,
         ];
 
         $anciennePhoto = $existant?->photo;
@@ -246,6 +254,7 @@ class FormulaireProducteur extends Component
             'groupes' => $this->villageId === ''
                 ? collect()
                 : GroupeProducteur::query()->where('village_id', (int) $this->villageId)->where('actif', true)->orderBy('nom')->get(),
+            'langues' => Langue::query()->where('actif', true)->orderBy('nom')->get(),
             'sexes' => Sexe::cases(),
             'operateurs' => OperateurMobileMoney::cases(),
             'typesPiece' => TypePiece::cases(),

@@ -2,6 +2,7 @@
     const saisies = [
         { href: '/achat', titre: 'Achat bord-champ', detail: 'Pesée, prix, prêt, photo de pesée' },
         { href: '/parcelle', titre: 'Relevé de parcelle', detail: 'Faire le tour à pied avec le GPS' },
+        { href: '/visite', titre: 'Visite de parcelle', detail: 'Pratiques constatées, observations, photos' },
         { href: '/depense', titre: 'Dépense terrain', detail: 'Payée depuis votre caisse, photo du reçu' },
         { href: '/producteur', titre: 'Nouveau producteur', detail: 'Fiche et accord du producteur' },
     ];

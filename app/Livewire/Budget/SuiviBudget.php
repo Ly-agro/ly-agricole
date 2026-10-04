@@ -36,6 +36,11 @@ class SuiviBudget extends Component
 
     public string $note = '';
 
+    /** Motif facultatif, proposé seulement quand le poste est déjà prévu (modification). */
+    public string $motif = '';
+
+    public bool $modification = false;
+
     public string $statut = '';
 
     public function mount(): void
@@ -60,13 +65,21 @@ class SuiviBudget extends Component
         $this->poste = $poste;
         $this->montant = '';
         $this->note = '';
+        $this->motif = '';
 
         $ligne = $this->ligneExistante($poste);
+        $this->modification = $ligne !== null;
         if ($ligne !== null) {
             $this->montant = number_format($ligne->montant_fcfa, 0, '', ' ');
             $this->note = (string) $ligne->note;
         }
         $this->formulaire = true;
+    }
+
+    /** Le poste choisi dans la liste peut déjà être prévu : proposer alors le motif. */
+    public function updatedPoste(): void
+    {
+        $this->modification = $this->ligneExistante($this->poste) !== null;
     }
 
     public function enregistrer(): void
@@ -83,6 +96,7 @@ class SuiviBudget extends Component
                 }
             }],
             'note' => ['nullable', 'string', 'max:255'],
+            'motif' => ['nullable', 'string', 'max:255'],
         ], attributes: ['poste' => 'poste']);
 
         $campagne = Campagne::query()->findOrFail((int) $this->campagneId);
@@ -92,7 +106,7 @@ class SuiviBudget extends Component
         $auteur = auth()->user();
 
         try {
-            Budgets::definir($campagne, $poste, $categorieId, (int) Montant::depuisSaisie($this->montant), $auteur, $this->note ?: null);
+            Budgets::definir($campagne, $poste, $categorieId, (int) Montant::depuisSaisie($this->montant), $auteur, $this->note ?: null, $this->motif ?: null);
         } catch (OperationRefusee $e) {
             throw ValidationException::withMessages(['montant' => $e->getMessage()]);
         }

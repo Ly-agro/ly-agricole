@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ActionJournal;
 use App\Models\Builders\BuilderImmuable;
 use App\Models\Concerns\Immuable;
+use App\Services\SuiviAgents;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +38,12 @@ class JournalActivite extends Model
     protected $table = 'journal_activite';
 
     protected $guarded = ['id'];
+
+    protected static function booted(): void
+    {
+        // Chaque action d'un agent prévient la direction (avis envoyé après le commit).
+        static::created(fn (self $entree) => SuiviAgents::apresJournal($entree));
+    }
 
     /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo

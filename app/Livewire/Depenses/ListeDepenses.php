@@ -34,6 +34,10 @@ class ListeDepenses extends Component
 
     public string $motifRefus = '';
 
+    public ?string $aAnnuler = null;
+
+    public string $motifAnnulation = '';
+
     public string $statut = '';
 
     public function mount(): void
@@ -91,6 +95,31 @@ class ListeDepenses extends Component
         $this->aRefuser = null;
     }
 
+    public function preparerAnnulation(string $id): void
+    {
+        $this->authorize('annuler-operations');
+        $this->resetErrorBag();
+        $this->statut = '';
+        $this->motifAnnulation = '';
+        $this->aAnnuler = Depense::query()->findOrFail($id)->id;
+    }
+
+    /** « Supprimer » : annulation (contre-passation du paiement s'il a eu lieu). */
+    public function annulerDepense(): void
+    {
+        $this->authorize('annuler-operations');
+        $this->resetErrorBag();
+
+        try {
+            Depenses::annuler(Depense::query()->findOrFail((string) $this->aAnnuler), $this->utilisateur(), $this->motifAnnulation);
+        } catch (OperationRefusee $e) {
+            throw ValidationException::withMessages(['motifAnnulation' => $e->getMessage()]);
+        }
+
+        $this->aAnnuler = null;
+        $this->statut = 'Dépense supprimée (annulée) : la caisse est remise comme avant.';
+    }
+
     private function utilisateur(): User
     {
         /** @var User $user */
@@ -116,6 +145,7 @@ class ListeDepenses extends Component
             'depenses' => $depenses,
             'statuts' => StatutDepense::cases(),
             'peutValider' => $toutVoir,
+            'peutAnnuler' => $user->can('annuler-operations'),
             'moi' => $user->id,
         ]);
     }

@@ -212,3 +212,54 @@ describe('référentiels', () => {
         expect(await base.producteurs.count()).toBe(2);
     });
 });
+
+describe('visites de parcelle (phase 2)', () => {
+    const reponse = (corps: object) => (async () => new Response(JSON.stringify(corps))) as typeof fetch;
+    const vide = { villages: [], produits: [], campagnes: [], lots: [], points_collecte: [], comptes: [], prets_en_cours: [], producteurs: [] };
+
+    it('les parcelles sont téléchargées ; une parcelle relevée ici reste visitable après un téléchargement complet', async () => {
+        const locale = await mettreEnFile(base, 'parcelle', { producteur_id: 'a', nom: 'Champ du bas', contour: {} }, 'Parcelle');
+
+        await telechargerReferentiels(base, reponse({ ...vide, horodatage: 't1', complet: true,
+            parcelles: [{ id: 'p1', producteur_id: 'a', nom: 'Verger', surface_m2: 10_000, produit_id: 1, actif: true }] }));
+
+        expect((await base.parcelles.where('producteur_id').equals('a').toArray()).map((p) => p.nom).sort()).toEqual(['Champ du bas', 'Verger']);
+        expect((await base.parcelles.get(locale.uuid))?.surface_m2).toBeNull();
+    });
+
+    it('une base v2 passe en v3 : nouveau téléchargement complet, file intacte', async () => {
+        const nom = 'migration-v3-' + numero++;
+        const { default: Dexie } = await import('dexie');
+        const v2 = new Dexie(nom);
+        v2.version(1).stores({ reglages: 'cle', operations: 'uuid, statut' });
+        v2.version(2).stores({ categories_depense: 'id', photos: 'uuid, statut' });
+        await v2.table('reglages').put({ cle: 'horodatage', valeur: 't1' });
+        await v2.table('operations').put({ uuid: 'u1', statut: 'en_attente' });
+        v2.close();
+
+        const v3 = new BaseTerrain(nom);
+        expect(await v3.reglages.get('horodatage')).toBeUndefined();
+        expect(await v3.operations.count()).toBe(1);
+        expect(await v3.parcelles.count()).toBe(0);
+    });
+
+    it('la photo d\'une visite part avant la visite', async () => {
+        const ordre: string[] = [];
+        const f = (async (url: string, init?: RequestInit) => {
+            if (url.endsWith('/photos')) {
+                ordre.push('photo');
+                return new Response('{}', { status: 201 });
+            }
+            const corps = JSON.parse(String(init?.body)) as { operations: { uuid: string; type: string }[] };
+            ordre.push(...corps.operations.map((o) => o.type));
+            return new Response(JSON.stringify({ resultats: corps.operations.map((o) => ({ uuid: o.uuid, statut: 'accepte' })) }));
+        }) as typeof fetch;
+        await base.photos.add({ uuid: 'ph1', blob: new Blob(['x']), prise_at: '2026-09-29T10:00:00Z', lat: 9.4, lng: -5.6, statut: 'en_attente', motif: null });
+        await mettreEnFile(base, 'visite', { parcelle_id: 'p1', pratiques: ['taille'], photos: ['ph1'] }, 'Visite');
+
+        await envoyer(base, f);
+
+        expect(ordre).toEqual(['photo', 'visite']);
+        expect((await base.operations.toArray())[0].statut).toBe('envoye');
+    });
+});

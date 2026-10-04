@@ -24,12 +24,38 @@ class ConnexionTest extends TestCase
     }
 
     #[Test]
-    public function la_racine_renvoie_un_visiteur_vers_la_connexion(): void
+    public function la_racine_montre_la_vitrine_sans_passer_par_la_connexion(): void
     {
-        $this->followingRedirects()
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('LY AGRICOLE')
+            ->assertSee('Du champ')
+            ->assertSee('Cultiver – Élever – Durer')
+            ->assertSee('anacarde')->assertSee('Cacao, café, anacarde')
+            ->assertSeeHtml('href="'.route('login').'"')
+            ->assertSeeHtml('images/logo-yl-agro.png')
+            ->assertDontSeeLivewire(Connexion::class);
+    }
+
+    #[Test]
+    public function la_vitrine_n_annonce_aucune_operation_d_investissement(): void
+    {
+        // Contrat de campagne, art. 2.3 : opération privée, sans publicité ni diffusion au public.
+        $page = $this->get('/')->assertOk()->getContent();
+
+        foreach (['investisseur', 'investissement', 'souscri', 'FCFA', 'rendement garanti'] as $mot) {
+            $this->assertStringNotContainsStringIgnoringCase($mot, strip_tags((string) $page), "La vitrine ne doit pas contenir « {$mot} ».");
+        }
+    }
+
+    #[Test]
+    public function la_vitrine_propose_l_espace_de_gestion_a_un_utilisateur_connecte(): void
+    {
+        $this->actingAs(User::factory()->create())
             ->get('/')
             ->assertOk()
-            ->assertSeeLivewire(Connexion::class);
+            ->assertSee('Mon espace')
+            ->assertSeeHtml('href="'.route('tableau-de-bord').'"');
     }
 
     #[Test]

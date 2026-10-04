@@ -5,6 +5,841 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-10-02 — Suivi des agents en direct (Reverb), comptes d'agents, « Supprimer », anacarde — FAIT, À VOIR DANS LE NAVIGATEUR
+
+**Demande.** Chaque action d'un agent → notification push au responsable (Reverb) ; le responsable
+crée les comptes d'agents ; il peut « supprimer » ; l'anacarde mise en avant sur la vitrine, avec
+des images animées de la noix à la transformation.
+
+- **Décisions demandées et prises** : « Supprimer » = annuler (contre-passation, sauf ce qui n'a
+  encore rien changé) ; la direction crée les comptes d'**agents seulement** (DECISIONS D5).
+- **Suivi des agents** (`SuiviAgents`, branché sur la création d'une ligne du journal) : toute
+  action d'un agent (sauf connexion/déconnexion) envoie un avis « Activité agent » à la direction :
+  liste, push, et diffusion en direct. Titre sans nom de producteur ni montant (écran verrouillé).
+- **Reverb** : `laravel/reverb` 1.12 (Guzzle redescendu de 8.2 à 7.15, seule combinaison possible),
+  `config/broadcasting.php`, `config/reverb.php`, `routes/channels.php`, Echo + pusher-js ; canal
+  `broadcast` ajouté à `AvisLy` seulement si un diffuseur réel est configuré ; bandeau et cloche mis
+  à jour sans recharger. Clés locales générées dans `.env` (pas dans le dépôt).
+- **Comptes d'agents** : droits `gerer-agents` / `ouvrir-comptes` ; écran « Comptes des agents » pour
+  la direction (ne voit, ne crée, ne modifie que des agents ; refus testé même en forçant l'id).
+- **Supprimer** : `Achats::annuler` (stock, remboursement en kilos et caisse contre-passés ensemble,
+  refus si le lot n'a plus les kilos, tout ou rien), `Depenses::annuler`, `SuppressionFiches::producteur`
+  (vraie suppression seulement sans prêt/achat/visite/SMS/décision ; photo effacée après commit).
+  Migration `annule_par`, `annule_at`, `motif_annulation` sur `achats` ; statut « Annulé ».
+- **Vitrine** : section `#anacarde` après l'accueil, 9 étapes illustrées en SVG animé (semis,
+  croissance, floraison, pomme et noix, récolte, séchage, pesée, stockage, transformation), lecture
+  automatique quand la section est visible, pause, flèches, chemin cliquable ; dernier prix bord-champ
+  publié affiché (jamais inventé) ; bouton « Découvrir l'anacarde » dans l'accueil. Respect des
+  retraits faits à la main sur la vitrine (liste repliée et « autres cultures ») : tests adaptés.
+- **Vérifié** : 779 tests (761 → 779), Pint. **Pas encore vu dans le navigateur** : le serveur a
+  été arrêté faute de mémoire sur le poste ; animation de la vitrine et avis en direct à regarder.
+
+---
+
+## 2026-09-30 (soir) — Prix sur la vitrine repliés, « Voir tous » immédiat, test d'avis stabilisé, fusion — FAIT
+
+- **Vitrine** : 6 cartes de prix d'emblée (anacarde, karité, tomate, cacao, café, hévéa), les
+  27 autres derrière « Afficher les autres cultures » (tableau replié), bouton « Voir tous les prix ».
+- **`/prix`** : recherche d'une culture dans le tableau à chaque lettre (sans accents) ; filtres
+  des courbes appliqués dès le choix, sans bouton ni rechargement (zone des courbes remplacée,
+  adresse mise à jour, bouton gardé sans JavaScript) ; campagnes proposées : celles du produit
+  choisi seulement (116 sinon) ; dates visibles seulement pour « Dates personnalisées ».
+  Vu dans Chrome : « ba » → 2 cultures ; Hévéa puis campagne 2023-2024 → courbe et info-bulle.
+- **Actualités : NewsAPI écarté** (décision de l'utilisateur, 2026-09-30) : le plan gratuit est
+  réservé au développement (interdit sur un site en ligne, articles d'au moins 24 h) ; on reste sur
+  les flux RSS. Clé fournie non enregistrée.
+- **ngrok** : jeton du compte LY accepté ; tunnel `https://onward-singer-creme.ngrok-free.dev`
+  (domaine fixe du compte) vérifié : pages en https, filtres de `/prix` à travers le tunnel.
+- **Test d'avis instable** : `notifications()` trie déjà du plus récent au plus ancien, `oldest()`
+  ne faisait qu'ajouter un second critère ; le test ne passait que par hasard dans une même
+  seconde. `reorder()->oldest()` et une seconde d'écart (NotificationsTest, AlertesTest).
+
+---
+
+## 2026-09-30 (suite) — Prix relevés des autres cultures, courbe refaite, contact, ngrok — FAIT, À FAIRE RELIRE
+
+- **Prix** (`HistoriquePrixCulturesSeeder`, d'après `docs/Prixrelever1-3`) : 95 prix, 29 cultures,
+  un par année de campagne, tous avec lien. Coton, karité, canne : prix officiels ; hévéa, palmier :
+  moyennes des prix mensuels/par période (APROMAC, CHPHC) ; riz, maïs, vivriers : ANADER, année
+  civile Y rangée dans (Y-1)-Y. Chargé dans MySQL (24 → 119 prix).
+- **Écartés** : prix de marché 2025-2026 sans lien de Prixrelever1 (N'kalo, Fratmat… dont des prix
+  de détail à Abidjan) ; « proxies » ANADER de Prixrelever2 pour hévéa (283/312/272), palmier
+  (207/244/225, invraisemblable pour le régime payé 65-80) et riz (194/238/302), contredits par
+  APROMAC, CHPHC et ADERIZ (Prixrelever3). Sans source : sésame, piment, hibiscus, poivre.
+- **À relire** : palmier 2022-2023 (77) et 2023-2024 (66) contiennent un mois estimé (≈ 71) ;
+  canne 2024-2025 arrondie (20 250 F/t → 20 F/kg) ; coton 2020-2021 : 300 (KOACI dit 270).
+- **Courbe** (`CourbeSvg` + `prix/evolution`) : aire en dégradé sous l'escalier, grille en filets,
+  repères de temps sur dates rondes (« 2024 », « oct. 2025 »), pastille du dernier prix, réticule
+  qui suit le pointeur et info-bulle (prix en vigueur, date, source) ; en-tête prix en grand +
+  variation. Vu dans Chrome (hévéa, survol à 2022-2023 → 295, source APROMAC).
+- **Contact** : direction@ylagro.com, 07 78 15 58 78 (`config/vitrine.php`, « Nous trouver » et
+  pied de page, liens mailto/tel) ; `MAIL_FROM_ADDRESS` et sujet VAPID mis à jour.
+- **ngrok** : `ngrok.yml` (tunnel `ly-agricole` → localhost:8000, sans jeton ; jeton du compte LY dans
+  `%LOCALAPPDATA%/ngrok/ly-agricole.yml`, pas celui de Tharamotors) ; `trustProxies`
+  limité à 127.0.0.1/::1. Config validée par `ngrok config check` ; en-têtes X-Forwarded simulés →
+  ressources en https. Tunnel non lancé.
+
+---
+
+## 2026-09-30 — Prix des campagnes passées (cacao, café, anacarde) — FAIT, À FAIRE RELIRE
+
+- 37 cultures (`CulturesSeeder`) ; tableau d'ensemble de `/prix` : cultures × 7 dernières
+  années de campagne (octobre à septembre : l'anacarde de février 2024 est dans 2023-2024).
+- `HistoriquePrixSeeder` : 24 prix relevés dans la presse ivoirienne (Abidjan.net, KOACI,
+  AIP, Fraternité Matin, Financial Afrik, Journal d'Abidjan, Conseil du Café-Cacao), chacun avec
+  son lien ; 20 campagnes créées **clôturées**, sans prix officiel. Relançable sans doublon.
+- **Réserves** : source = presse, pas le site du Conseil du Café-Cacao ; date d'effet = annonce ou
+  lancement ; non vérifiés au jour près : cacao intermédiaire 2020-2021 (avril 2021) et
+  2024-2025 (avril 2025) ; café 2020-2021 (550, relevé indirectement). Rien avant 2019 ni pour les
+  autres cultures (karité, tomate, maïs…) : pas de source trouvée. Prix 2026-2027 (cacao 1 200,
+  café 1 300) non saisis : ils entrent en vigueur le 1er octobre.
+
+---
+
+## 2026-09-29 — Courbes d'évolution des prix et actualités depuis internet — FINI
+
+**Demande.** « Les actualités et les prix bord-champ ne peuvent pas être récupérés depuis
+internet, avec courbe d'évolution par campagne et période ? »
+
+**Fait.**
+
+- **Courbes** : page publique `/prix` (lien depuis la vitrine). Un graphique par produit
+  (café, cacao, anacarde…), courbe en escalier (un prix vaut jusqu'au changement suivant),
+  filtre par produit et par période (tout, 6 mois, 12 mois, une campagne, dates libres),
+  tableau des valeurs et tableau « campagne par campagne ». SVG fait côté serveur
+  (`Support/CourbeSvg`), infobulle au survol et au clavier, une seule échelle par graphique.
+- **Actualités depuis internet** : flux RSS / Atom choisis par la direction (onglet
+  « Sources d'actualités », bouton « Récupérer maintenant », commande
+  `vitrine:actualites` planifiée à 06:00). Tout arrive en **brouillon « à relire »** avec
+  titre, court extrait en texte simple et lien vers l'article d'origine ; rien n'est public
+  sans publication par la direction. Pas de doublon (empreinte source + lien), adresses
+  internes refusées (localhost, réseau privé, métadonnées cloud), pas de redirection, flux
+  avec déclaration d'entités refusé, une source en panne n'arrête pas les autres.
+- **Prix : pas de récupération automatique.** Aucun flux officiel n'existe (les sites
+  consultés refusent les robots ou n'ont pas de flux) et un prix faux affiché publiquement
+  est pire que pas de prix : les prix restent saisis avec source et date (question 39).
+
+**Vérifié.** 730 tests verts (+ 11 courbe, 18 évolution, 23 récupération), Larastan 0, Pint.
+Courbe vue dans Chrome sur `/prix?produit=1`.
+
+**Reste à décider (question 39).** Quelles sources de flux ajouter ; si une saisie assistée
+d'un prix à partir d'un article est souhaitée.
+
+---
+
+## 2026-09-29 — Vitrine : prix bord-champ et actualités — FINI
+
+> Branche `phase-2-suite`. Demande du responsable projet : « un onglet actualités et l'affichage des prix
+> bord-champ (café, cacao, anacarde et autres), par récupération ou par saisie ».
+
+**Fait : la saisie.** Registre immuable `prix_marche` (produit, prix au kilo, **date d'effet**, **source
+obligatoire**, lien http(s) facultatif, note) et table `actualites` (texte simple, brouillon / publiée).
+`App\Services\Publications` ; écran de la direction `/publications` (onglets Prix et Actualités ; droit
+`gerer-publications`, **direction seule**). La vitrine affiche, sans connexion, une section « Prix
+bord-champ » (prix, date, source cliquable, écart signé au prix précédent) et une section « Actualités »
+(3 dernières + page `/actualites` et une page par actualité), avec liens « Prix » et « Actualités » dans le
+menu. Les brouillons et les actualités datées du futur n'existent pas pour le public (404) ; le texte est
+échappé (jamais de HTML) ; un lien de source doit commencer par http:// ou https://.
+
+**Un prix affiché n'est pas le prix officiel.** Il ne change rien aux achats : le plancher reste
+`campagnes.prix_officiel_kg_fcfa`, qui n'est jamais publié tel quel. L'écran et la vitrine le disent ; le
+bouton « Reprendre le prix officiel de la campagne ouverte » ne fait que pré-remplir le formulaire. (Point
+confirmé avec l'autre session : ses alertes concernent le prix de campagne, pas ces prix affichés.)
+
+**Pas fait : la récupération automatique.** Aucune source n'est choisie, les sources officielles n'ont pas
+d'interface stable connue, et un prix faux affiché publiquement engage LY. Question ouverte n° 39.
+
+**Au passage.** La vitrine est découpée en morceaux partagés (`resources/views/vitrine/*` et le composant
+`x-vitrine.page`) pour que les pages d'actualités aient le même en-tête, style et pied ; rendu inchangé.
+`php artisan migrate` a été lancé sur la base de dev (9 migrations en attente, ajouts seulement).
+
+**Vérifié en l'exécutant.** 34 tests (validations, source obligatoire, lien dangereux refusé, immuabilité,
+prix en vigueur par date d'effet, écart signé, droits, vitrine vide / remplie, aucun montant hors de la section
+des prix, brouillons et futur invisibles, texte échappé, liens du menu, écran de gestion) ; deux défauts
+trouvés et corrigés (comparaison de dates en SQLite, message inversé au basculement de publication).
+**Vu dans Chrome** sur une base de contrôle (supprimée) avec des données d'essai : menu, section des prix,
+page des actualités. Pas vu : la section « Actualités » de l'accueil ni la largeur téléphone.
+
+**Reste.** Question 39 (sources à suivre, validation avant publication, flux externe).
+
+---
+
+## 2026-09-29 — Commission des pisteurs (question 6, repris de B) — FINI
+
+> Branche `phase-2-suite`. Dernier des cinq blocs repris de B.
+
+**Décision du responsable projet (question 6).** Les achats via pisteurs sont possibles ; « la commission
+et son mode de calcul / paiement » restent à définir ; proposition : « prévoir dès maintenant le champ pisteur
+et la commission dans le modèle d'achat, même si le calcul automatique est activé ultérieurement ».
+
+**Fait, et seulement cela.** Règle de commission **par pisteur** (`ModeCommission` : FCFA par kilo, ou pour mille
+du montant), saisie dans Référentiels › Pisteurs, **vide** tant que la direction ne l'a pas choisie (mode et
+valeur vont ensemble ; entier ; ≤ 1 000 ‰). Colonne `achats.commission_pisteur_fcfa` (nullable). **Calcul
+automatique désactivé par défaut** : paramètre `calcul_commission_pisteur` (aucun / automatique), à activer par
+la direction. `App\Services\CommissionsPisteur` : arrondi au franc le plus proche en entiers, exact au-delà de
+2^31 ; seul un achat dont le **vendeur est un pisteur** porte une commission ; `due()` = somme des achats
+**validés** (jamais « à valider » ni refusés). Affichée par pisteur et dans la liste des achats.
+**C'est une somme due, pas un paiement** : quand et comment elle est payée n'est pas défini, et elle n'entre
+pas dans le résultat de campagne tant qu'elle n'est pas payée par une dépense (contrat art. 10.2).
+
+**Vérifié en l'exécutant.** 13 tests (calcul par kilo et en pour mille, arrondis, très gros montant, sans règle
+complète, calcul non activé, achat au pisteur, achat à un producteur, achats validés seulement, formulaire et
+ses refus, affichage, paramètre). Pas vu dans un navigateur.
+
+**Reste.** Question 6 : montant, moment et mode de paiement ; imputation comptable.
+
+---
+
+## 2026-09-29 — Langue par producteur (question 12, repris de B) — FINI
+
+> Branche `phase-2-suite`. Quatrième des cinq blocs repris de B.
+
+**Décision du responsable projet (question 12).** Français d'abord ; préférence de langue par producteur à
+prévoir ; langues locales à confirmer ; messages courts et sans accent pour les SMS ; message vocal plus tard.
+
+**Fait.** Table `langues` (code unique en minuscules, nom, actif) et `producteurs.langue_id` (nullable = français).
+**Aucune langue locale n'est pré-remplie** : la direction ou l'administrateur les ajoutent (Référentiels ›
+Langues) quand elles sont confirmées ; l'écran donne le nombre de producteurs par langue, pour choisir lesquelles
+traduire d'abord. Le champ est dans le formulaire producteur du bureau (facultatif, « Français (par défaut) »), sur
+la fiche, et **sur le téléphone** (`terrain/` : table locale `langues` en **Dexie version 4**, téléchargée avec
+les référentiels, liste affichée seulement si elle n'est pas vide). `/api/sync` accepte `langue_id` (inconnue ou
+désactivée ⇒ opération rejetée avec motif ; absente ⇒ français). **Aucun message n'est traduit** : tout part encore
+en français ; ce bloc n'enregistre que la préférence.
+
+**Vérifié en l'exécutant.** PHP : 12 tests (aucune langue par défaut, code unique et en minuscules, colonne des
+producteurs, droits, formulaire, langue refusée si inactive ou inconnue, fiche, synchro, référentiels). Terrain :
+4 tests vitest (version 4, langues gardées avec celles désactivées, complet / delta, ancien serveur) ; **72 tests**
+au total, `svelte-check` et build OK. Pas vu sur un téléphone.
+
+**Reste.** Traductions des messages (SMS) : à faire quand les langues seront confirmées.
+
+---
+
+## 2026-09-29 — Appareils et jetons (question 25, repris de B) — FINI
+
+> Branche `phase-2-suite`. Troisième des cinq blocs repris de B.
+
+**Décision du responsable projet (question 25).** Pas d'expiration automatique des jetons ; un compte
+désactivé ne peut plus envoyer ; prévoir la liste des appareils, la dernière synchronisation et la
+désactivation à distance d'un téléphone perdu.
+
+**Fait.** `App\Services\Appareils` : liste des jetons Sanctum (un appareil = un jeton « LY Terrain
+xxxxxxxx »), rattaché à sa **dernière synchronisation** par la fin de l'identifiant de l'appareil (même
+utilisateur seulement) ; `revoquer()` (un appareil) et `revoquerTous()` (tous ceux d'un utilisateur),
+avec **motif obligatoire** et une ligne au journal (`ActionJournal::RevocationAppareil` : qui, quand,
+quel appareil, pourquoi). Écran `/appareils`, droit `gerer-appareils` (**direction et administrateur** ;
+pas le comptable ni l'agent). Aucune migration. Côté téléphone, seul le message de session expirée
+mentionne désormais « appareil coupé par le bureau ».
+
+**Vérifié en l'exécutant.** 14 tests, dont le point crucial : **le jeton d'un appareil coupé est refusé
+(401) à la requête suivante** sur `/api/referentiels` et `/api/sync`, alors que les autres appareils du
+même utilisateur et ceux des autres continuent de marcher ; journal ; motif et droits ; liste ; écran.
+Ce que le téléphone perdu n'avait pas encore envoyé reste sur lui, inatteignable pour le bureau.
+
+**Reste.** Aucune alerte « appareil sans synchronisation depuis N jours » (aucun seuil fixé, pas de seuil
+inventé) ; à voir avec B, dont les alertes sont le bon endroit.
+
+---
+
+## 2026-09-29 — Balance Bluetooth (repris de B) — FINI, NON VÉRIFIÉ SUR MATÉRIEL
+
+> Branche `phase-2-suite`. Deuxième des cinq blocs repris de B.
+
+**Ce qui est fait.** Côté téléphone, `terrain/src/lib/balance.ts` : lecture des trames texte des
+indicateurs de pesage courants (« ST,GS,+ 12.50kg », « 12,5 kg », sans unité = unité choisie),
+profil Bluetooth standard « Weight Scale » (0x181D / 0x2A9D, 5 g l'unité), deux services série usuels,
+découpage en trames, **attente d'un poids stable** (ST de la balance, sinon 5 lectures identiques ;
+jamais « stable » à vide), conversion en **grammes entiers** (jamais de flottant ; plus de décimales
+que l'unité ⇒ refusé ; négatif ⇒ refusé), source du poids. Réutilise la méthode de B
+(`imprimante.ts` : plugin `@capacitor-community/bluetooth-le`, Web Bluetooth dans Chrome). Composant
+`PeseeBalance.svelte` dans le formulaire d'achat : poids en direct, boutons « → Poids brut » et
+« → Tare » actifs seulement quand le poids est stable ; un poids tapé à la main reste possible.
+**Source du poids** : `balance` seulement si le champ vaut exactement ce que la balance a donné.
+Côté serveur : colonne `achats.poids_source` (nullable, enum `SourcePoids`), reçue par `/api/sync`
+(valeur inconnue ⇒ opération rejetée avec motif), affichée dans la liste des achats. **Trace, pas
+un blocage** ; pas de nouveau contrôle.
+
+**Non vérifié.** Aucune balance ni téléphone ici : le modèle de balance et son format sont inconnus
+(question ouverte n° 38). Le Bluetooth classique (SPP) n'est pas géré. Table locale : aucune (Dexie
+reste en version 3, la version 4 est libre).
+
+**Vérifié en l'exécutant.** Terrain : **68 tests** vitest (dont 32 nouveaux : trames, stabilité,
+profil standard, source), `svelte-check` 0 erreur, `npm run build` OK ; il a fallu `npm install` dans
+`terrain/` (les plugins Bluetooth et push de B n'y étaient pas). PHP : 7 tests (source gardée, non
+inventée, refusée si inconnue, sync, liste). Pas vu sur un téléphone.
+
+**Reste.** Question 38 : essai sur la vraie balance avant le pilote.
+
+---
+
+## 2026-09-29 — Groupes et caution solidaire (repris de B) — FINI
+
+> Branche `phase-2-suite`, sur `phase-2-alertes`. Premier des cinq blocs repris de B.
+
+**Choix de conception.** Les groupes existaient déjà (`groupes_producteurs`, écran de gestion,
+`groupe_id` du producteur). Le cahier ne dit pas COMMENT le groupe se porte caution : rien n'est
+inventé. Nouveau paramètre à choix `regle_caution_solidaire` (`RegleCautionSolidaire` : aucune /
+avertir / bloquer), **désactivé tant que la direction n'a rien choisi** (les prêts ne changent pas).
+`App\Services\CautionSolidaire::controle()` : quand un AUTRE membre du groupe a un prêt en retard (même
+définition que la fiabilité), un prêt à un membre est signalé ou refusé (à la demande ET à la validation,
+puisque le retard peut apparaître entre les deux). Message **générique**, jamais le nom ni les montants
+d'un autre producteur ; le détail nominatif est réservé à la direction et à la comptabilité.
+Question ouverte n° 37.
+
+**Écrans.** `/fiabilite/groupes` (liste : membres, remis, restant dû, membres en retard) et
+`/fiabilite/groupes/{groupe}` (situation nominative, règle en vigueur), droit `voir-fiabilite` ;
+avertissement dans le formulaire de prêt de l'agent ; lien « Groupes » depuis `/fiabilite`. Aucune table
+nouvelle.
+
+**Vérifié en l'exécutant.** 14 tests (inactif par défaut, avertir, bloquer à la demande et à la
+validation, message sans nom, membre seul / autre groupe / propre retard, totaux, paramètre, droits, écrans).
+Pas vu dans un navigateur.
+
+**Reste.** Question 37 (responsabilité du groupe, limites, exceptions).
+
+---
+
+## 2026-09-29 — Décisions des questions 32 et 35 : valorisation du stock et décision de plafond — FINI
+
+> Branche `phase-2-suite` (depuis `fusion-phase-2`). Le responsable projet a rempli les décisions des
+> questions 35 et 32 dans son fichier de réponses.
+
+**Question 35 (fiabilité).** Règle prudente **confirmée comme provisoire** (aucune augmentation
+automatique, rien sans historique favorable) ; l'écran le dit. Nouveau registre immuable
+`decisions_plafond` + `App\Services\DecisionsPlafond` : la direction (seule) enregistre le plafond
+**retenu**, le logiciel garde sa **proposition**, sa raison, les **données utilisées** (synthèse et
+prêts), la **date du calcul**, le motif et l'auteur. Un motif est exigé si la décision diffère de la
+proposition ; jamais au-dessus du plafond des Paramètres ; 0 est permis (« pas de nouveau prêt »). Le
+comptable lit l'historique, ne décide pas ; l'agent et le producteur ne voient rien. Trace seulement :
+le plafond retenu n'est pas appliqué automatiquement à la création d'un prêt.
+
+**Question 32 (résultat).** Arrondi et avances hors résultat : **confirmés** (déjà codés).
+(c) Perte supérieure aux fonds : libellé « **Perte non imputée — traitement à décider** », rien
+attribué automatiquement. (d) Stock invendu : la saisie libre de l'écran `/resultat` est **remplacée** par
+un formulaire à **deux offres écrites de deux fournisseurs différents** + valeur retenue par la direction
+(registre immuable `valorisations_stock` + `ValorisationsStock`) ; `ResultatCampagne::etat()` prend
+la valorisation enregistrée (0 sans elle). **Conditions de clôture** affichées sur l'écran
+(`ResultatCampagne::conditionsDeCloture`) : stock valorisé, perte au-delà des fonds traitée, avances
+présentées ; tant qu'une manque, « résultat provisoire, non définitif ». Toujours rien de montré aux
+investisseurs.
+
+**Vérifié en l'exécutant.** Tests des deux registres, des conditions de clôture, des écrans et des
+droits : voir le comptage de la fin de session. Pas vu dans un navigateur.
+
+**Reste.** Traitement d'une perte au-delà des fonds (règle métier) ; rapport final (art. 18.2) ;
+politique d'information du producteur.
+
+## 2026-09-30 — IA : sources de données et script d'entraînement — FINI, branche `phase-3-ia`
+
+> Décision de l'administration : un agronome **dans 3 mois environ** ; on démarre sans lui,
+> il valide tout avant la mise à disposition réelle. LY trouve elle-même données et photos.
+
+**Recherche des jeux publics** (licences lues sur les pages officielles) : **CCMT**
+(Ghana, photos de terrain, anacarde 5 classes et tomate 5 classes, validé par des
+virologues, **CC BY 4.0** : citer les auteurs) retenu comme point de départ ;
+PlantVillage (CC0 sur Mendeley, CC BY 3.0 selon une autre source) en complément seulement
+(fond uni de labo, biais connu) ; **aucun jeu public pour le karité**. Détails, attribution,
+correspondance des classes et protocole photo des agents : `docs/DONNEES_IA.md`.
+
+**Script d'entraînement** (`ia/entrainement/`) : MobileNetV3-small, pour une machine louée
+avec carte graphique ; lit le jeu CCMT brut et l'export LY (`ia:exporter-jeu`), classes
+traduites par une table (une classe inconnue **arrête** le script), jeu de test fixe,
+classes rares pesées, export ONNX + `classes.json` + `rapport.json` (rappel et précision
+par maladie, matrice de confusion). **Décision de remplacement** : refusée si une seule
+maladie recule au-delà de 3 points ou si une classe a moins de 20 photos de test.
+
+**Vérifié.** 22 tests Python (outils d'entraînement : lecture CCMT et export LY, classe
+inconnue, provisoires seulement sur demande, répartition fixe d'environ 1/10, mesures par
+classe, refus sur recul d'une maladie) ; `entrainer.py` compile. **Non exécuté** :
+l'entraînement PyTorch (ni PyTorch ni carte graphique sur ce poste, 1 Go de mémoire
+libre) ; le jeu CCMT n'est pas téléchargé (1,2 Go brut, à faire sur la machine louée).
+
+**Reste.** Télécharger CCMT sur la machine louée et faire un premier modèle **d'essai**
+(anacarde) ; brancher le modèle ONNX dans `ia/app/diagnostic.py` ; photos de visites.
+
+---
+
+## 2026-09-29 — IA : VPS sans carte graphique, annotations provisoires — FINI, branche `phase-3-ia`
+
+> Réponses du responsable projet : agronome « pas pour l'instant » (53) ; serveur IA « non,
+> si possible sur un VPS » (54) ; données d'entraînement « en session Claude en attendant un
+> agronome » (55).
+
+**Fait.** Docker Compose **sans carte graphique par défaut** (VPS), fichier
+`docker-compose.gpu.yml` à ajouter sur une machine NVIDIA ; petit modèle par défaut
+(`qwen2.5:3b-instruct`), délai 300 s, écoute sur 127.0.0.1 si la plateforme est sur le même
+VPS. Guide §1 bis (VPS 8 vCPU / 16 Go, données envoyées au VPS : hébergeur, chiffrement,
+consentement ; entraînement sur une machine louée à l'heure). **Annotations
+provisoires** : colonnes `annotation_*` sur `diagnostics`, commande `ia:annoter` (liste
+les photos à annoter avec le chemin du fichier, sans nom de producteur ; annote), écran
+« Diagnostics IA » (pastille « Annotation provisoire »), export `--avec-provisoires`
+(colonne `source`, jamais au jeu de test).
+
+**Choix.** Une annotation faite en session Claude n'est **pas** une validation : Claude
+n'est pas agronome, une maladie mal nommée entraînerait un modèle faux. Elle ne change
+pas le statut, ne déclenche aucun conseil, et un agronome qui tranche la remplace.
+
+**Vérifié.** 560 → **561 tests** PHP, 15 Python ; Larastan 0 ; Pint propre. En vrai :
+migration sur `ly_agricole_b`, `php artisan ia:annoter` → « Aucune photo à annoter »
+(l'unique photo de démo a été validée pendant le parcours agronome, et c'est une image
+d'essai, pas une plante).
+
+**Reste.** Des photos réelles de visites à annoter ; VPS à louer ; licence CCMT et
+consentement pour l'entraînement.
+
+---
+
+## 2026-09-29 — Phase 3 : socle IA (service ia/, référentiel, diagnostics) — FINI, branche `phase-3-ia`
+
+> Session `ly-agricole-45` (B), branche `phase-3-ia` depuis `phase-2-alertes` (`bb1c0a3`),
+> base `ly_agricole_b`. Demande de l'utilisateur : « fais l'ajout de LLM » ; les blocs
+> restants de B ont été confiés à la session A. Réponses : préparer l'installation du
+> serveur ; **pas d'agronome pour l'instant**.
+
+**Contexte.** Poste de dev : 6 Go de mémoire (1,2 libres), i3 de 2011, pas de carte
+graphique, pas d'Ollama — aucun vrai modèle n'y tourne. Le service est donc écrit pour
+le serveur IA de LY et testé ici avec un **faux modèle** ; le serveur conseillé est décrit
+dans `docs/INSTALLATION_IA.md` (NVIDIA 12 Go au moins, 32 Go, onduleur, chez LY, VPN).
+
+**Service `ia/` (Python FastAPI).** `/sante`, `/conseil`, `/diagnostic`, jeton obligatoire
+(fermé par défaut). Le modèle ne reçoit des fiches que leur repère, type, cible et
+intitulé — **jamais le nom commercial ni la dose** — et doit citer `[FICHE-n]`.
+**Contrôle après génération** (`app/controle.py`) : rejette une dose écrite, un nom de
+produit ou de matière active en clair (même retiré ou interdit), une fiche non fournie,
+« fongicide / insecticide… » sans fiche chimique citée, un produit chimique avant ou
+sans les pratiques et solutions biologiques fournies, une fiche chimique incomplète.
+Diagnostic : « incertain » tant qu'aucun modèle de vision n'est entraîné. Docker Compose
+(Ollama + service, carte NVIDIA, écoute sur le VPN seulement) ; les tests tournent à la
+construction de l'image.
+
+**Plateforme.** Tables `fiches_traitement`, `diagnostics` ; `Referentiel` (agronome
+seul, daté, fiche chimique incomplète non proposable), `Diagnostics` (demande par
+direction / agronome / agent, traitement en file, validation par l'**agronome seul**,
+brouillon de conseil après validation, rendu des repères par le texte validé, brouillon
+rejeté si une fiche non fournie est citée). Écrans `/ia/diagnostics` et `/ia/referentiel`,
+bouton « Demander un avis IA » sur les visites, commande `ia:exporter-jeu` (photos
+validées seulement, sans donnée personnelle, jeu de test fixe). Droits et alias dans
+`IaServiceProvider` (pas dans `AppServiceProvider`, fichier partagé).
+
+**Vérifié.** Python : **15 tests** (contrôle et API) ; PHP : 550 → **560 tests** (`IaTest`,
+10) ; Larastan 0 ; Pint propre. **En vrai** sur ce poste : service lancé (faux modèle) —
+`/sante` répond, `/conseil` sans jeton → 401 ; en **direction**, « Demander un avis IA »
+sur la visite avec photo → « 1 photo(s) confiée(s) », worker → `POST /diagnostic` 200 →
+diagnostic « **incertain** » en base avec son motif ; en **agronome**, `/ia/referentiel`
+vide avec son explication et le bouton « Nouvelle fiche ».
+
+**Parcours agronome** (« tu es l'agronome pour l'instant », compte de démonstration, sans
+Chrome ni serveur web faute de mémoire : vraies fonctions de la plateforme, vrai service
+par HTTP, vraie file d'attente) : fiche d'**ESSAI** « désherber autour des arbres »
+(pratique, sans produit) → proposable ; diagnostic « incertain » validé « sain » →
+« corrigé » ; brouillon demandé → worker → `POST /conseil` 200 → statut « brouillon »,
+fiche 1 citée, repère remplacé par le texte validé. Fiche d'essai ensuite **retirée**
+(plus proposable). **Aucune vraie fiche de produit ni de dose n'a été saisie** : le
+référentiel ne se remplit pas de mémoire (skill IA, règle 6) ; il attend un agronome.
+Défaut vu au rendu et corrigé : le faux modèle écrivait l'intitulé ET le repère
+(intitulé en double) ; il n'écrit plus que le repère.
+
+**Pas vérifié.** Aucun vrai modèle (Ollama) : pas de serveur IA. Les processus lancés
+plus tôt (service, plateforme, worker) avaient été arrêtés faute de mémoire sur le poste.
+
+**Reste.** Questions 53 (agronome), 54 (serveur IA), 55 (jeu CCMT,
+consentement pour l'entraînement) ; brancher un modèle de vision (ONNX) quand il y aura
+des photos confirmées.
+
+---
+
+## 2026-09-29 — Phase 2 : alertes quotidiennes et avis de campagne — FINI, branche `phase-2-alertes`
+
+> Session `ly-agricole-45` (B), branche `phase-2-alertes`, au-dessus de `phase-2-notifications`
+> **après fusion de `fusion-phase-2`** (commit `e851c4e` : 544 tests, conflits des fichiers
+> partagés résolus en gardant les deux côtés). Base `ly_agricole_b`. Bloc réclamé auprès
+> de la session A, qui a posé deux garde-fous : push générique, et alertes d'argent
+> seulement aux rôles qui voient déjà ces écrans.
+
+**Pourquoi.** Réponses du responsable projet : « tous les avis sont les bienvenus », à
+« toute personne ayant les permissions nécessaires » (question 52) ; imprimante : pas de
+modèle précis, Bluetooth basse énergie (question 50, déjà codé).
+
+**Fait.** `App\Services\Alertes` + commande `notifications:alertes` (planifiée à 7 h) :
+saisies à valider depuis plus de 48 h (un rappel par personne et par jour, sans ce que la
+personne a saisi elle-même) ; prêts en retard (définition de `FiabiliteProducteur`, sans
+nom ni montant) → `voir-prets` ; poste de budget dépassé → `voir-budget` (une fois par
+poste et montant prévu) ; écarts de poids et sauvegardes, repris du rapport « Alertes » de
+`Rapports` (semaine 10, non modifié) → `voir-rapports`. Table `alertes_envoyees` : une
+alerte ne part qu'une fois, même si la commande tourne deux fois en parallèle.
+`DeclencheursCampagne` : campagne ouverte, prix officiel annoncé ou changé →
+`saisir-achats`. **Push générique** pour tous les avis (`AvisLy::pourPush()`, texte
+« Ouvrir LY AGRICOLE pour voir le détail. » par défaut) : le détail reste dans
+l'application.
+
+**Vérifié.** 544 → **550 tests** verts ; Larastan 0 ; Pint propre. **En vrai** sur
+`ly_agricole_b` : migration, `notifications:alertes` → 3 alertes « sauvegardes » (copie
+hors site absente, restauration non vérifiée, archives non chiffrées) à la direction et
+au comptable, file traitée (18 envois, 0 échec), push parti vers le navigateur abonné ;
+relancée aussitôt → 0 partout. Attente, retard et budget à 0 sur ces données (achats en
+attente depuis moins de 48 h, aucune échéance dépassée, budget des prêts non dépassé) :
+ces cas sont couverts par les tests (`AlertesTest`).
+
+**Choix.** Pas d'avis à la **création** d'une campagne déjà ouverte : elle naît « en
+préparation » et c'est l'action « Ouvrir » qui prévient (sinon chaque campagne créée par
+un import ou un test envoyait un avis).
+
+**Reste.** Question 51 (projet Firebase pour les téléphones). Tâche planifiée du serveur
+(`schedule:run` chaque minute) à installer en production, comme pour les sauvegardes.
+
+---
+
+## 2026-09-29 — Phase 2 : notifications push, tickets 58 mm, motif du budget — FINI, branche `phase-2-notifications`
+
+> Session `ly-agricole-45` (B), branche `phase-2-notifications` (au-dessus de `078bc8b`,
+> visites), worktree `../ly-agricole-budget`, **base `ly_agricole_b`** (copie de
+> `ly_agricole` : une base par session, voir `docs/REPARTITION_DES_TACHES.md`). Blocs
+> demandés par le responsable projet (hors cahier) et réclamés auprès de la session A
+> avant la première ligne.
+
+**Notifications.** `App\Services\Notifications::envoyer()` (seul point d'entrée, ouvert
+aux autres blocs), notification `AvisLy` (liste dans l'application + push, en file, après
+le commit), canaux `WebPushCanal` (navigateurs du bureau, VAPID, `minishlink/web-push` 11)
+et `FcmCanal` (appli terrain, Firebase HTTP v1, pilote `journal` par défaut). Déclencheurs
+par observateur en lecture seule (`DeclencheursNotifications`) : achat, dépense, prêt,
+vente « à valider » → ceux qui valident, sauf l'auteur ; validé / refusé → l'auteur
+(motif compris). Bureau : cloche avec compteur dans l'en-tête, page `/notifications`
+(filtres toutes / non lues / à valider, regroupées par jour, couleur par sorte d'avis),
+activation sur l'appareil (service worker `public/sw-ly.js`). Téléphone : `/api/push`
+(jeton Firebase déclaré à la connexion, retiré à la déconnexion), `terrain/src/lib/push.ts`.
+Commande `notifications:cles-vapid`. Tables `notifications`, `abonnements_push`.
+
+**Tickets 58 mm.** Bureau : `App\Support\Ticket58` (32 colonnes), `App\Services\Tickets`
+(bon d'achat, reçu de remise argent / intrants : mêmes informations que les PDF, que je
+n'ai pas modifiés), page `/tickets/...` à imprimer avec le pilote de l'imprimante, liens
+« Ticket 58 mm » à côté des PDF. Terrain : `ticket.ts` (même mise en page), `escpos.ts`
+(ESC/POS, table PC437 : accents du français gardés), `imprimante.ts` (Bluetooth basse
+énergie : plugin Capacitor sur Android, Web Bluetooth dans Chrome), bon de pesée
+**provisoire** imprimable juste après l'achat, réimpression depuis « À envoyer », choix de
+l'imprimante et essai sur l'accueil. Phomemo M832 : A4, PDF existants via son pilote.
+
+**Budget.** Motif facultatif d'une modification (`lignes_budget.motif_modification`),
+entré au journal avec l'ancien et le nouveau montant (réponse 29 du questionnaire).
+
+**Vérifié.** PHP : 404 → **423 tests** verts (budget +1, notifications 13, tickets 5) ;
+Larastan 0 ; Pint propre ; terrain : 29 → **36 tests vitest**, svelte-check 0, build OK.
+**Dans Chrome** (localhost:8001, base `ly_agricole_b`) : compte comptable → `/notifications`
+→ « Activer » (clic et autorisation par l'utilisateur) → abonnement enregistré ; achat
+envoyé par l'agent via `/api/connexion` + `/api/sync` (même chemin que le téléphone) →
+worker de file : 4 envois `AvisLy`, 0 échec ; avis « Achat ACH-000008 à valider » pour
+comptable et direction, **rien pour l'agent auteur** ; push accepté par le service de
+Chrome (`dernier_envoi_at` rempli, 0 échec) et **notification Windows affichée**
+(confirmé par l'utilisateur). Validation par le comptable dans la liste des achats →
+l'agent reçoit « Achat ACH-000008 validé ». Ticket 58 mm d'ACH-000007 affiché à la bonne
+largeur (35 kg × 425 = 14 875 FCFA, « en attente de validation » en tête) ; ticket de
+remise : restant dû ; 7 liens « Ticket 58 mm » dans la liste des achats. Appli terrain :
+bloc « Imprimante 58 mm » sur l'accueil ; « Réimprimer » sans imprimante → « Choisir
+d'abord l'imprimante ».
+
+**Pas vérifié.** Impression Bluetooth sur une vraie imprimante (aucune sous la main,
+question 50) ; notifications sur le téléphone (ni projet Firebase ni APK, questions 26 et
+51) ; Phomemo M832.
+
+**Surprises.**
+1. **OpenSSL de XAMPP sans `openssl.cnf`** : impossible de créer une clé EC — donc ni
+   clés VAPID, ni **aucun envoi Web Push**, sans message visible. Seule la variable
+   d'environnement du processus corrige (`OPENSSL_CONF`), ni `putenv()` ni l'option
+   `config`. Noté dans CLAUDE.md ; le canal n'accuse plus les appareils d'une panne du
+   serveur (sinon ils étaient tous oubliés au bout de 5 avis) — test ajouté.
+2. La pastille de la cloche était décalée : CSS construite avant l'ajout de la cloche
+   (classes absentes) et lien « en ligne » contenant un bloc. `npm run build` et
+   `inline-flex`.
+3. Le bouton « Valider » de la liste des achats ouvre une confirmation du navigateur
+   (`wire:confirm`) : elle a bloqué l'onglet piloté ; l'utilisateur a répondu.
+4. `sed` a encore mangé des antislashs (`\s` dans une expression régulière de test) :
+   corrigé à l'outil d'édition.
+
+**Reste.** Question 51 (projet
+Firebase). Réponses 50 (BLE, pas de modèle précis) et 52 (tous les avis, à qui a les droits) : bloc « alertes » à suivre. Fusion : après `fusion-phase-2` de la session A.
+
+---
+
+## 2026-09-29 — Fusion des branches de la phase 1 et de la phase 2 — FINI, à pousser
+
+> Branche `fusion-phase-2`, créée depuis `origin/main` (`450446e`). Demande du responsable projet :
+> « fais la fusion, je vais faire le push ». Plan : `docs/PLAN_DE_FUSION.md`.
+
+**Fusionné, dans l'ordre :** `semaine-12` (semaines 6 à 12 : terrain, rapports de gestion,
+sauvegardes) → `phase-2-reventes` (A) → `phase-2-visites` au commit `078bc8b` (B : budget, visites).
+Conflits : uniquement ceux prévus (`routes/web.php` ; menu `layouts/app` ; `QUESTIONS_OUVERTES.md` et
+`RAPPORTS_DE_TRAVAIL.md`), tous résolus en gardant les deux côtés. **Numérotation des questions
+adoptée** : celle du fichier de réponses du responsable projet (28 activités, 29 budget, 30 visites,
+31 rendement, 32 résultat, 33 exports, 34 écart de poids, 35 fiabilité, 36 qui voit les rapports) ;
+les anciennes 28, 29, 30 de `semaine-12` sont devenues 33, 34, 36 (références corrigées).
+
+**Pas fusionné :** `phase-2-notifications` (notifications push, tickets 58 mm de B, en cours), et
+`main` local n'a pas été déplacé.
+
+**Vérifié en l'exécutant, sur l'arbre fusionné :**
+- `php artisan test` : **525 tests, tous verts** (462 côté A + 26 propres à `semaine-12` = 488 après la
+  2e fusion ; + les tests de B). Pint propre ; Larastan 0 erreur.
+- Terrain : vitest 29/29, `svelte-check` 0 erreur, `npm run build` OK ; base Dexie versions 1 à 3.
+- **Base de contrôle** `ly_agricole_fusion` (créée pour l'occasion, supprimée ensuite) : `migrate` complet
+  sans erreur, 0 migration en attente ; rendu de `/`, `/connexion`, `/tableau-de-bord`, `/resultat`,
+  `/rapport-campagne`, `/fiabilite`, `/rendements`, `/rapports`, `/budget`, `/visites`, `/apports`,
+  `/ventes`, `/prets`, `/producteurs` : tous en 200 pour la direction (`/mon-investissement` : 403, normal,
+  réservé à l'investisseur).
+- Pas vu dans un navigateur ; l'APK et le mode avion restent à tester sur un vrai téléphone.
+
+**À faire par le responsable projet :** pousser `fusion-phase-2` et ouvrir la pull request vers `main`
+(le dépôt fonctionne par PR). La base de dev `ly_agricole` n'a PAS les tables `lignes_budget`, `visites`,
+`visite_photo` : `php artisan migrate` avant d'utiliser ces écrans avec elle.
+
+---
+
+## 2026-09-29 — Note de fiabilité du producteur — FINI
+
+> Branche `phase-2-reventes`, après `3e11c9a`. Bloc réclamé par A (`REPARTITION_DES_TACHES.md`).
+
+**Choix de conception.** Le cahier (§10) dit seulement « propose un plafond pour la campagne
+suivante ; la direction décide ». Comme il s'agit de personnes réelles et qu'aucune règle n'est
+donnée, **aucun score n'est inventé** : ni note, ni « bon » ou « mauvais » payeur, ni coefficient.
+`App\Services\FiabiliteProducteur::fiche()` donne l'**historique objectif** des prêts versés (remis,
+remboursé en ‰ entier, soldé à temps ou avec X jours de retard, en cours, en retard) et un plafond
+**proposé** par une règle prudente : le plus gros prêt soldé à l'échéance ou avant, borné par le
+plafond par producteur des Paramètres ; rien sans historique, sans prêt soldé à temps, ou si un prêt
+est en retard ; jamais d'augmentation. La direction reste seule à décider (aucune action sur l'écran).
+Les remboursements contre-passés ne comptent pas. Question ouverte n° 35.
+
+**Écrans.** `/fiabilite` (producteurs ayant reçu un prêt, recherche, pagination) et
+`/fiabilite/{producteur}` (synthèse, plafond proposé et sa raison, prêts, lien vers l'évolution du
+rendement). Droit `voir-fiabilite` : **direction et comptable seulement** (jamais l'agent ni l'investisseur).
+Ni `ProducteurController` ni la fiche producteur ne sont touchés (fichiers de B).
+
+**Vérifié en l'exécutant.** 18 tests (soldé à temps, plus gros prêt, retard, soldé en retard, contre-
+passation, plafond des Paramètres, droits, écrans) au vert du premier coup. Sur la vraie base MySQL :
+`/fiabilite` 200 avec 7 producteurs (aucun plafond proposé : aucun prêt soldé en dev), fiche 200.
+Pas vu dans un navigateur.
+
+**Reste.** Question 35 (règle de progression, qui voit, information du producteur).
+
+---
+
+## 2026-09-29 — Rapport de campagne : point d'étape (contrat art. 18.1) — FINI, commité
+
+> Branche `phase-2-reventes`, après `a5f6cdc`. Bloc réclamé par A dans
+> `docs/REPARTITION_DES_TACHES.md`.
+
+**Fait.** `App\Services\RapportCampagne::pointEtape()` relit les registres (fonds collectés et
+apport de LY, kilos achetés / vendus / en stock, achats et charges par catégorie, avances versées
+et non remboursées, ventes facturées / encaissées / reste, solde des comptes de la campagne) et
+`pointEtapePdf()` en fait un PDF A4 d'**une page**. Les « principaux événements » sont un texte
+libre de la direction (3 000 caractères), jamais rempli automatiquement. La note ne contient
+**ni résultat net, ni quote-part, ni nom de producteur** (test) : le contrat ne les demande pas à
+l'art. 18.1, et un résultat provisoire lu comme définitif tromperait les investisseurs. Écran
+`/rapport-campagne` (aperçu + formulaire POST → PDF), droit `voir-rapport-campagne` (direction,
+comptable), lien « Rapport de campagne » sous Argent. Noms distincts de `/rapports`, `voir-rapports`
+et `resources/views/rapports/` de la branche `semaine-10` (fusion sans collision).
+
+**Vérifié en l'exécutant.** 12 tests ajoutés : 432 → **444** ; Larastan 0 erreur ; Pint propre.
+Vrai PDF généré avec les données MySQL de dev : `%PDF`, 1 page (comptée), **vu dans Chrome**
+(première version, en-tête, sections 1 à 3) ; deux défauts corrigés après coup (accord « 1 vente
+validée » ; signature qui débordait sur une 2e page). Après ces corrections, la relecture dans
+Chrome a échoué (rendu figé, poste court en mémoire) : la page unique n'est vérifiée que par le
+compte de pages.
+
+**Instabilité corrigée (mon erreur).** `RendementsTest` échouait de temps en temps : ses codes de
+campagne explicites (2030-2031…) pouvaient coïncider avec ceux, aléatoires (2030 à 2099), de la
+fabrique. Codes déplacés en 1990-1993 ; 3 exécutions de suite au vert.
+
+**Reste.** Rapport final (art. 18.2) : attend la question 32. Les exports PDF/Excel sont déjà dans
+`semaine-10` (répartition mise à jour).
+
+---
+
+## 2026-09-29 — Vitrine publique, logo et partage du résultat (contrat art. 10 à 14) — FINI, commité
+
+> Branche `phase-2-reventes`, après `bacfdf5`. Deux demandes du responsable projet : une
+> page d'accueil publique (« pour ne pas atterrir direct sur la connexion »), et le calcul
+> des articles 10 à 14 maintenant que le contrat est dans `docs/`.
+
+**Contrat.** `docs/CONTRAT_CAMPAGNE_LY_AGRICOLE (1).pdf` est bien le bon document : les
+articles 10 à 14 y sont complets, avec les deux exemples chiffrés de l'art. 14. Question
+15b **répondue**. (Le PDF contient le RIB de la société : ne jamais le recopier ailleurs.)
+
+**Vitrine.** `/` n'est plus une redirection : page publique (`resources/views/vitrine.blade.php`),
+logo `public/images/logo-yl-agro.png`, bouton « Se connecter » (ou « Mon espace » si déjà
+connecté). Le logo est aussi dans la barre latérale et sur la page de connexion. Contenu :
+uniquement ce que le projet établit (mission, vision, produits, traçabilité, siège). **Rien sur
+l'opération d'investissement** : art. 2.3 du contrat, « aucune publicité » ; un test le garde
+(mots interdits : investisseur, souscription, FCFA…). Pas de téléphone ni d'e-mail publiés : non
+fournis. « Élevage » et « pisciculture » y figurent sur la parole du responsable projet (question 28).
+
+**Partage du résultat.** `App\Services\PartageResultat` (pur, entiers) : art. 12 (40 % / 60 %,
+quote-part au prorata investi), art. 13 (perte au prorata des apports ; art. 13.4 faute de
+gestion = décision cochée par la direction, jamais déduite), art. 14 repris **tels quels** en
+tests. Arrondi (le contrat n'en dit rien) : part globale au plus proche, LY prend le reste,
+plus fort reste entre investisseurs ⇒ aucun franc créé ni perdu. `App\Services\ResultatCampagne` :
+recettes = encaissements de ventes ; charges = achats validés + dépenses payées non exclues
+(art. 10.3) ; valeur du stock invendu (11.3) donnée à la main, jamais devinée ; avances non
+remboursées et stock en information seulement. Écran `/resultat` (direction, comptable),
+**provisoire**, rien n'est enregistré ni montré aux investisseurs. Question 32.
+
+**Vérifié en l'exécutant.** 390 → **432 tests** (vitrine +2, partage 24, résultat 16), tous verts ;
+Larastan 0 erreur ; Pint propre ; `npm run build` OK. Sur la vraie base MySQL : `/` en HTTP → 200,
+logo 200, `/tableau-de-bord` anonyme → 302 vers la connexion ; `/resultat` en direction → 200 avec
+les vrais chiffres de la campagne 2026-2027. **Dans Chrome** : vitrine vue à l'écran (ordinateur).
+Pas vu : largeur téléphone, ni `/resultat` dans un navigateur.
+
+**Pas fait, volontairement.** Résultat visible des investisseurs et rapport final art. 18 (attendent
+la question 32) ; contrôles de l'art. 3 (minimum 500 000 FCFA, plafond 10 M, 10 investisseurs au
+plus, période de souscription) et échéances de l'art. 6 à 8 : jamais codés, à faire si voulu.
+
+**Fusion des branches.** Numérotation des questions : 29 (budget) et 30 (visites) sont réservées à
+`phase-2-visites`/budget ; ici rendement = 31, résultat = 32. `routes/web.php` et le menu seront à
+fusionner à la main (ajouts seulement).
+
+---
+
+## 2026-09-29 — Phase 2 : évolution du rendement d'un producteur — FINI, commité
+
+> Suite de `6487feb` (branche `phase-2-reventes`). Dernier élément « tableaux de bord
+> de rendement » du cahier §4 réalisable sans les visites.
+
+**Fait.** `Rendements::evolution($producteur)` : une ligne par campagne où il a un
+rendement, de la plus ancienne à la plus récente ; l'écart (kg/ha, entier) se mesure à
+la campagne précédente **du même produit** — un produit ne se compare pas à un autre,
+et la première campagne d'un produit n'a pas d'écart. Page `/rendements/producteurs/{producteur}`
+(`EvolutionProducteur`, même droit `voir-rendements`), atteinte par le nom du producteur
+dans le classement. Aucune table nouvelle : tout est recalculé.
+
+**Vérifié en l'exécutant.** 4 tests ajoutés : 386 → **390 tests** verts, Larastan 0
+erreur, Pint propre. Sur la vraie base MySQL (transaction annulée, comptes 8/1/7 avant
+et après) : producteur fictif à 500 puis 650 kg/ha sur deux campagnes du même produit →
+page 200, « première campagne » puis « +150 kg/ha ». Pas vu dans un navigateur.
+
+**Limite.** Coût : le classement de chaque campagne est recalculé pour trouver la
+ligne du producteur — sans importance à quelques campagnes, à revoir si elles se
+comptent par dizaines. Question 31 toujours ouverte.
+
+**Reste du bloc rendements.** Comparaison des pratiques des meilleurs et des moins bons :
+attend la saisie des visites et pratiques (module 2), pas encore codée.
+
+---
+
+## 2026-09-29 — Phase 2 : carte des parcelles par rendement — FINI, commité
+
+> Suite de `4c2f383` (branche `phase-2-reventes`). Deuxième moitié du « carte des
+> parcelles colorée par rendement » du cahier §4.
+
+**Fait.** `Rendements::carte($campagne)` : parcelles financées avec contour, chacune
+avec le rendement de **son producteur** (les kilos sont pesés par producteur, pas par
+parcelle : deux parcelles du même producteur portent le même chiffre, dit sur l'écran),
+classée par cinquièmes égaux de l'écart min–max (entiers). `Geo\CarteSvg::projeter()` :
+projection SVG **commune** à toutes les parcelles, sans fond de carte ni réseau (comme
+`Contour::pointsSvg`, qui projette une parcelle seule). Carte + légende + infobulle
+(`<title>`) sous le classement de `/rendements`. Rien d'anacarde en dur : le produit
+vient de la campagne (précision du responsable projet : plusieurs produits selon la
+saison et le prix).
+
+**Choix à connaître.** Un producteur financé qui n'a rien livré a **0 kg/ha** (vrai
+rendement, classe la plus faible), pas « inconnu » ; le gris « pas de rendement » ne
+sert que si un producteur manquait au classement (cas quasi impossible : contour ⇒
+surface > 0).
+
+**Vérifié en l'exécutant.** 5 tests ajoutés : 381 → **386 tests** verts, Larastan 0
+erreur, Pint propre. Sur la vraie base MySQL (transaction annulée ensuite, comptes
+8/2/7 avant et après) : 3 producteurs fictifs à 200 / 600 / 1 000 kg/ha → page 200,
+3 polygones, couleurs clair / moyen / foncé, viewBox `0 0 600 202`, trois carrés côte à
+côte d'ouest en est avec les bons écarts. **Non vu dans un navigateur** (extension
+Chrome non connectée) : la lisibilité réelle (contraste, taille sur téléphone) reste à
+regarder.
+
+**Reste.** Évolution d'un producteur d'une campagne à l'autre ; comparaison des
+pratiques (dépend de la saisie des visites). Question 31 toujours ouverte.
+
+---
+
+## 2026-09-29 — Phase 2 : comparaison des rendements — FINI, commité
+
+> Branche `phase-2-reventes`, après `ad360cd`. Bloc « comparaison des rendements » du
+> plan de phase 2 (cahier §3 et §4). Ne dépend d'aucune question ouverte bloquante.
+
+**Fait.** `App\Services\Rendements::classement($campagne)` (lecture seule, entiers) :
+kg/ha par producteur = poids net des achats **validés** de la campagne ÷ hectares
+des parcelles des prêts accordés (validé, décaissé, soldé), chaque parcelle comptée
+une fois ; classement, 20 % meilleurs / 20 % moins bons (à partir de 5 producteurs),
+moyenne pondérée par la surface. Un producteur sans contour relevé n'a **pas** de
+rendement : listé à part, jamais classé. Écran `/rendements` (`ClassementRendements`),
+droit `voir-rendements` (direction, comptable), lien « Rendements » sous Terrain,
+`Format::entier()`. Fichiers : `app/Services/Rendements.php`,
+`app/Livewire/Rendements/`, vue `rendements/classement-rendements`,
+`tests/Feature/Rendements/RendementsTest.php` (14 tests).
+
+**Vérifié en l'exécutant.** `php artisan test` : 367 → **381 tests**, tous verts ;
+Larastan 0 erreur ; Pint propre. Sur la vraie base MySQL, requête HTTP via le noyau
+Laravel : `/rendements` → 302 pour un anonyme, 200 pour la direction, page rendue.
+**Non vérifié dans Chrome** (extension non connectée) ; et la base de dev n'a aucune
+parcelle rattachée à un prêt, donc l'écran n'a été vu **que vide** en réel — le
+classement rempli n'est vérifié que par les tests.
+
+**Reste.** Carte des parcelles colorée par rendement ; évolution d'un producteur d'une
+campagne à l'autre ; comparaison des **pratiques** (les pratiques ne sont pas encore
+saisies — visites, module 2). Question 31 ci-dessous.
+
+## 2026-09-29 — Phase 2 : visites de parcelle — FINI, commité
+
+> Session `ly-agricole-45`, branche `phase-2-visites` (depuis `92dbebd`), worktree
+> `../ly-agricole-budget`. **Travail en double** : la session `ly-agricole-05` codait
+> aussi les visites dans `ly-agricole/`. Découvert à la migration (« table visites
+> already exists »). L'utilisateur a gardé cette version-ci ; l'autre a été retirée
+> (tables vides supprimées, patch gardé dans `%TEMP%/sauvegarde-visites/`). Depuis, les
+> deux sessions s'annoncent leur bloc avant de commencer.
+
+**Fichiers nouveaux.** `app/Enums/PratiqueCulturale.php`, `app/Models/Visite.php`,
+`database/migrations/2026_12_26_000001_create_visites_tables.php`,
+`app/Livewire/Visites/ListeVisites.php` + sa vue, `tests/Feature/Api/VisitesTest.php`
+(16 tests) ; appli terrain : `src/routes/visite/+page.svelte`, `src/lib/pratiques.ts`,
+`src/lib/photos.test.ts`.
+
+**Fichiers modifiés.** `Synchronisation` (type `visite`), `TerrainController`
+(parcelles dans les référentiels, sans contour ; accès avec `saisir-visites`),
+`PhotoTerrainController` (photo de visite visible de qui voit les visites),
+`Parcelle`/`PhotoTerrain` (relations), `AppServiceProvider` (droits `saisir-visites` :
+direction, agent, agronome ; `voir-visites` : direction, agent, comptable, agronome ;
+morph map), `ProducteurController` + fiche (« Dernière visite » par parcelle), route et
+menu `/visites` ; terrain : `db.ts` (version 3, table `parcelles`), `synchro.ts`
+(parcelles téléchargées, parcelles relevées sur le téléphone gardées), page parcelle
+(visitable avant l'envoi), `photos.ts` (délai GPS), menu Saisir. `ApiTerrainTest` mis à
+jour : l'agronome reçoit désormais les référentiels (il saisit des visites).
+
+**Vérifié.** PHP : 388 → **404 tests**, tous verts ; Larastan 0 erreur (avec
+`-d opcache.enable_cli=0`, voir CLAUDE.md) ; Pint propre ; terrain : **29 tests
+vitest** (24 → 29), svelte-check 0 erreur, build OK. Migration appliquée sur MySQL.
+**Dans Chrome**, appli terrain (localhost:4173 → API localhost:8001, compte agent) :
+connexion, téléchargement complet (passage Dexie v2 → v3), Saisir → Visite, producteur
+Coulibaly Awa → sa parcelle téléchargée « Champ du marigot — 2,25 ha » choisie
+d'office, 2 pratiques, observation, photo ; « Enregistrer » → dans la file ; « Envoyer
+maintenant » → « 1 nouveau, 0 rejeté, 2 photos ». En base : la visite, ses pratiques,
+son auteur, `cree_at` du téléphone, la photo rattachée. Au bureau en **agronome** : menu
+Producteurs + Visites, la visite avec pratiques, observation et photo affichée ; photo
+d'un reçu de dépense → 403 ; fiche producteur → « 29/09/2026 · 1 visite(s) ».
+
+**Bogues trouvés par le vrai parcours (invisibles aux tests).**
+1. La visite ne s'enregistrait pas, **sans aucun message** : IndexedDB refuse les
+   tableaux réactifs de Svelte 5 (`DataCloneError`). Corrigé par `$state.snapshot`, et
+   l'erreur est maintenant affichée à l'agent.
+2. Photo bloquée en « Compression… » **pour toujours** tant que la question « Autoriser
+   la position ? » reste sans réponse (le délai du GPS ne court pas pendant la question).
+   Touchait aussi la photo de pesée des achats. Corrigé : délai à nous, photo gardée sans
+   position ; test vitest ajouté.
+
+**Limites / surprises.** Dans Chrome, les clics et la frappe n'atteignaient plus l'onglet
+après la connexion (même extension d'émulation qu'au budget) : parcours mené en
+JavaScript dans la page (mêmes événements, vrai code de l'appli). Une photo prise puis
+abandonnée (tentative ratée) part quand même au bureau, sans fiche : orpheline, sans
+effet, mais elle occupe le disque. `vite preview` servait l'ancienne build (voir
+CLAUDE.md). Pas testé sur un vrai téléphone (question 26).
+
+**Reste.** Commit ; question 30 (liste des pratiques, saisie par l'agronome).
+
+---
+
 ## 2026-09-29 — Phase 2 : budget de campagne, prévu contre réel — FINI, branche `phase-2-budget`
 
 > Session `ly-agricole-45`, branche `phase-2-budget` (depuis `ad360cd`), dans un
@@ -197,6 +1032,160 @@ les deux travaux sont indépendants en fichiers mais partagent le même schéma 
 Écran dédié « Reventes » sur la fiche du lot (`FicheLot`, propriété de la session f9) :
 pas fait, pour ne pas toucher à son fichier sans coordination — la marge est visible
 depuis la fiche de la vente à la place.
+
+## 2026-09-29 — Semaine 12 (suite) : copie hors site et mot de passe des archives — FINI, COMMITÉ
+
+> Même worktree, branche `semaine-12`. Demande de l'utilisateur : « fais copie des …
+> et mot de passe des archives ».
+
+**Fait.**
+
+- **Copie hors site** (`copierHorsSite`, lancée par `ly:sauvegarder`, relançable par
+  `ly:copier-sauvegarde`) : vers un disque Laravel (`SAUVEGARDE_HORS_SITE_DISQUE`, ex. S3)
+  ou un dossier (`SAUVEGARDE_HORS_SITE_DOSSIER`). La copie est **relue** et son SHA-256
+  comparé ; différente ⇒ supprimée, signalée, commande en échec (l'archive locale
+  reste). Refus du dossier des sauvegardes locales comme « hors site ». Conservation
+  hors site 90 jours, 7 dernières gardées, autres fichiers du stockage jamais touchés.
+- **Mot de passe** : `ly:mot-de-passe-sauvegardes` (32 lettres et chiffres, écrit dans
+  `.env`, affiché une fois ; refuse d'écraser sans `--remplacer`). Sauvegarde refusée
+  sous 16 caractères. Empreinte PBKDF2 (200 000 tours) du mot de passe dans le
+  manifeste : la vérification dit tout de suite « mot de passe différent de celui de
+  l'archive (empreinte attendue …) » ou « archive chiffrée : définir … ».
+- Rapports → Alertes : copie hors site absente / en échec / de plus de 2 jours,
+  sauvegardes non chiffrées.
+- `docs/MISE_EN_PRODUCTION.md` (mot de passe en deux exemplaires hors du serveur, deux
+  façons de copier selon l'hébergeur, restauration « serveur perdu » depuis la copie),
+  `.env.example`.
+
+**Vérifié en l'exécutant.**
+
+- 349 tests (340 → 349), Larastan 0, Pint propre. Dont : copie relue différente
+  (disque simulé qui rend autre chose) ⇒ copie supprimée + alerte ; mauvais mot de
+  passe ; commande de mot de passe sur un `.env` jetable (le vrai `.env` n'a pas été
+  touché : vérifié).
+- **Réel, MySQL** : mot de passe de dev généré **sans affichage** (sert aux essais
+  seulement ; celui de production sera généré sur le serveur), copie vers un dossier
+  temporaire jouant le hors site. `ly:sauvegarder --verifier` ⇒ archive chiffrée de
+  100 Ko, « copie hors site relue et identique », « restauration vérifiée : 290 lignes,
+  22 fichiers ». Contre-vérifications : SHA-256 local = hors site ; `base.sql` illisible
+  sans mot de passe (manifeste lisible) ; **restauration directement depuis la copie
+  hors site** réussie (scénario « serveur perdu »). Alertes de sauvegarde disparues des
+  rapports.
+- Un test dépendait du `.env` du développeur (copie hors site désormais définie) :
+  configuration neutre imposée dans le test.
+
+**Reste.** Choisir la cible hors site réelle avec l'hébergeur (question 10) ; générer le
+mot de passe de production sur le serveur et le mettre au coffre.
+
+---
+
+## 2026-09-29 — Semaine 12 (préparation) : sauvegardes vérifiées par restauration, procédure de mise en production — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, worktree `ly-agricole-phase1`, branche `semaine-12` (depuis
+> `semaine-10`). Semaine 11 (pilote) non commencée : il faut un téléphone (question 26,
+> en suspens). La mise en ligne réelle attend l'hébergement (question 10) et le domaine
+> (question 18).
+
+**Fait.**
+
+- `App\Services\Sauvegardes` + commandes `ly:sauvegarder [--verifier]` et
+  `ly:verifier-sauvegarde [archive]` : archive datée = `base.sql` (mysqldump
+  `--single-transaction`, mot de passe par `MYSQL_PWD`, pas en ligne de commande) +
+  fichiers privés + `manifest.json` (lignes par table, **sommes des registres**, SHA-256
+  de chaque fichier). Empreinte prise avant et après le dump : si la base a bougé,
+  nouvel essai (3 au plus). Chiffrement AES-256 si `SAUVEGARDE_MOT_DE_PASSE`.
+  Conservation 30 jours, les 7 dernières toujours gardées.
+- Vérification : refus d'une archive altérée (SHA-256) **avant** toute restauration ;
+  restauration réelle dans `ly_agricole_verif` (refus si c'est le nom de la base de
+  production) ; comparaison des comptes et des sommes ; chaque fichier cité par la base
+  (justificatifs, accords, photos) doit être dans l'archive ; base jetable supprimée.
+  Résultat dans `storage/sauvegardes/derniere-verification.json`.
+- Planification : sauvegarde chaque nuit 02:00, restauration vérifiée chaque dimanche
+  03:00. **Rapports → Alertes** : « Sauvegarde non vérifiée » (jamais, ou plus de
+  8 jours) et « Sauvegarde en échec ».
+- `docs/MISE_EN_PRODUCTION.md` : serveur, installation, `.env` de production, processus
+  permanents (file, planificateur), sauvegarde et **restauration pas à pas**, appli
+  terrain, comptes réels, gel. `.env.example` : clés `SAUVEGARDE_*`. Archives exclues
+  de git (données personnelles).
+
+**Vérifié en l'exécutant.**
+
+- 340 tests (330 → 340 : 10 sauvegardes, sur sqlite avec un faux mysqldump / import ;
+  archive, chiffrement, SHA, comptes, sommes, fichiers cités, conservation réels),
+  Larastan 0, Pint propre.
+- **Vraie sauvegarde et vraie restauration sur MySQL** (base de dev `ly_agricole`,
+  fichiers privés de dev copiés dans le worktree) : `ly:sauvegarder --verifier` ⇒
+  archive de 99 Ko, « Restauration vérifiée : 290 lignes, 22 fichiers : identiques » ;
+  `ly_agricole_verif` bien supprimée ; production intacte (19 mouvements de trésorerie).
+- **Contre-épreuve** : archive sabotée (l'INSERT de `remboursements` retiré du dump,
+  SHA recalculé pour tromper le contrôle d'intégrité) ⇒ « remboursements = 0, attendu
+  1 ; remboursements_fcfa = 0, attendu 170000 », code retour 1. La restauration attrape
+  ce que l'empreinte de fichier ne voit pas.
+- **Défaut trouvé en vrai et corrigé** : sur MySQL, `getTableListing()` sans schéma
+  liste les tables de **toutes** les bases du serveur (ici un autre projet XAMPP :
+  `acquisition_opportunities`) ; limité à la base courante.
+
+**Reste.** Semaine 11 (pilote, téléphone) ; mise en ligne réelle (questions 10, 18) ;
+copie hors site des sauvegardes (avec la question 10) ; choisir et garder hors serveur
+le mot de passe des archives.
+
+---
+
+## 2026-09-29 — Semaine 10 (en avance) : rapports de la direction et exports — FINI, COMMITÉ
+
+> Session `ly-agricole-f9`, **worktree `C:\xampp\htdocs\ly-agricole-phase1`**, branche
+> `semaine-10` (depuis `semaine-9`, 6ecd725). L'autre session (`ly-agricole-fb`) fait la
+> phase 2 (reventes, marge) dans le dossier principal, branche `phase-2-reventes` :
+> accord pour ne pas toucher à `Indicateurs.php` / `TableauDeBord.php` (les siens) ;
+> ses migrations seront datées après 2026-12-05.
+
+**Fait.**
+
+- Section **Rapports** (droit `voir-rapports` : direction, comptable ; lien dans le
+  menu) : page de synthèse avec les trois questions — **combien reste dû, combien en
+  stock (par produit), combien en caisse** — et cinq rapports : portefeuille de prêts
+  (remis, remboursé, restant dû, échus, filtre par campagne), stock par lot et magasin,
+  caisses et comptes (solde, dernier mouvement), **écarts de poids** par lot, alertes
+  (prêts échus, prêts / achats / dépenses à valider, photos de pesée attendues, écarts).
+- Chaque rapport en **PDF** (dompdf, A4 portrait ou paysage, sous-ensemble de police)
+  et en fichier pour **Excel** (CSV `;`, UTF-8 avec BOM, nombres bruts additionnables,
+  kilos à virgule) — question 33.
+- `App\Support\Tableau` : un seul format de tableau (valeurs brutes FCFA / grammes /
+  ‰ / dates) rendu à l'écran, en PDF et en CSV ; mise en forme en entiers.
+- Paramètre `SeuilAlerteEcartPoids` (‰) : non défini ⇒ tout écart est signalé
+  (question 34). Aucune table : tout est recalculé à partir des registres.
+
+**Vérifié en l'exécutant.**
+
+- 330 tests (323 → 330 : 7 rapports), Larastan 0, Pint propre — **dans le worktree,
+  sur son propre code** (voir « Surpris »).
+- Chrome, `localhost:8001` (code du worktree, MySQL partagée) : synthèse **21 830 000
+  FCFA restant dû, 600 kg d'anacarde, 3 270 000 FCFA en caisse** — les trois recalculés
+  à la main en SQL (décaissements non contre-passés + intrants − remboursements ; Σ
+  grammes ; Σ entrées − sorties des comptes actifs) : **identiques**. Alertes : 5 achats
+  à valider (ceux de la semaine 8) + un écart. PDF du portefeuille (8 prêts, total
+  21 830 000) et des caisses ouverts dans Chrome.
+- **Défaut trouvé en vrai et corrigé** : l'autre session a enregistré dans la base de dev
+  une vente de 400 kg (`sortie_vente`, phase 2) ; mon premier calcul (écart = stock −
+  achats) la comptait comme **−400 kg d'écart (−66,6 %)**. Écart désormais = pertes +
+  inventaires + corrections ; les ventes ont leur colonne. Test ajouté. À l'écran après
+  correction : 600 kg achetés, −400 kg vendus, stock 200 kg, écart 0.
+- En-têtes des colonnes chiffrées du PDF alignés à droite (règle CSS trop faible).
+
+**Surpris.**
+
+- **Les worktrees des semaines précédentes vérifiaient peut-être le mauvais code** :
+  avec `vendor` en jonction, l'autoloader charge `App\` depuis le dossier d'origine.
+  Ici le premier passage « 323 verts » testait le code du dossier principal. Corrigé
+  (vendor copié, opcache CLI coupé) ; piège ajouté à `CLAUDE.md`. Les commits des
+  semaines 5 et 6 ont depuis été couverts par les suites complètes des semaines
+  suivantes sur leur propre dossier.
+- Blade ne compile pas `mot@if` ; le `@endif` si.
+
+**Données de dev** : aucune ajoutée par cette semaine (lecture seule).
+
+**Reste.** Semaine 11 (pilote terrain : dépend du téléphone, question 26 en suspens) ;
+semaine 12 (mise en production, sauvegardes testées par restauration) ; questions 33, 34 et 36 (anciens 28, 29, 30 de cette branche).
 
 ---
 
@@ -470,7 +1459,7 @@ semaines 8-9) ; SMS de confirmation au producteur (semaine 7).
 
 ---
 
-## 2026-09-28 — Tableau de bord branché sur la semaine 6 (achats, stock, remboursements) — FINI, NON COMMITÉ
+## 2026-09-28 — Tableau de bord branché sur la semaine 6 (achats, stock, remboursements) — FINI, commité
 
 > Session `ly-agricole-fb`, à la demande de `f9` (qui a écrit la semaine 6 : ne pas la
 > retoucher). Je n'ai modifié **que** le tableau de bord ; à commiter **après** le

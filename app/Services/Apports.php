@@ -18,9 +18,9 @@ use Illuminate\Support\Facades\DB;
  * (apport de LY facultatif). L'argent va toujours sur le compte de trésorerie **dédié à
  * la campagne** : un apport sur un compte sans lien avec elle est refusé.
  *
- * Ne calcule PAS le résultat net ni les quotes-parts (contrat art. 10 à 14) : le texte
- * exact de ces articles n'est pas disponible (question ouverte n° 15 bis, 2026-12-12).
- * Ce service ne fait que tracer qui a apporté combien, à quelle campagne.
+ * Ne calcule PAS le résultat net ni les quotes-parts : il ne fait que tracer qui a apporté
+ * combien, à quelle campagne. Le partage (contrat art. 10 à 14) est dans PartageResultat
+ * et ResultatCampagne, qui lisent ces apports.
  */
 class Apports
 {

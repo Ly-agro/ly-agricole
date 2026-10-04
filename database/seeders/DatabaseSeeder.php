@@ -32,6 +32,8 @@ class DatabaseSeeder extends Seeder
         foreach (['anacarde' => 'Anacarde', 'karite' => 'Karité', 'tomate' => 'Tomate'] as $code => $nom) {
             Produit::create(['code' => $code, 'nom' => $nom]);
         }
+        // Et la liste large des cultures courantes (sans doublon avec les trois ci-dessus).
+        $this->call(CulturesSeeder::class);
 
         // Lieux fictifs, pour essayer les écrans (les vraies zones : question ouverte n° 1).
         $zone = Zone::create(['nom' => 'Zone de test']);

@@ -36,6 +36,20 @@
         </form>
     @endif
 
+    @if ($aAnnuler !== null)
+        <form wire:submit="annulerDepense" class="mb-6 rounded-xl border border-red-200 bg-red-50 p-5">
+            <p class="text-sm font-semibold text-red-950">Supprimer cette dépense</p>
+            <p class="mt-1 text-sm text-red-900">Elle restera visible, marquée « Annulée ». Si elle était payée, l'argent revient dans la caisse.</p>
+            <label for="motifAnnulation" class="mt-3 block text-sm font-medium text-red-950">Pourquoi ? (obligatoire)</label>
+            <input wire:model="motifAnnulation" id="motifAnnulation" type="text" placeholder="Ex. dépense saisie deux fois" class="mt-1 block w-full rounded-md border border-red-300 px-3 py-2 focus:outline-none">
+            @error('motifAnnulation') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+            <div class="mt-3 flex gap-3">
+                <button type="submit" class="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800">Supprimer la dépense</button>
+                <button type="button" wire:click="$set('aAnnuler', null)" class="rounded-md px-4 py-2 text-sm text-stone-700 hover:bg-red-100">Garder</button>
+            </div>
+        </form>
+    @endif
+
     <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
         <table class="min-w-full text-sm">
             <thead class="bg-stone-50 text-left text-stone-600">
@@ -88,6 +102,9 @@
                                         class="ml-2 rounded-md bg-emerald-700 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-800">Valider</button>
                                     <button type="button" wire:click="preparerRefus('{{ $d->id }}')" class="ml-1 rounded-md px-2 py-1 text-xs text-red-800 hover:bg-red-50">Refuser</button>
                                 @endif
+                            @endif
+                            @if ($peutAnnuler && in_array($d->statut->value, ['a_valider', 'payee'], true))
+                                <button type="button" wire:click="preparerAnnulation('{{ $d->id }}')" class="ml-1 rounded-md px-2 py-1 text-xs text-red-800 hover:bg-red-50">Supprimer</button>
                             @endif
                         </td>
                     </tr>

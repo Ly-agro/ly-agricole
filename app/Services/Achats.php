@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\CleParametre;
+use App\Enums\SourcePoids;
 use App\Enums\StatutAchat;
 use App\Enums\StatutCampagne;
 use App\Enums\StatutLot;
@@ -13,6 +14,7 @@ use App\Models\Achat;
 use App\Models\Campagne;
 use App\Models\CompteTresorerie;
 use App\Models\Lot;
+use App\Models\MouvementTresorerie;
 use App\Models\Parametre;
 use App\Models\Pisteur;
 use App\Models\Pret;
@@ -39,7 +41,7 @@ class Achats
     public const GRAMMES_MAX = 100_000_000; // 100 t en une pesée : borne de bon sens.
 
     /**
-     * @param  array{campagne_id: int, lot_id: int, fournisseur_type: TypeFournisseur, producteur_id?: ?string, pisteur_id?: ?int, fournisseur_nom?: ?string, point_collecte_id?: ?int, date_achat: Carbon, poids_brut_g: int, tare_g: int, humidite_pour_mille?: ?int, kor_centieme_lbs?: ?int, grainage_noix_kg?: ?int, prix_kg_fcfa: int, pret_id?: ?string, grammes_rembourses?: int, compte_id: int, id?: string, photo_pesee?: ?string}  $donnees
+     * @param  array{campagne_id: int, lot_id: int, fournisseur_type: TypeFournisseur, producteur_id?: ?string, pisteur_id?: ?int, fournisseur_nom?: ?string, point_collecte_id?: ?int, date_achat: Carbon, poids_brut_g: int, tare_g: int, humidite_pour_mille?: ?int, kor_centieme_lbs?: ?int, grainage_noix_kg?: ?int, prix_kg_fcfa: int, poids_source?: SourcePoids|string|null, pret_id?: ?string, grammes_rembourses?: int, compte_id: int, id?: string, photo_pesee?: ?string}  $donnees
      */
     public static function enregistrer(array $donnees, User $auteur): Achat
     {
@@ -68,6 +70,12 @@ class Achats
             // Pesée, en grammes (D4).
             $brut = $donnees['poids_brut_g'];
             $tare = $donnees['tare_g'];
+            // Trace, pas un contrôle : balance Bluetooth ou saisie à la main (null = non transmis).
+            $source = $donnees['poids_source'] ?? null;
+            if ($source !== null && ! $source instanceof SourcePoids) {
+                $source = SourcePoids::tryFrom((string) $source)
+                    ?? throw new OperationRefusee('Source du poids inconnue : « balance » ou « manuel ».');
+            }
             $net = $brut - $tare;
             if ($brut <= 0 || $tare < 0 || $net <= 0 || $brut > self::GRAMMES_MAX) {
                 throw new OperationRefusee('Pesée incohérente : le poids net (brut − tare) doit être supérieur à zéro.');
@@ -88,6 +96,10 @@ class Achats
             }
 
             $montant = intdiv($net * $prix + 500, 1000);
+            // Commission due au pisteur : vide tant que la direction n'a pas activé le calcul (question 6).
+            $commission = $type === TypeFournisseur::Pisteur
+                ? CommissionsPisteur::calculer(Pisteur::query()->find((int) ($donnees['pisteur_id'] ?? 0)), $net, $montant)
+                : null;
 
             // Prêt : kilos retenus pour le remboursement.
             $pret = null;
@@ -125,11 +137,13 @@ class Achats
                 'poids_brut_g' => $brut,
                 'tare_g' => $tare,
                 'poids_net_g' => $net,
+                'poids_source' => $source,
                 'humidite_pour_mille' => $donnees['humidite_pour_mille'] ?? null,
                 'kor_centieme_lbs' => $donnees['kor_centieme_lbs'] ?? null,
                 'grainage_noix_kg' => $donnees['grainage_noix_kg'] ?? null,
                 'prix_kg_fcfa' => $prix,
                 'montant_fcfa' => $montant,
+                'commission_pisteur_fcfa' => $commission,
                 'pret_id' => $pret?->id,
                 'grammes_rembourses' => $grammesRembourses,
                 'montant_especes_fcfa' => $especes,
@@ -169,6 +183,43 @@ class Achats
             $achat->update(['statut' => StatutAchat::Refuse, 'valide_par' => $validateur->id, 'valide_at' => now(), 'motif_refus' => trim($motif)]);
 
             return $achat;
+        });
+    }
+
+    /**
+     * « Supprimer » un achat, réservé à la direction (décision du 2026-10-01) : rien ne s'efface.
+     * À valider : il passe « annulé », aucun effet n'avait eu lieu. Validé : ses effets sont
+     * contre-passés ensemble — les kilos ressortent du lot (refusé s'ils n'y sont plus), le
+     * remboursement en kilos est repris, l'argent payé revient dans la caisse. Motif obligatoire.
+     */
+    public static function annuler(Achat $achat, User $auteur, string $motif): Achat
+    {
+        if (! $auteur->can('annuler-operations')) {
+            throw new OperationRefusee('Seule la direction peut supprimer (annuler) un achat.');
+        }
+        $motif = trim($motif);
+        if (mb_strlen($motif) < 5) {
+            throw new OperationRefusee('Le motif de l\'annulation est obligatoire (5 caractères au moins).');
+        }
+
+        return DB::transaction(function () use ($achat, $auteur, $motif) {
+            $achat = Achat::query()->lockForUpdate()->findOrFail($achat->id);
+
+            if (in_array($achat->statut, [StatutAchat::Refuse, StatutAchat::Annule], true)) {
+                throw new OperationRefusee("L'achat {$achat->reference} est déjà ".mb_strtolower($achat->statut->libelle()).'.');
+            }
+
+            if ($achat->statut === StatutAchat::Valide) {
+                Stock::annulerEntreeAchat($achat, $motif, $auteur);
+                Remboursements::annulerNature($achat, $motif, $auteur);
+                if ($achat->mouvement_id !== null) {
+                    Tresorerie::contrePasser(MouvementTresorerie::query()->findOrFail($achat->mouvement_id), $motif, $auteur, depuisOrigine: true);
+                }
+            }
+
+            $achat->update(['statut' => StatutAchat::Annule, 'annule_par' => $auteur->id, 'annule_at' => now(), 'motif_annulation' => $motif]);
+
+            return $achat->refresh();
         });
     }
 

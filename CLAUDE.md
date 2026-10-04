@@ -61,8 +61,38 @@ vendor/bin/pint                        # style
 vendor/bin/phpstan analyse --memory-limit=1G   # Larastan niveau 6 (phpstan.neon), plusieurs minutes ici
 npm run build                          # Vite + Tailwind 4 (config dans resources/css/app.css)
 php artisan serve                      # http://127.0.0.1:8000
-php artisan queue:work                 # envoie les SMS en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
+php artisan queue:work                 # envoie les SMS et les notifications en file (QUEUE_CONNECTION=database) ; pilote SMS_PILOTE=journal → storage/logs
+php artisan notifications:cles-vapid   # une fois : clés du Web Push à mettre dans .env (PUSH_VAPID_PUBLIQUE / _PRIVEE)
+php artisan notifications:alertes      # alertes du jour (planifiée à 7 h via schedule:run) ; relancée le même jour : rien ne repart
+php artisan ia:exporter-jeu <dossier>  # photos validées par un agronome → jeu d'entraînement (manifeste.csv, jeu de test fixe)
+php artisan ia:annoter [n° classe]     # sans agronome : lister / annoter PROVISOIREMENT une photo (pas une validation)
+php artisan ly:sauvegarder --verifier  # archive base + fichiers, puis VRAIE restauration comparée (docs/MISE_EN_PRODUCTION.md)
 ```
+
+Tunnel public HTTPS (démo, téléphone) : `ngrok start --config "$LOCALAPPDATA/ngrok/ly-agricole.yml"
+--config ngrok.yml ly-agricole` avec `serve` lancé sur `localhost:8000`. Jeton du compte ngrok **de
+LY** dans `ly-agricole.yml` (hors dépôt) ; **jamais** `%LOCALAPPDATA%\ngrok\ngrok.yml`, qui porte le
+jeton de Tharamotors. Proxy local de confiance dans `bootstrap/app.php`. Faire
+`npm run build` avant : sans build, `public/hot` pointe vers un Vite local injoignable du dehors.
+Service IA (`ia/`, phase 3) — Python 3.13, FastAPI :
+
+```bash
+cd ia
+python -m unittest discover -s tests -t .      # contrôle après génération, API, outils d'entraînement
+python -m entrainement.entrainer --culture anacarde --ccmt … --ly … --sortie …   # sur une machine LOUÉE avec carte graphique
+IA_JETON=… IA_LLM=faux python -m uvicorn app.main:app --port 8100   # essai sans Ollama (poste de dev)
+```
+
+Sur le serveur IA : `docker compose up -d --build` (voir `docs/INSTALLATION_IA.md`) ; côté
+Laravel, `IA_URL` et `IA_JETON` dans `.env`, et `queue:work` qui tourne.
+
+Avis en direct (Reverb, 2026-10-02) : `php artisan reverb:start` (port 8080) en plus de `serve` et
+`queue:work` ; `BROADCAST_CONNECTION=reverb` et les clés `REVERB_*` dans `.env`, puis
+`npm run build` (les clés `VITE_REVERB_*` sont lues à la construction). Sans Reverb, rien ne casse :
+liste des avis et push restent. Reverb a imposé Guzzle 7 (au lieu de 8) : voir `composer.lock`.
+
+Notifications push du bureau : lancer `serve` **et** `queue:work` avec
+`OPENSSL_CONF=C:\xampp\php\extras\ssl\openssl.cnf` (voir pièges).
 
 Appli terrain (`terrain/`, semaine 8) — Node 26, npm :
 
@@ -177,5 +207,31 @@ Chacun a coûté du temps sur l'autre projet ; ils s'appliquent ici tels quels.
 - **`php -r` + `preg_replace` qui échoue = fichier vidé** : `preg_replace` rend `null`
   et `file_put_contents($f, null)` écrit 0 octet, sans erreur fatale (vu le 2026-09-28).
   Pour du code PHP, l'outil d'édition ; sinon vérifier le retour avant d'écrire.
+- **OpenSSL de XAMPP ne trouve pas `openssl.cnf`** : `openssl_pkey_new` échoue (« Unable to
+  create the key ») — génération des clés VAPID et **chaque envoi Web Push** (clé
+  éphémère). Seule la variable d'environnement du **processus** corrige :
+  `OPENSSL_CONF=C:\xampp\php\extras\ssl\openssl.cnf` avant `php artisan serve` /
+  `queue:work` ; `putenv()` et l'option `config` ne suffisent pas (vu le 2026-09-29).
+  Sans elle, l'avis reste dans l'application, le push est journalisé en erreur.
+- **Deux copies du dépôt (worktree) ⇒ Pint et Larastan plantent** (« Cannot declare class
+  ComposerAutoloaderInit… » ou phar introuvable) : l'opcache du CLI, sous Windows,
+  confond les archives phar identiques des deux copies. Lancer
+  `php -d opcache.enable_cli=0 vendor/phpstan/phpstan/phpstan.phar analyse …` (idem pour
+  Pint), ou lancer Pint depuis l'autre copie sur les fichiers voulus (vu le 2026-09-29).
+- **`vite preview` garde la page de la build précédente** : relancer l'aperçu après
+  `npm run build` — et vérifier que l'ancien `node` a bien quitté le port (arrêter la
+  tâche de fond ne tue que son shell).
 - **`assertSessionHas` ne voit pas un message flash Livewire** : vérifier ce que la vue
   affiche (`assertSee`).
+- **Blade : une directive collée à un mot n'est pas compilée** (« en cours@if (…) ») ;
+  son `@endif` l'est, d'où une `ParseError` « unexpected endif ». Mettre la directive
+  sur sa propre ligne.
+- **Worktree git : ne pas relier `vendor` par une jonction.** L'autoloader de Composer
+  charge alors les classes `App\` du dossier d'origine, pas celles du worktree : les
+  tests passent sur le mauvais code (vu le 2026-09-29). Copier `vendor` (robocopy,
+  ~110 Mo), donner au worktree son propre `public/build` (`npm run build`) et son
+  `APP_URL`. Et **lancer PHP avec `-d opcache.enable_cli=0`** dans le worktree :
+  l'opcache CLI ressert sinon l'`autoload.php` de l'autre dossier (« Cannot declare
+  class ComposerAutoloaderInit… »). Servir le worktree depuis `public/` :
+  `php -d opcache.enable=0 -S localhost:8001 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`
+  (le redémarrer après un `npm run build` : le manifeste Vite reste en mémoire).

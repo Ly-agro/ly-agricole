@@ -18,7 +18,7 @@ export class HorsReseau extends Error {
 
 export class SessionExpiree extends Error {
     constructor() {
-        super('Session expirée ou compte désactivé : se reconnecter.');
+        super('Session expirée, compte désactivé ou appareil coupé par le bureau : se reconnecter.');
     }
 }
 
@@ -103,8 +103,20 @@ export async function connecter(base: BaseTerrain, serveur: string, email: strin
     return r.utilisateur;
 }
 
+/** Déclare au bureau le jeton Firebase du téléphone (notifications) ; gardé pour le retirer. */
+export async function declarerJetonPush(base: BaseTerrain, jeton: string, appareil: string, f: Fetch = fetch): Promise<void> {
+    await appeler(base, '/push', { method: 'POST', body: JSON.stringify({ jeton, appareil }) }, f);
+    await regler(base, 'jeton_push', jeton);
+}
+
 export async function deconnecter(base: BaseTerrain, f: Fetch = fetch): Promise<void> {
     try {
+        // Un téléphone déconnecté ne doit plus recevoir les avis de cet utilisateur.
+        const jetonPush = await reglage<string>(base, 'jeton_push');
+        if (jetonPush) {
+            await appeler(base, '/push', { method: 'DELETE', body: JSON.stringify({ jeton: jetonPush }) }, f);
+            await base.reglages.delete('jeton_push');
+        }
         await appeler(base, '/deconnexion', { method: 'POST' }, f);
     } catch {
         // Hors réseau : le jeton est oublié ici ; le bureau peut désactiver le compte.
@@ -124,6 +136,8 @@ interface Referentiels {
     producteurs: object[];
     prets_en_cours: object[];
     categories_depense: object[];
+    parcelles?: object[];
+    langues?: object[];
 }
 
 /** Télécharge les référentiels : tout la première fois, puis seulement ce qui a changé. */
@@ -131,7 +145,7 @@ export async function telechargerReferentiels(base: BaseTerrain, f: Fetch = fetc
     const depuis = await reglage<string>(base, 'horodatage');
     const r = (await appeler(base, '/referentiels' + (depuis ? '?depuis=' + encodeURIComponent(depuis) : ''), {}, f)) as Referentiels;
 
-    const tables = [base.villages, base.produits, base.campagnes, base.lots, base.points_collecte, base.producteurs, base.categories_depense] as const;
+    const tables = [base.villages, base.produits, base.campagnes, base.lots, base.points_collecte, base.producteurs, base.categories_depense, base.parcelles, base.langues] as const;
     await base.transaction('rw', [...tables, base.comptes, base.prets_en_cours, base.reglages, base.operations], async () => {
         if (r.complet) {
             await Promise.all(tables.map((t) => t.clear()));
@@ -143,12 +157,22 @@ export async function telechargerReferentiels(base: BaseTerrain, f: Fetch = fetc
         await base.points_collecte.bulkPut(r.points_collecte as never[]);
         await base.producteurs.bulkPut(r.producteurs as never[]);
         await base.categories_depense.bulkPut((r.categories_depense ?? []) as never[]);
+        await base.parcelles.bulkPut((r.parcelles ?? []) as never[]);
+        await base.langues.bulkPut((r.langues ?? []) as never[]);
         // Fiches créées sur le téléphone et pas encore au bureau : elles restent utilisables.
         const locales = await base.operations.filter((o) => o.type === 'producteur' && o.statut !== 'envoye' && o.statut !== 'abandonne').toArray();
         for (const o of locales) {
             if (!(await base.producteurs.get(o.uuid))) {
                 const d = o.donnees as { nom: string; prenoms: string; telephone: string | null; village_id: number };
                 await base.producteurs.put({ id: o.uuid, code: null, nom: d.nom, prenoms: d.prenoms, telephone: d.telephone, village_id: d.village_id, groupe_id: null, actif: true });
+            }
+        }
+        // Idem pour les parcelles relevées ici : on peut les visiter avant l'envoi.
+        const parcellesLocales = await base.operations.filter((o) => o.type === 'parcelle' && o.statut !== 'envoye' && o.statut !== 'abandonne').toArray();
+        for (const o of parcellesLocales) {
+            if (!(await base.parcelles.get(o.uuid))) {
+                const d = o.donnees as { producteur_id: string; nom: string; produit_id?: number | null };
+                await base.parcelles.put({ id: o.uuid, producteur_id: d.producteur_id, nom: d.nom, surface_m2: null, produit_id: d.produit_id ?? null, actif: true });
             }
         }
         // Toujours complets : ils changent sans date (soldes, restants dus).
@@ -191,7 +215,7 @@ export async function envoyer(base: BaseTerrain, f: Fetch = fetch): Promise<Bila
     const bilan: BilanEnvoi = { envoyees: 0, dejaRecues: 0, rejetees: 0, photos: 0 };
     const appareil = await appareilId(base);
 
-    // Les photos d'abord : une dépense exige que son justificatif soit déjà au bureau.
+    // Les photos d'abord : une dépense ou une visite exige que ses photos soient déjà au bureau.
     bilan.photos = await envoyerPhotos(base, appareil, f);
 
     for (;;) {

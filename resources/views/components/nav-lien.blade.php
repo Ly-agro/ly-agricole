@@ -17,11 +17,24 @@
         'depenses' => 'M6 3h12v18l-3-2-3 2-3-2-3 2V3ZM9 8h6M9 12h6',
         // Argent qui entre dans la campagne : flèche vers un bac, sens inverse de « ventes ».
         'apports' => 'M4 8.5V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3.5M7 13.5 12 18.5l5-5M12 17.5v-11',
+        // Feuille dans un cercle : constat sur la parcelle.
+        // Loupe sur une feuille (diagnostic) ; fiole (référentiel des traitements).
+        'ia' => 'M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM20 20l-4.8-4.8M8 12.5c0-2.5 1.6-4 4.5-4 0 2.8-1.8 4-4.5 4Z',
+        'traitements' => 'M9 3h6M10 3v6L5 18.5A1.8 1.8 0 0 0 6.6 21h10.8a1.8 1.8 0 0 0 1.6-2.5L14 9V3M7.5 15h9',
+        'visites' => 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8.5 15.5c0-4 2.5-7 7-7 0 4.5-3 7-7 7Zm0 0 3-3',
         // Prévu contre réel : deux barres, une pleine, une en cours.
         'budget' => 'M4 20h16M7 20V9m5 11V5m5 15v-7',
         'referentiels' => 'M4 6h16M4 12h16M4 18h10',
+        'publications' => 'M4 5h16v11H4zM8 20h8M12 16v4M8 9h8M8 12h5',
+        'appareils' => 'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM11 18h2',
+        'fiabilite' => 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3ZM9 12l2 2 4-4',
+        'rapport' => 'M7 3h7l5 5v13H7V3ZM14 3v5h5M10 13h6M10 17h6',
+        'resultat' => 'M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5',
+        'rendements' => 'M4 20h16M6 20V12M12 20V5M18 20v-6',
         'journal' => 'M8 4h9a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2ZM6 8H4m2 4H4m2 4H4M10 9h6M10 13h6',
         'utilisateurs' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0',
+        // Barres (rapports).
+        'rapports' => 'M4 20h16M7 16v-5M12 16V6M17 16v-8',
     ];
 @endphp
 

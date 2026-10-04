@@ -13,7 +13,8 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * Création et modification des comptes par l'admin (pas d'inscription publique).
+ * Création et modification des comptes (pas d'inscription publique) : tous les rôles par
+ * l'admin, les comptes d'agents seulement par la direction.
  * Chaque action revérifie le droit : une action Livewire est un point d'entrée public.
  */
 #[Title('Utilisateurs')]
@@ -41,30 +42,54 @@ class GestionUtilisateurs extends Component
 
     public function mount(): void
     {
-        $this->authorize('gerer-utilisateurs');
+        $this->authorize('ouvrir-comptes');
+    }
+
+    /**
+     * Rôles que l'utilisateur connecté peut attribuer : tous pour l'admin, « agent » seulement
+     * pour la direction.
+     *
+     * @return list<Role>
+     */
+    private function rolesPermis(): array
+    {
+        return auth()->user()->can('gerer-utilisateurs') ? Role::cases() : [Role::Agent];
+    }
+
+    /** La direction ne voit et ne touche que les comptes d'agents. */
+    private function peutGerer(User $user): bool
+    {
+        return in_array($user->role, $this->rolesPermis(), true);
     }
 
     /** @return Collection<int, User> */
     #[Computed]
     public function utilisateurs(): Collection
     {
-        return User::query()->orderByDesc('actif')->orderBy('nom')->get();
+        return User::query()
+            ->when(! auth()->user()->can('gerer-utilisateurs'), fn ($q) => $q->whereIn('role', array_map(fn (Role $r) => $r->value, $this->rolesPermis())))
+            ->orderByDesc('actif')->orderBy('nom')->get();
     }
 
     public function nouveau(): void
     {
-        $this->authorize('gerer-utilisateurs');
+        $this->authorize('ouvrir-comptes');
 
         $this->resetErrorBag();
         $this->reset('nom', 'telephone', 'email', 'role', 'motDePasse', 'actif', 'statut');
         $this->editionId = 0;
+        // Un seul rôle possible (direction) : déjà choisi.
+        if (count($this->rolesPermis()) === 1) {
+            $this->role = $this->rolesPermis()[0]->value;
+        }
     }
 
     public function modifier(int $id): void
     {
-        $this->authorize('gerer-utilisateurs');
+        $this->authorize('ouvrir-comptes');
 
         $user = User::findOrFail($id);
+        abort_unless($this->peutGerer($user), 403);
 
         $this->resetErrorBag();
         $this->statut = '';
@@ -85,15 +110,16 @@ class GestionUtilisateurs extends Component
 
     public function enregistrer(): void
     {
-        $this->authorize('gerer-utilisateurs');
+        $this->authorize('ouvrir-comptes');
 
         $existant = $this->editionId ? User::findOrFail($this->editionId) : null;
+        abort_if($existant !== null && ! $this->peutGerer($existant), 403);
 
         $donnees = $this->validate([
             'nom' => ['required', 'string', 'max:255'],
             'telephone' => ['nullable', 'string', 'max:20', Rule::unique('users', 'telephone')->ignore($existant)],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($existant)],
-            'role' => ['required', Rule::enum(Role::class)],
+            'role' => ['required', Rule::enum(Role::class)->only($this->rolesPermis())],
             'motDePasse' => [$existant ? 'nullable' : 'required', 'string', 'min:'.self::MOT_DE_PASSE_MIN],
             'actif' => ['boolean'],
         ], attributes: [
@@ -142,7 +168,8 @@ class GestionUtilisateurs extends Component
     public function render(): View
     {
         return view('livewire.utilisateurs.gestion-utilisateurs', [
-            'roles' => Role::cases(),
+            'roles' => $this->rolesPermis(),
+            'agentsSeulement' => ! auth()->user()->can('gerer-utilisateurs'),
         ]);
     }
 }

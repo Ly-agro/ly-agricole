@@ -5,15 +5,18 @@ namespace App\Providers;
 use App\Enums\ActionJournal;
 use App\Enums\Role;
 use App\Models\Achat;
+use App\Models\Actualite;
 use App\Models\Apport;
 use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\Decaissement;
+use App\Models\DecisionPlafond;
 use App\Models\Depense;
 use App\Models\Encaissement;
 use App\Models\GroupeProducteur;
 use App\Models\Intrant;
+use App\Models\Langue;
 use App\Models\LigneBudget;
 use App\Models\Lot;
 use App\Models\Magasin;
@@ -25,13 +28,17 @@ use App\Models\Parcelle;
 use App\Models\Pisteur;
 use App\Models\PointCollecte;
 use App\Models\Pret;
+use App\Models\PrixMarche;
 use App\Models\Producteur;
 use App\Models\Produit;
 use App\Models\Remboursement;
+use App\Models\SourceActualites;
 use App\Models\User;
 use App\Models\ValidationPret;
+use App\Models\ValorisationStock;
 use App\Models\Vente;
 use App\Models\Village;
+use App\Models\Visite;
 use App\Models\Zone;
 use App\Services\Journal;
 use App\Services\Sms\EnvoyeurSms;
@@ -105,6 +112,13 @@ class AppServiceProvider extends ServiceProvider
             'encaissement' => Encaissement::class,
             'apport' => Apport::class,
             'ligne_budget' => LigneBudget::class,
+            'visite' => Visite::class,
+            'langue' => Langue::class,
+            'prix_marche' => PrixMarche::class,
+            'actualite' => Actualite::class,
+            'source_actualites' => SourceActualites::class,
+            'valorisation_stock' => ValorisationStock::class,
+            'decision_plafond' => DecisionPlafond::class,
         ]);
     }
 
@@ -117,7 +131,16 @@ class AppServiceProvider extends ServiceProvider
     private function definirLesDroits(): void
     {
         Gate::define('gerer-utilisateurs', fn (User $user) => $user->aLeRole(Role::Admin));
+        // La direction crée, modifie et désactive les comptes d'AGENTS seulement (décision du
+        // 2026-10-01) ; les autres rôles restent à l'admin. Même écran « Utilisateurs ».
+        Gate::define('gerer-agents', fn (User $user) => $user->aLeRole(Role::Direction));
+        // « Supprimer » une opération = l'annuler par contre-passation (rien ne s'efface) ;
+        // une fiche qui n'a encore servi à rien est vraiment supprimée. Direction seule.
+        Gate::define('annuler-operations', fn (User $user) => $user->aLeRole(Role::Direction));
+        Gate::define('ouvrir-comptes', fn (User $user) => $user->can('gerer-utilisateurs') || $user->can('gerer-agents'));
         Gate::define('voir-journal', fn (User $user) => $user->aLeRole(Role::Admin, Role::Direction));
+        // Rapports de la direction (restant dû, stock, caisses, écarts, alertes) et exports.
+        Gate::define('voir-rapports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
 
         // Zones, villages, produits, magasins, points de collecte.
         Gate::define('gerer-referentiels', fn (User $user) => $user->aLeRole(Role::Admin, Role::Direction));
@@ -166,12 +189,35 @@ class AppServiceProvider extends ServiceProvider
         // l'investisseur (cahier §2 : « consulte sa quote-part », en attendant le
         // calcul exact — voir App\Services\Apports).
         Gate::define('gerer-apports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Rendements (cahier §4) : lecture des chiffres de tous les producteurs.
+        Gate::define('voir-rendements', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Résultat net et partage (contrat art. 10 à 14) : direction et comptabilité, lecture.
+        Gate::define('voir-resultat-campagne', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Rapports du contrat (art. 18), distincts de `voir-rapports` (rapports de gestion, semaine 10).
+        Gate::define('voir-rapport-campagne', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Fiabilité des producteurs (cahier §10) : historique de remboursement de personnes réelles,
+        // réservé à ceux qui décident des prêts.
+        Gate::define('voir-fiabilite', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
+        // Décisions de la direction seule (questions 32 et 35) : valorisation du stock invendu
+        // (contrat art. 11.3) et plafond de prêt d'un producteur. La comptabilité lit, ne décide pas.
+        // Téléphones de l'appli terrain (question 25) : liste, dernière synchronisation, couper un
+        // téléphone perdu. Sécurité des comptes : direction et administrateur.
+        Gate::define('gerer-appareils', fn (User $user) => $user->aLeRole(Role::Direction, Role::Admin));
+        // Vitrine publique : prix bord-champ affichés et actualités (direction seule).
+        Gate::define('gerer-publications', fn (User $user) => $user->aLeRole(Role::Direction));
+        Gate::define('valoriser-stock', fn (User $user) => $user->aLeRole(Role::Direction));
+        Gate::define('decider-plafond', fn (User $user) => $user->aLeRole(Role::Direction));
         Gate::define('voir-portail-investisseur', fn (User $user) => $user->aLeRole(Role::Investisseur));
 
         // Budget de campagne (cahier §8) : fixé par la direction, comme le prix officiel
         // et les seuils ; suivi aussi par la comptabilité (question 29).
         Gate::define('voir-budget', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));
         Gate::define('gerer-budget', fn (User $user) => $user->aLeRole(Role::Direction));
+
+        // Visites de parcelle (cahier §4) : saisies sur le terrain par les agents et
+        // l'agronome ; lues par ceux qui voient déjà les producteurs (question 30).
+        Gate::define('saisir-visites', fn (User $user) => $user->aLeRole(Role::Direction, Role::Agent, Role::Agronome));
+        Gate::define('voir-visites', fn (User $user) => $user->aLeRole(Role::Direction, Role::Agent, Role::Comptable, Role::Agronome));
     }
 
     private function journaliserLesConnexions(): void

@@ -68,11 +68,13 @@
         if (points.length < 3 || surface <= 0) return (erreur = 'Il faut au moins 3 points qui entourent une surface.');
         arreter();
 
-        await mettreEnFile(db, 'parcelle', {
+        const op = await mettreEnFile(db, 'parcelle', {
             producteur_id: producteur.id,
             nom: nom.trim(),
             contour: polygone(points),
         }, `Parcelle « ${nom.trim()} » de ${producteur.nom} ${producteur.prenoms} — ${points.length} points, ≈ ${hectares(surface)}`);
+        // Visitable tout de suite, avant même l'envoi (la surface viendra du bureau).
+        await db.parcelles.put({ id: op.uuid, producteur_id: producteur.id, nom: nom.trim(), surface_m2: null, produit_id: null, actif: true });
 
         succes = `Parcelle enregistrée sur le téléphone (≈ ${hectares(surface)}). Elle partira au prochain envoi.`;
         points = [];

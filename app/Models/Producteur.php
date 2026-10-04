@@ -39,10 +39,12 @@ use Illuminate\Support\Carbon;
  * @property bool $actif
  * @property-read Village $village
  * @property-read GroupeProducteur|null $groupe
+ * @property int|null $langue_id
+ * @property-read Langue|null $langue
  */
 #[Fillable([
     'id', 'nom', 'prenoms', 'sexe', 'annee_naissance', 'telephone', 'numero_mobile_money', 'operateur_mm',
-    'piece_type', 'piece_numero', 'photo', 'village_id', 'groupe_id', 'consentement_at', 'consentement_par',
+    'piece_type', 'piece_numero', 'photo', 'village_id', 'groupe_id', 'langue_id', 'consentement_at', 'consentement_par',
     'cree_par', 'actif',
 ])]
 class Producteur extends Model
@@ -68,6 +70,16 @@ class Producteur extends Model
     public function village(): BelongsTo
     {
         return $this->belongsTo(Village::class);
+    }
+
+    /**
+     * Langue de préférence pour les messages ; vide = français (question 12).
+     *
+     * @return BelongsTo<Langue, $this>
+     */
+    public function langue(): BelongsTo
+    {
+        return $this->belongsTo(Langue::class);
     }
 
     /** @return BelongsTo<GroupeProducteur, $this> */
