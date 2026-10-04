@@ -21,7 +21,7 @@
         @include('vitrine.entete')
 
         <main id="contenu">
-            {{-- Accueil --}}
+            
             <section class="v-hero relative overflow-hidden text-white">
                 <div class="v-soleil" aria-hidden="true"></div>
                 <div class="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.5fr_1fr]">
@@ -35,7 +35,8 @@
                             l'anacarde, le karité, la tomate et bien d'autres produits de la terre ivoirienne, au fil des saisons.
                         </p>
                         <div class="v-entree mt-9 flex flex-wrap gap-3" style="--d: .6s">
-                            <a href="#filieres" class="v-bouton rounded-md bg-amber-400 px-6 py-3 font-semibold text-[#123524] hover:bg-amber-300">Nos filières <span class="v-fleche" aria-hidden="true">→</span></a>
+                            <a href="#anacarde" class="v-bouton rounded-md bg-amber-400 px-6 py-3 font-semibold text-[#123524] hover:bg-amber-300">Découvrir l'anacarde <span class="v-fleche" aria-hidden="true">→</span></a>
+                            <a href="#filieres" class="v-bouton rounded-md border border-amber-200/60 px-6 py-3 font-medium text-white hover:bg-white/10">Nos filières</a>
                             <a href="#chaine" class="v-bouton rounded-md border border-amber-200/60 px-6 py-3 font-medium text-white hover:bg-white/10">Comment nous travaillons</a>
                         </div>
                     </div>
@@ -47,7 +48,6 @@
                 </div>
             </section>
 
-            {{-- Bandeau des produits --}}
             <div class="v-bandeau" aria-hidden="true">
                 <div class="v-bandeau-piste text-sm font-medium uppercase tracking-[0.25em]">
                     @for ($k = 0; $k < 2; $k++)
@@ -63,7 +63,8 @@
                 </div>
             </div>
 
-            {{-- Filières --}}
+            @include('vitrine.anacarde')
+
             <section id="filieres" class="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
                 <p data-reveal class="text-sm font-medium uppercase tracking-widest text-emerald-800">Nos filières</p>
                 <h2 data-reveal style="--d: .1s" class="mt-2 max-w-2xl text-3xl font-semibold tracking-tight">Des produits de la terre ivoirienne, suivis de la parcelle à la vente.</h2>
@@ -94,7 +95,7 @@
                 </p>
             </section>
 
-            {{-- Prix bord-champ : information datée et sourcée, saisie par la direction. --}}
+            
             <section id="prix" class="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20">
                 <p data-reveal class="text-sm font-medium uppercase tracking-widest text-emerald-800">Prix bord-champ</p>
                 <h2 data-reveal style="--d: .1s" class="mt-2 max-w-2xl text-3xl font-semibold tracking-tight">Les prix du moment, avec leur source.</h2>
@@ -125,59 +126,8 @@
                         @endforeach
                     </div>
 
-                    {{-- Les autres prix, repliés : un clic les liste, sans quitter la page. --}}
-                    @if ($prixAutres->isNotEmpty())
-                        <details class="v-carte group mt-5 rounded-2xl" data-autres-prix>
-                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 font-medium [&::-webkit-details-marker]:hidden">
-                                <span class="group-open:hidden">Afficher les {{ $prixAutres->count() }} autres cultures</span>
-                                <span class="hidden group-open:inline">Masquer les autres cultures</span>
-                                <span class="v-texte-doux text-sm transition-transform group-open:rotate-180" aria-hidden="true">▾</span>
-                            </summary>
-                            <div class="overflow-x-auto border-t border-[#34251a]/10">
-                                <table class="w-full min-w-[520px] text-left text-sm">
-                                    <caption class="sr-only">Prix des autres cultures</caption>
-                                    <thead>
-                                        <tr class="v-texte-doux text-xs">
-                                            <th scope="col" class="px-6 py-2 font-medium">Culture</th>
-                                            <th scope="col" class="px-3 py-2 text-right font-medium">FCFA / kg</th>
-                                            <th scope="col" class="px-3 py-2 text-right font-medium">Écart</th>
-                                            <th scope="col" class="px-6 py-2 font-medium">Au</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($prixAutres as $ligne)
-                                            <tr class="border-t border-[#34251a]/10">
-                                                <th scope="row" class="px-6 py-2 font-medium">
-                                                    <a href="{{ route('prix.evolution', ['produit' => $ligne['produit']->id]) }}" class="underline decoration-dotted">{{ $ligne['produit']->nom }}</a>
-                                                </th>
-                                                <td class="px-3 py-2 text-right font-semibold tabular-nums">{{ \App\Support\Format::entier($ligne['prix']->prix_kg_fcfa) }}</td>
-                                                <td class="whitespace-nowrap px-3 py-2 text-right text-xs tabular-nums">
-                                                    @if ($ligne['ecart'] !== null && $ligne['ecart'] !== 0)
-                                                        <span class="{{ $ligne['ecart'] > 0 ? 'text-emerald-700' : 'text-red-700' }}">{{ $ligne['ecart'] > 0 ? '▲ +' : '▼ −' }}{{ \App\Support\Format::entier(abs($ligne['ecart'])) }}</span>
-                                                    @else
-                                                        <span class="v-texte-doux">—</span>
-                                                    @endif
-                                                </td>
-                                                <td class="v-texte-doux px-6 py-2 text-xs tabular-nums">{{ $ligne['prix']->date_effet->format('d/m/Y') }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </details>
-                    @endif
                 @endif
-                @if ($sansPrix->isNotEmpty())
-                    <div data-reveal class="mt-8">
-                        <h3 class="text-base font-semibold">Autres cultures suivies</h3>
-                        <p class="v-texte-doux mt-1 text-sm">Leur prix s'affichera ici dès qu'il sera relevé, avec sa source.</p>
-                        <ul class="mt-3 flex flex-wrap gap-2">
-                            @foreach ($sansPrix as $culture)
-                                <li class="v-carte rounded-full px-3 py-1 text-sm">{{ $culture->nom }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+                
                 @if ($prix->isNotEmpty())
                     <p data-reveal class="mt-5"><a href="{{ route('prix.evolution') }}" class="v-bouton inline-block rounded-md bg-emerald-800 px-5 py-3 text-sm font-medium text-white hover:bg-emerald-900">Voir tous les prix et les courbes <span class="v-fleche" aria-hidden="true">→</span></a></p>
                 @endif
@@ -186,7 +136,7 @@
 
             <svg class="v-vague text-[#dccdb2]" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 60V28C180 4 360 4 540 26s360 34 540 12 270-30 360-14v38Z" /></svg>
 
-            {{-- Chaîne --}}
+            
             <section id="chaine" class="v-alt -mt-px">
                 <div class="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pb-20">
                     <p data-reveal class="text-sm font-medium uppercase tracking-widest text-emerald-800">Comment nous travaillons</p>
@@ -221,7 +171,7 @@
 
             <svg class="v-vague -mt-px rotate-180 text-[#dccdb2]" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 60V28C180 4 360 4 540 26s360 34 540 12 270-30 360-14v38Z" /></svg>
 
-            {{-- Actualités --}}
+            
             <section id="actualites" class="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
                 <div class="flex flex-wrap items-end justify-between gap-3">
                     <div>
@@ -248,7 +198,7 @@
                 @endif
             </section>
 
-            {{-- Mission --}}
+            
             <section id="mission" class="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
                 <div class="grid gap-6 lg:grid-cols-2">
                     <div data-reveal="gauche" class="rounded-2xl p-8 text-white" style="background: linear-gradient(140deg, #123524, #1f4d33);">
@@ -275,7 +225,7 @@
                 </div>
             </section>
 
-            {{-- Contact --}}
+            
             <section id="contact" class="v-alt">
                 <div class="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 sm:py-16 md:grid-cols-2">
                     <div data-reveal="gauche">

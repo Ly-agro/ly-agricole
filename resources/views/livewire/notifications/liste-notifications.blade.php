@@ -9,6 +9,8 @@
             'trace' => 'M7 7l10 10M17 7 7 17'],
         'alerte' => ['libelle' => 'Alerte', 'pastille' => 'bg-sky-100 text-sky-900', 'rond' => 'bg-sky-100 text-sky-800', 'fond' => 'bg-sky-50/70',
             'trace' => 'M12 8v5M12 16.5v.01M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z'],
+        'activite' => ['libelle' => 'Activité agent', 'pastille' => 'bg-stone-200 text-stone-800', 'rond' => 'bg-stone-200 text-stone-700', 'fond' => 'bg-stone-50',
+            'trace' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0'],
     ];
     // Avis d'avant la distinction validé / refusé : présentés comme « validé ».
     $sortes['traite'] = $sortes['valide'];

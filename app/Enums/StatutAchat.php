@@ -8,6 +8,8 @@ enum StatutAchat: string
     case AValider = 'a_valider';
     case Valide = 'valide';
     case Refuse = 'refuse';
+    /** Annulé par la direction : effets contre-passés (stock, remboursement, caisse), l'achat reste visible. */
+    case Annule = 'annule';
 
     public function libelle(): string
     {
@@ -15,6 +17,7 @@ enum StatutAchat: string
             self::AValider => 'À valider',
             self::Valide => 'Validé',
             self::Refuse => 'Refusé',
+            self::Annule => 'Annulé',
         };
     }
 }

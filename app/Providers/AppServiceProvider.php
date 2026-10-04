@@ -131,6 +131,13 @@ class AppServiceProvider extends ServiceProvider
     private function definirLesDroits(): void
     {
         Gate::define('gerer-utilisateurs', fn (User $user) => $user->aLeRole(Role::Admin));
+        // La direction crée, modifie et désactive les comptes d'AGENTS seulement (décision du
+        // 2026-10-01) ; les autres rôles restent à l'admin. Même écran « Utilisateurs ».
+        Gate::define('gerer-agents', fn (User $user) => $user->aLeRole(Role::Direction));
+        // « Supprimer » une opération = l'annuler par contre-passation (rien ne s'efface) ;
+        // une fiche qui n'a encore servi à rien est vraiment supprimée. Direction seule.
+        Gate::define('annuler-operations', fn (User $user) => $user->aLeRole(Role::Direction));
+        Gate::define('ouvrir-comptes', fn (User $user) => $user->can('gerer-utilisateurs') || $user->can('gerer-agents'));
         Gate::define('voir-journal', fn (User $user) => $user->aLeRole(Role::Admin, Role::Direction));
         // Rapports de la direction (restant dû, stock, caisses, écarts, alertes) et exports.
         Gate::define('voir-rapports', fn (User $user) => $user->aLeRole(Role::Direction, Role::Comptable));

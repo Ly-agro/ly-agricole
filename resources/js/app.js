@@ -24,3 +24,6 @@ document.addEventListener('keydown', (e) => {
     basculerMenu(false);
     document.querySelectorAll('details[data-deroulant][open]').forEach((d) => d.removeAttribute('open'));
 });
+
+// Avis en direct (Reverb) pour un utilisateur connecté : voir echo.js.
+import './echo';

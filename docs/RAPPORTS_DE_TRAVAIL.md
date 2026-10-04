@@ -5,6 +5,37 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-10-02 — Suivi des agents en direct (Reverb), comptes d'agents, « Supprimer », anacarde — FAIT, À VOIR DANS LE NAVIGATEUR
+
+**Demande.** Chaque action d'un agent → notification push au responsable (Reverb) ; le responsable
+crée les comptes d'agents ; il peut « supprimer » ; l'anacarde mise en avant sur la vitrine, avec
+des images animées de la noix à la transformation.
+
+- **Décisions demandées et prises** : « Supprimer » = annuler (contre-passation, sauf ce qui n'a
+  encore rien changé) ; la direction crée les comptes d'**agents seulement** (DECISIONS D5).
+- **Suivi des agents** (`SuiviAgents`, branché sur la création d'une ligne du journal) : toute
+  action d'un agent (sauf connexion/déconnexion) envoie un avis « Activité agent » à la direction :
+  liste, push, et diffusion en direct. Titre sans nom de producteur ni montant (écran verrouillé).
+- **Reverb** : `laravel/reverb` 1.12 (Guzzle redescendu de 8.2 à 7.15, seule combinaison possible),
+  `config/broadcasting.php`, `config/reverb.php`, `routes/channels.php`, Echo + pusher-js ; canal
+  `broadcast` ajouté à `AvisLy` seulement si un diffuseur réel est configuré ; bandeau et cloche mis
+  à jour sans recharger. Clés locales générées dans `.env` (pas dans le dépôt).
+- **Comptes d'agents** : droits `gerer-agents` / `ouvrir-comptes` ; écran « Comptes des agents » pour
+  la direction (ne voit, ne crée, ne modifie que des agents ; refus testé même en forçant l'id).
+- **Supprimer** : `Achats::annuler` (stock, remboursement en kilos et caisse contre-passés ensemble,
+  refus si le lot n'a plus les kilos, tout ou rien), `Depenses::annuler`, `SuppressionFiches::producteur`
+  (vraie suppression seulement sans prêt/achat/visite/SMS/décision ; photo effacée après commit).
+  Migration `annule_par`, `annule_at`, `motif_annulation` sur `achats` ; statut « Annulé ».
+- **Vitrine** : section `#anacarde` après l'accueil, 9 étapes illustrées en SVG animé (semis,
+  croissance, floraison, pomme et noix, récolte, séchage, pesée, stockage, transformation), lecture
+  automatique quand la section est visible, pause, flèches, chemin cliquable ; dernier prix bord-champ
+  publié affiché (jamais inventé) ; bouton « Découvrir l'anacarde » dans l'accueil. Respect des
+  retraits faits à la main sur la vitrine (liste repliée et « autres cultures ») : tests adaptés.
+- **Vérifié** : 779 tests (761 → 779), Pint. **Pas encore vu dans le navigateur** : le serveur a
+  été arrêté faute de mémoire sur le poste ; animation de la vitrine et avis en direct à regarder.
+
+---
+
 ## 2026-09-30 (soir) — Prix sur la vitrine repliés, « Voir tous » immédiat, test d'avis stabilisé, fusion — FAIT
 
 - **Vitrine** : 6 cartes de prix d'emblée (anacarde, karité, tomate, cacao, café, hévéa), les
@@ -14,6 +45,11 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
   adresse mise à jour, bouton gardé sans JavaScript) ; campagnes proposées : celles du produit
   choisi seulement (116 sinon) ; dates visibles seulement pour « Dates personnalisées ».
   Vu dans Chrome : « ba » → 2 cultures ; Hévéa puis campagne 2023-2024 → courbe et info-bulle.
+- **Actualités : NewsAPI écarté** (décision de l'utilisateur, 2026-09-30) : le plan gratuit est
+  réservé au développement (interdit sur un site en ligne, articles d'au moins 24 h) ; on reste sur
+  les flux RSS. Clé fournie non enregistrée.
+- **ngrok** : jeton du compte LY accepté ; tunnel `https://onward-singer-creme.ngrok-free.dev`
+  (domaine fixe du compte) vérifié : pages en https, filtres de `/prix` à travers le tunnel.
 - **Test d'avis instable** : `notifications()` trie déjà du plus récent au plus ancien, `oldest()`
   ne faisait qu'ajouter un second critère ; le test ne passait que par hasard dans une même
   seconde. `reorder()->oldest()` et une seconde d'écart (NotificationsTest, AlertesTest).

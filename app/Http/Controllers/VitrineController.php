@@ -28,6 +28,8 @@ class VitrineController extends Controller
         return view('vitrine', [
             'prix' => $prix,
             'prixEnAvant' => $prix->take(self::PRIX_EN_AVANT),
+            // Filière phare : son dernier prix publié s'affiche dans la section « de la noix à l'amande ».
+            'prixAnacarde' => $prix->first(fn (array $ligne) => $ligne['produit']->code === 'anacarde'),
             'prixAutres' => $prix->slice(self::PRIX_EN_AVANT)->values(),
             // Cultures suivies mais sans prix publié : affichées, avec « prix à venir », jamais un prix inventé.
             'cultures' => Produit::query()->where('actif', true)->orderBy('nom')->get(),

@@ -14,6 +14,7 @@ use App\Models\Achat;
 use App\Models\Campagne;
 use App\Models\CompteTresorerie;
 use App\Models\Lot;
+use App\Models\MouvementTresorerie;
 use App\Models\Parametre;
 use App\Models\Pisteur;
 use App\Models\Pret;
@@ -182,6 +183,43 @@ class Achats
             $achat->update(['statut' => StatutAchat::Refuse, 'valide_par' => $validateur->id, 'valide_at' => now(), 'motif_refus' => trim($motif)]);
 
             return $achat;
+        });
+    }
+
+    /**
+     * « Supprimer » un achat, réservé à la direction (décision du 2026-10-01) : rien ne s'efface.
+     * À valider : il passe « annulé », aucun effet n'avait eu lieu. Validé : ses effets sont
+     * contre-passés ensemble — les kilos ressortent du lot (refusé s'ils n'y sont plus), le
+     * remboursement en kilos est repris, l'argent payé revient dans la caisse. Motif obligatoire.
+     */
+    public static function annuler(Achat $achat, User $auteur, string $motif): Achat
+    {
+        if (! $auteur->can('annuler-operations')) {
+            throw new OperationRefusee('Seule la direction peut supprimer (annuler) un achat.');
+        }
+        $motif = trim($motif);
+        if (mb_strlen($motif) < 5) {
+            throw new OperationRefusee('Le motif de l\'annulation est obligatoire (5 caractères au moins).');
+        }
+
+        return DB::transaction(function () use ($achat, $auteur, $motif) {
+            $achat = Achat::query()->lockForUpdate()->findOrFail($achat->id);
+
+            if (in_array($achat->statut, [StatutAchat::Refuse, StatutAchat::Annule], true)) {
+                throw new OperationRefusee("L'achat {$achat->reference} est déjà ".mb_strtolower($achat->statut->libelle()).'.');
+            }
+
+            if ($achat->statut === StatutAchat::Valide) {
+                Stock::annulerEntreeAchat($achat, $motif, $auteur);
+                Remboursements::annulerNature($achat, $motif, $auteur);
+                if ($achat->mouvement_id !== null) {
+                    Tresorerie::contrePasser(MouvementTresorerie::query()->findOrFail($achat->mouvement_id), $motif, $auteur, depuisOrigine: true);
+                }
+            }
+
+            $achat->update(['statut' => StatutAchat::Annule, 'annule_par' => $auteur->id, 'annule_at' => now(), 'motif_annulation' => $motif]);
+
+            return $achat->refresh();
         });
     }
 

@@ -1,13 +1,18 @@
 <div>
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-xl font-semibold">Utilisateurs</h1>
+        <div>
+            <h1 class="text-xl font-semibold">{{ $agentsSeulement ? 'Comptes des agents' : 'Utilisateurs' }}</h1>
+            @if ($agentsSeulement)
+                <p class="mt-1 text-sm text-stone-500">Vous créez et gérez les comptes des agents de terrain. Les autres comptes sont gérés par l'administrateur.</p>
+            @endif
+        </div>
 
         <button
             wire:click="nouveau"
             type="button"
             class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
         >
-            Nouveau compte
+            {{ $agentsSeulement ? 'Nouvel agent' : 'Nouveau compte' }}
         </button>
     </div>
 

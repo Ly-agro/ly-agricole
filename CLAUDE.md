@@ -86,6 +86,11 @@ IA_JETON=… IA_LLM=faux python -m uvicorn app.main:app --port 8100   # essai sa
 Sur le serveur IA : `docker compose up -d --build` (voir `docs/INSTALLATION_IA.md`) ; côté
 Laravel, `IA_URL` et `IA_JETON` dans `.env`, et `queue:work` qui tourne.
 
+Avis en direct (Reverb, 2026-10-02) : `php artisan reverb:start` (port 8080) en plus de `serve` et
+`queue:work` ; `BROADCAST_CONNECTION=reverb` et les clés `REVERB_*` dans `.env`, puis
+`npm run build` (les clés `VITE_REVERB_*` sont lues à la construction). Sans Reverb, rien ne casse :
+liste des avis et push restent. Reverb a imposé Guzzle 7 (au lieu de 8) : voir `composer.lock`.
+
 Notifications push du bureau : lancer `serve` **et** `queue:work` avec
 `OPENSSL_CONF=C:\xampp\php\extras\ssl\openssl.cnf` (voir pièges).
 

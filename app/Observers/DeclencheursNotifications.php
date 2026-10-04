@@ -106,6 +106,8 @@ class DeclencheursNotifications
         $refus = is_string($motif) && $motif !== '' ? " Motif : {$motif}" : '';
 
         return match (true) {
+            $m instanceof Achat && $m->statut === StatutAchat::Annule => ['titre' => "Achat {$m->reference} annulé par la direction",
+                'texte' => $m->nomFournisseur().'. Motif : '.$m->getAttribute('motif_annulation'), 'url' => route('achats')],
             $m instanceof Achat && $avant === StatutAchat::AValider => $m->statut === StatutAchat::Valide
                 ? ['titre' => "Achat {$m->reference} validé", 'texte' => Format::kg($m->poids_net_g).' — '.$m->nomFournisseur().'.', 'url' => route('achats')]
                 : ['titre' => "Achat {$m->reference} refusé", 'texte' => $m->nomFournisseur().'.'.$refus, 'url' => route('achats')],

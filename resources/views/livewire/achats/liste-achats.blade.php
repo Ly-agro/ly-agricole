@@ -33,6 +33,26 @@
         </form>
     @endif
 
+    @if ($aAnnuler !== null)
+        <form wire:submit="annulerAchat" class="mb-6 rounded-xl border border-red-200 bg-red-50 p-5">
+            <p class="text-sm font-semibold text-red-950">Supprimer l'achat {{ $achatAAnnuler?->reference }}</p>
+            <p class="mt-1 text-sm text-red-900">
+                @if ($achatAAnnuler?->statut === \App\Enums\StatutAchat::Valide)
+                    L'achat restera visible, marqué « Annulé ». Ses effets sont repris : les kilos ressortent du lot, le remboursement du prêt est annulé et l'argent payé revient dans la caisse.
+                @else
+                    L'achat n'avait encore rien changé (ni stock, ni caisse) : il restera visible, marqué « Annulé ».
+                @endif
+            </p>
+            <label for="motifAnnulation" class="mt-3 block text-sm font-medium text-red-950">Pourquoi ? (obligatoire)</label>
+            <input wire:model="motifAnnulation" id="motifAnnulation" type="text" placeholder="Ex. poids saisi deux fois" class="mt-1 block w-full rounded-md border border-red-300 px-3 py-2 focus:outline-none">
+            @error('motifAnnulation') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+            <div class="mt-3 flex gap-2">
+                <button type="submit" class="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800">Supprimer l'achat</button>
+                <button type="button" wire:click="$set('aAnnuler', null)" class="rounded-md px-4 py-2 text-sm text-stone-700 hover:bg-stone-100">Garder</button>
+            </div>
+        </form>
+    @endif
+
     <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
         <table class="min-w-full text-sm">
             <thead class="bg-stone-50 text-left text-stone-600">
@@ -80,6 +100,7 @@
                             {{ $a->statut->libelle() }}
                             @if ($a->validateur) <span class="block text-xs text-stone-500">{{ $a->statut->value === 'refuse' ? 'refusé' : 'validé' }} par {{ $a->validateur->nom }}</span> @endif
                             @if ($a->motif_refus) <span class="block text-xs text-red-700">{{ $a->motif_refus }}</span> @endif
+                            @if ($a->motif_annulation) <span class="block text-xs text-red-700">annulé : {{ $a->motif_annulation }}</span> @endif
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-right">
                             <a href="{{ route('achats.bon', $a) }}" target="_blank" class="mr-1 rounded-md px-2 py-1 text-xs text-emerald-800 hover:bg-emerald-50">Bon PDF</a>
@@ -99,6 +120,9 @@
                                         class="rounded-md bg-emerald-700 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-800">Valider</button>
                                     <button type="button" wire:click="preparerRefus('{{ $a->id }}')" class="ml-1 rounded-md px-2 py-1 text-xs text-red-800 hover:bg-red-50">Refuser</button>
                                 @endif
+                            @endif
+                            @if ($peutAnnuler && in_array($a->statut->value, ['a_valider', 'valide'], true))
+                                <button type="button" wire:click="preparerAnnulation('{{ $a->id }}')" class="ml-1 rounded-md px-2 py-1 text-xs text-red-800 hover:bg-red-50">Supprimer</button>
                             @endif
                         </td>
                     </tr>

@@ -57,6 +57,85 @@
             .v-pastille { transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), background-color .3s ease; }
             .v-etape:hover .v-pastille { transform: scale(1.18) rotate(-6deg); background: var(--or); color: var(--brun); }
 
+            /* Anacarde : filière phare, histoire animée de la noix à l'amande. */
+            .v-ana { background: radial-gradient(50rem 26rem at 90% 0%, rgba(242, 182, 50, .28), transparent 60%), linear-gradient(165deg, #123524 0%, #173f2a 60%, #2b2118 100%); }
+            .v-ana-prix { display: block; background: rgba(255, 255, 255, .08); border: 1px solid rgba(242, 182, 50, .4); transition: background .25s ease, transform .25s ease; }
+            .v-ana-prix:hover { background: rgba(255, 255, 255, .14); transform: translateY(-3px); }
+            .v-ana-scene { background: #fdf4dc; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .7); }
+            .v-ana-svg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transform: scale(1.04); transition: opacity .7s ease, transform .9s ease; }
+            .v-ana-svg.est-active { opacity: 1; transform: none; }
+            .v-ana-fleche { display: inline-flex; height: 2.75rem; width: 2.75rem; align-items: center; justify-content: center; border-radius: 9999px; background: var(--or); color: var(--vert); font-size: 1.15rem; font-weight: 700; transition: transform .2s ease, background .2s ease; }
+            .v-ana-fleche:hover { transform: scale(1.08); background: #f7c95a; }
+            .v-ana-fleche:focus-visible, .v-ana-pas:focus-visible { outline: 3px solid var(--or); outline-offset: 3px; }
+            .v-ana-pas .v-ana-barre span { width: 0; background: var(--or); }
+            .v-ana-pas.est-passe .v-ana-barre span { width: 100%; }
+            .v-ana-pas[aria-current="step"] .v-ana-barre span { width: 100%; }
+            .v-ana.est-en-lecture .v-ana-pas[aria-current="step"] .v-ana-barre span { animation: ana-remplit var(--ana-duree, 6s) linear forwards; }
+            .v-ana-pas[aria-current="step"] span:last-child { color: #fff; font-weight: 600; }
+            .v-ana-chemin { scrollbar-width: thin; }
+            @keyframes ana-remplit { from { width: 0; } to { width: 100%; } }
+
+            /* Les scènes : chaque animation part quand son étape devient active. */
+            .v-ana-svg * { transform-box: fill-box; }
+            .est-active .ana-pluie rect { animation: ana-pluie 1.1s linear infinite; }
+            .est-active .ana-pluie rect:nth-child(2n) { animation-delay: .4s; }
+            .est-active .ana-pluie rect:nth-child(3n) { animation-delay: .75s; }
+            .ana-pousse { transform-origin: 50% 100%; }
+            .est-active .ana-pousse { animation: ana-pousse 2.4s cubic-bezier(.2, .8, .2, 1) both; }
+            .ana-feuille-g { transform-origin: 100% 50%; } .ana-feuille-d { transform-origin: 0% 50%; }
+            .est-active .ana-feuille-g { animation: ana-deplie-g 1.2s 1.6s ease-out both; }
+            .est-active .ana-feuille-d { animation: ana-deplie-d 1.2s 1.8s ease-out both; }
+            .ana-grandit { transform-box: view-box; transform-origin: 200px 232px; }
+            .est-active .ana-grandit { animation: ana-grandit 2.6s cubic-bezier(.2, .8, .2, 1) both, ana-vent 4s 2.6s ease-in-out infinite; }
+            .est-active .ana-soleil-doux { animation: v-pulse 4s ease-in-out infinite; }
+            .ana-fleurs circle { transform-origin: center; }
+            .est-active .ana-fleurs circle { animation: ana-eclot .6s cubic-bezier(.3, 1.6, .5, 1) both; }
+            @for ($k = 1; $k <= 8; $k++)
+                .est-active .ana-fleurs circle:nth-child({{ $k }}) { animation-delay: {{ 0.25 * $k }}s; }
+            @endfor
+            .ana-abeille { transform-box: view-box; }
+            .est-active .ana-abeille { animation: ana-abeille 5s ease-in-out infinite; }
+            .ana-balance { transform-box: view-box; transform-origin: 200px 40px; }
+            .est-active .ana-balance { animation: ana-balance 3.2s ease-in-out infinite; }
+            .est-active .ana-chute { animation: ana-chute 2.4s cubic-bezier(.5, 0, .9, .6) infinite; }
+            .est-active .ana-chute-2 { animation-delay: .8s; } .est-active .ana-chute-3 { animation-delay: 1.6s; }
+            .ana-rayons { transform-box: view-box; transform-origin: 320px 70px; }
+            .est-active .ana-rayons { animation: ana-tourne 12s linear infinite; }
+            .est-active .ana-chaleur path { animation: ana-chaleur 2.4s ease-in infinite; }
+            .est-active .ana-chaleur path:nth-child(2) { animation-delay: .8s; } .est-active .ana-chaleur path:nth-child(3) { animation-delay: 1.6s; }
+            .ana-aiguille { transform-box: view-box; transform-origin: 200px 74px; }
+            .est-active .ana-aiguille { animation: ana-aiguille 2.6s ease-out both; }
+            .est-active .ana-sac { animation: ana-sac 2.6s ease-out both; }
+            .est-active .ana-fiche { animation: v-monte .7s 2.2s ease-out both; }
+            .est-active .ana-empile { animation: ana-empile .7s cubic-bezier(.3, 1.4, .5, 1) both; }
+            @for ($k = 1; $k <= 6; $k++)
+                .est-active .ana-empile-{{ $k }} { animation-delay: {{ 0.35 * ($k - 1) }}s; }
+            @endfor
+            .est-active .ana-coque-g { animation: ana-ouvre-g 1.4s .6s ease-in-out both; }
+            .est-active .ana-coque-d { animation: ana-ouvre-d 1.4s .6s ease-in-out both; }
+            .ana-amande { transform-origin: center; }
+            .est-active .ana-amande { animation: ana-amande 1s 1.6s cubic-bezier(.3, 1.5, .5, 1) both; }
+            .est-active .ana-etiquette { animation: v-monte .7s 2.2s ease-out both; }
+
+            @keyframes ana-pluie { from { transform: translateY(-40px); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(230px); opacity: .2; } }
+            @keyframes ana-pousse { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+            @keyframes ana-deplie-g { from { transform: rotate(60deg) scale(0); } to { transform: none; } }
+            @keyframes ana-deplie-d { from { transform: rotate(-60deg) scale(0); } to { transform: none; } }
+            @keyframes ana-grandit { from { transform: scale(.35); } to { transform: scale(1); } }
+            @keyframes ana-vent { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(1.6deg); } }
+            @keyframes ana-eclot { from { transform: scale(0); } to { transform: scale(1); } }
+            @keyframes ana-abeille { 0% { transform: translate(60px, 200px); } 25% { transform: translate(150px, 110px) rotate(-10deg); } 50% { transform: translate(250px, 90px); } 75% { transform: translate(300px, 170px) rotate(10deg); } 100% { transform: translate(60px, 200px); } }
+            @keyframes ana-balance { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+            @keyframes ana-chute { 0% { transform: translateY(0); opacity: 1; } 70% { transform: translateY(78px); opacity: 1; } 100% { transform: translateY(78px); opacity: 0; } }
+            @keyframes ana-tourne { to { transform: rotate(360deg); } }
+            @keyframes ana-chaleur { from { transform: translateY(10px); opacity: 0; } 40% { opacity: .9; } to { transform: translateY(-30px); opacity: 0; } }
+            @keyframes ana-aiguille { 0% { transform: rotate(-80deg); } 35% { transform: rotate(60deg); } 55% { transform: rotate(10deg); } 75% { transform: rotate(38deg); } 100% { transform: rotate(28deg); } }
+            @keyframes ana-sac { 0% { transform: translateY(-14px); } 35% { transform: translateY(10px); } 60% { transform: translateY(2px); } 100% { transform: translateY(5px); } }
+            @keyframes ana-empile { from { transform: translateY(-180px); opacity: 0; } 60% { opacity: 1; } to { transform: none; opacity: 1; } }
+            @keyframes ana-ouvre-g { to { transform: translate(-56px, 10px) rotate(-14deg); } }
+            @keyframes ana-ouvre-d { to { transform: translate(56px, 10px) rotate(14deg); } }
+            @keyframes ana-amande { from { transform: scale(.7); } to { transform: scale(1.06); } }
+
             /* Apparition au défilement : seulement si JavaScript est actif. */
             .js [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity .8s ease, transform .8s cubic-bezier(.2, .7, .2, 1); transition-delay: var(--d, 0s); }
             .js [data-reveal="gauche"] { transform: translateX(-30px); }

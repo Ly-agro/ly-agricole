@@ -27,26 +27,25 @@ class CulturesVitrineTest extends TestCase
         $this->assertGreaterThanOrEqual(25, Produit::query()->count());
     }
 
+    // La liste « Autres cultures suivies » a été retirée de la vitrine (choix du 2026-10-01) :
+    // les cultures défilent dans le bandeau, et un prix n'est jamais inventé.
     #[Test]
-    public function la_vitrine_montre_les_cultures_sans_prix_avec_prix_a_venir_et_aucun_chiffre(): void
+    public function la_vitrine_nomme_les_cultures_sans_inventer_de_prix(): void
     {
         $this->seed(CulturesSeeder::class);
 
-        $this->get('/')->assertOk()->assertSee('Autres cultures suivies')
-            ->assertSee('Manioc')->assertSee('Cacao')->assertSee('Aucun prix publié pour le moment');
+        $this->get('/')->assertOk()
+            ->assertSee('Manioc')->assertSee('Cacao')->assertSee('Aucun prix publié pour le moment')
+            ->assertDontSee('FCFA / kg');
     }
 
     #[Test]
-    public function une_culture_avec_prix_quitte_la_liste_des_cultures_sans_prix(): void
+    public function un_prix_publie_apparait_avec_sa_source(): void
     {
         $this->seed(CulturesSeeder::class);
         $direction = User::factory()->role(Role::Direction)->create();
-        Publications::publierPrix(Produit::query()->where('code', 'mais')->firstOrFail(), 250, Carbon::today(), 'Marché', null, null, $direction);
+        Publications::publierPrix(Produit::query()->where('code', 'mais')->firstOrFail(), 250, Carbon::today(), 'Marché de Bouaké', null, null, $direction);
 
-        $page = $this->get('/')->assertOk()->getContent();
-        $liste = substr((string) $page, (int) strpos((string) $page, 'Autres cultures suivies'));
-
-        $this->assertStringContainsString('Manioc', $liste);
-        $this->assertStringNotContainsString('Maïs', $liste);
+        $this->get('/')->assertOk()->assertSee('Maïs')->assertSee('Marché de Bouaké')->assertSee('FCFA / kg');
     }
 }

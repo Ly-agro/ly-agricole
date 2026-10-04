@@ -32,8 +32,24 @@
                 <a href="{{ route('producteurs.modifier', $producteur) }}"
                     class="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm text-stone-800 hover:bg-stone-50">Modifier</a>
             @endcan
+            @can('annuler-operations')
+                {{-- Confirmation dans la page (pas de boîte du navigateur). --}}
+                <details class="relative">
+                    <summary class="cursor-pointer list-none rounded-md border border-red-200 bg-white px-4 py-2 text-sm text-red-800 hover:bg-red-50 [&::-webkit-details-marker]:hidden">Supprimer</summary>
+                    <form method="POST" action="{{ route('producteurs.supprimer', $producteur) }}" class="absolute right-0 z-10 mt-2 w-72 rounded-xl border border-red-200 bg-white p-4 text-sm shadow-lg">
+                        @csrf
+                        @method('DELETE')
+                        <p class="text-stone-700">Supprimer définitivement la fiche de {{ $producteur->nomComplet() }}, sa photo et ses parcelles ? Possible seulement si elle n'a encore servi à rien (aucun prêt, achat ni visite).</p>
+                        <button type="submit" class="mt-3 w-full rounded-md bg-red-700 px-4 py-2 font-medium text-white hover:bg-red-800">Oui, supprimer la fiche</button>
+                    </form>
+                </details>
+            @endcan
         </div>
     </div>
+
+    @if (session('refus'))
+        <p class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">{{ session('refus') }}</p>
+    @endif
 
     <dl class="mt-8 grid gap-x-8 gap-y-4 rounded-xl border border-stone-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-3">
         <div><dt class="text-stone-500">Sexe</dt><dd>{{ $producteur->sexe?->libelle() ?? '—' }}</dd></div>

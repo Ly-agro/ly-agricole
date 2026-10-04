@@ -16,8 +16,8 @@ class RolesTest extends TestCase
     /** @return array<string, array{Role}> */
     public static function rolesSansGestionDesComptes(): array
     {
+        // La direction ouvre l'écran, mais seulement pour les agents : voir AgentsParLaDirectionTest.
         return [
-            'direction' => [Role::Direction],
             'comptable' => [Role::Comptable],
             'agent' => [Role::Agent],
             'agronome' => [Role::Agronome],

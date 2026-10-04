@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\OperationRefusee;
 use App\Models\Producteur;
 use App\Services\CarteProducteur;
+use App\Services\SuppressionFiches;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -20,6 +23,20 @@ class ProducteurController extends Controller
             ->withCount('visites')->withMax('visites', 'date_visite')->orderBy('nom')]);
 
         return view('producteurs.fiche', ['producteur' => $producteur]);
+    }
+
+    /** « Supprimer » : seulement une fiche qui n'a encore servi à rien (le service vérifie). */
+    public function supprimer(Producteur $producteur): RedirectResponse
+    {
+        Gate::authorize('annuler-operations');
+
+        try {
+            SuppressionFiches::producteur($producteur, auth()->user());
+        } catch (OperationRefusee $e) {
+            return redirect()->route('producteurs.fiche', $producteur)->with('refus', $e->getMessage());
+        }
+
+        return redirect()->route('producteurs')->with('statut', "Fiche de {$producteur->nomComplet()} supprimée.");
     }
 
     public function carte(Producteur $producteur): Response

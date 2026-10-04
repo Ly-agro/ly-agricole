@@ -46,7 +46,25 @@ class PrixVitrineTest extends TestCase
         $this->assertCount(VitrineController::PRIX_EN_AVANT, $enAvant);
         $this->assertSame(['anacarde', 'karite'], array_slice($enAvant, 0, 2));
         $this->assertCount(2, $page->viewData('prixAutres'));
-        $page->assertSee('Afficher les 2 autres cultures')->assertSee('Voir tous les prix et les courbes');
+        // Les autres prix ne sont plus repliés sur l'accueil (choix du 2026-10-01) : « Voir tous ».
+        $page->assertSee('Voir tous les prix et les courbes')->assertDontSee('data-autres-prix', false);
+    }
+
+    #[Test]
+    public function l_anacarde_a_sa_section_animee_avec_son_dernier_prix(): void
+    {
+        $page = $this->get('/')->assertOk()
+            ->assertSeeHtml('id="anacarde"')
+            ->assertSeeHtml('L\'anacarde, de la noix à l\'amande.')
+            ->assertSeeHtml('href="#anacarde"');
+        foreach (['La noix semée', 'La floraison', 'La récolte', 'Le séchage', 'La pesée et le contrôle', 'Le stockage', 'La transformation'] as $etape) {
+            $page->assertSee($etape);
+        }
+        // Sans prix publié, aucun prix n'est inventé dans la section.
+        $page->assertDontSeeHtml('class="v-ana-prix');
+
+        $this->prix('anacarde', 400);
+        $this->get('/')->assertOk()->assertSeeHtml('class="v-ana-prix')->assertSee('400');
     }
 
     #[Test]

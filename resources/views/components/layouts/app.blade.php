@@ -9,6 +9,11 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        {{-- Avis en direct (Reverb) : Echo s'abonne au canal privé de cet utilisateur. --}}
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        @auth
+            <meta name="ly-utilisateur" content="{{ auth()->id() }}">
+        @endauth
 
         <title>{{ $title ?? config('app.name') }} — {{ config('app.name') }}</title>
 
@@ -120,7 +125,7 @@
                     </div>
                 @endcanany
 
-                @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie', 'gerer-intrants', 'voir-journal', 'gerer-utilisateurs', 'gerer-appareils', 'gerer-publications'])
+                @canany(['gerer-referentiels', 'gerer-campagnes', 'gerer-parametres', 'gerer-tresorerie', 'gerer-intrants', 'voir-journal', 'ouvrir-comptes', 'gerer-appareils', 'gerer-publications'])
                     <div>
                         <p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-stone-500">Administration</p>
                         <div class="space-y-1">
@@ -132,6 +137,8 @@
                             @endcan
                             @can('gerer-utilisateurs')
                                 <x-nav-lien route="utilisateurs" motif="utilisateurs" icone="utilisateurs">Utilisateurs</x-nav-lien>
+                            @elsecan('gerer-agents')
+                                <x-nav-lien route="utilisateurs" motif="utilisateurs" icone="utilisateurs">Agents</x-nav-lien>
                             @endcan
                             @can('gerer-publications')
                                 <x-nav-lien route="publications" motif="publications" icone="publications">Vitrine</x-nav-lien>
@@ -196,11 +203,11 @@
 
                     @auth
                         @php $nonLues = auth()->user()->unreadNotifications()->count(); @endphp
-                        <a href="{{ route('notifications') }}" class="relative inline-flex items-center justify-center rounded-lg p-2 text-stone-700 hover:bg-stone-100"
+                        <a href="{{ route('notifications') }}" data-cloche class="relative inline-flex items-center justify-center rounded-lg p-2 text-stone-700 hover:bg-stone-100"
                             aria-label="Notifications{{ $nonLues > 0 ? ' : '.$nonLues.' non lue(s)' : '' }}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20a2 2 0 0 0 4 0" /></svg>
                             @if ($nonLues > 0)
-                                <span class="absolute -right-0.5 -top-0.5 min-w-5 rounded-full bg-red-600 px-1 text-center text-[11px] font-semibold leading-5 text-white tabular-nums">{{ $nonLues > 99 ? '99+' : $nonLues }}</span>
+                                <span data-cloche-compte class="absolute -right-0.5 -top-0.5 min-w-5 rounded-full bg-red-600 px-1 text-center text-[11px] font-semibold leading-5 text-white tabular-nums">{{ $nonLues > 99 ? '99+' : $nonLues }}</span>
                             @endif
                         </a>
                     @endauth

@@ -6,6 +6,7 @@ use App\Notifications\Canaux\FcmCanal;
 use App\Notifications\Canaux\WebPushCanal;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -42,10 +43,25 @@ class AvisLy extends Notification implements ShouldQueue
         return ['titre' => $this->titre, 'texte' => $this->textePush ?? self::TEXTE_PUSH, 'url' => $this->url, 'categorie' => $this->categorie];
     }
 
-    /** @return list<string> */
+    /**
+     * Diffusion en direct (Reverb) seulement si un diffuseur réel est configuré : en file, un
+     * canal par tâche, donc un serveur Reverb arrêté ne bloque ni la liste ni le push.
+     *
+     * @return list<string>
+     */
     public function via(object $notifiable): array
     {
-        return ['database', WebPushCanal::class, FcmCanal::class];
+        $canaux = ['database', WebPushCanal::class, FcmCanal::class];
+        if (! in_array(config('broadcasting.default'), ['null', 'log', null], true)) {
+            $canaux[] = 'broadcast';
+        }
+
+        return $canaux;
+    }
+
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return new BroadcastMessage($this->toArray($notifiable));
     }
 
     /** @return array{titre: string, texte: string, url: string|null, categorie: string} */

@@ -9,6 +9,7 @@ use App\Exceptions\OperationRefusee;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\Depense;
+use App\Models\MouvementTresorerie;
 use App\Models\Parametre;
 use App\Models\User;
 use App\Support\Format;
@@ -114,6 +115,36 @@ class Depenses
             ]);
 
             return $depense;
+        });
+    }
+
+    /**
+     * « Supprimer » une dépense, réservé à la direction (décision du 2026-10-01) : rien ne
+     * s'efface. À valider : elle passe « annulée », rien n'avait été payé. Payée : le paiement
+     * est contre-passé (l'argent revient dans la caisse), elle passe « annulée ».
+     */
+    public static function annuler(Depense $depense, User $auteur, string $motif): Depense
+    {
+        if (! $auteur->can('annuler-operations')) {
+            throw new OperationRefusee('Seule la direction peut supprimer (annuler) une dépense.');
+        }
+        $motif = trim($motif);
+        if (mb_strlen($motif) < 5) {
+            throw new OperationRefusee('Le motif de l\'annulation est obligatoire (5 caractères au moins).');
+        }
+
+        return DB::transaction(function () use ($depense, $auteur, $motif) {
+            $depense = Depense::query()->lockForUpdate()->findOrFail($depense->id);
+
+            if ($depense->statut === StatutDepense::Payee && $depense->mouvement_id !== null) {
+                Tresorerie::contrePasser(MouvementTresorerie::query()->findOrFail($depense->mouvement_id), $motif, $auteur);
+            } elseif ($depense->statut !== StatutDepense::AValider) {
+                throw new OperationRefusee('Cette dépense est déjà '.mb_strtolower($depense->statut->libelle()).'.');
+            }
+
+            $depense->update(['statut' => StatutDepense::Annulee, 'motif_refus' => 'Annulée par la direction : '.$motif]);
+
+            return $depense->refresh();
         });
     }
 

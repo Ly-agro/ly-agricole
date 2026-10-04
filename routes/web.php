@@ -80,7 +80,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tableau-de-bord', TableauDeBord::class)->name('tableau-de-bord');
 
     Route::get('/utilisateurs', GestionUtilisateurs::class)
-        ->middleware('can:gerer-utilisateurs')
+        ->middleware('can:ouvrir-comptes')
         ->name('utilisateurs');
 
     // Rapports de la direction et exports (semaine 10).
@@ -97,6 +97,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/nouveau', FormulaireProducteur::class)->middleware('can:gerer-producteurs')->name('.nouveau');
         Route::get('/groupes', Groupes::class)->middleware('can:gerer-producteurs')->name('.groupes');
         Route::get('/{producteur}', [ProducteurController::class, 'fiche'])->middleware('can:voir-producteurs')->name('.fiche');
+        Route::delete('/{producteur}', [ProducteurController::class, 'supprimer'])->middleware('can:annuler-operations')->name('.supprimer');
         Route::get('/{producteur}/modifier', FormulaireProducteur::class)->middleware('can:gerer-producteurs')->name('.modifier');
         Route::get('/{producteur}/photo', [ProducteurController::class, 'photo'])->middleware('can:voir-producteurs')->name('.photo');
         Route::get('/{producteur}/carte', [ProducteurController::class, 'carte'])->middleware('can:gerer-producteurs')->name('.carte');

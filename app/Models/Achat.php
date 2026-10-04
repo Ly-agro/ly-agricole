@@ -62,7 +62,7 @@ use Illuminate\Support\Carbon;
     'point_collecte_id', 'date_achat', 'lat', 'lng', 'poids_brut_g', 'tare_g', 'poids_net_g', 'poids_source', 'humidite_pour_mille',
     'kor_centieme_lbs', 'grainage_noix_kg', 'prix_kg_fcfa', 'montant_fcfa', 'pret_id', 'grammes_rembourses',
     'montant_especes_fcfa', 'commission_pisteur_fcfa', 'compte_id', 'mouvement_id', 'photo_pesee', 'statut', 'cree_par', 'valide_par',
-    'valide_at', 'motif_refus',
+    'valide_at', 'motif_refus', 'annule_par', 'annule_at', 'motif_annulation',
 ])]
 class Achat extends Model
 {
@@ -147,6 +147,7 @@ class Achat extends Model
             'statut' => StatutAchat::class,
             'date_achat' => 'datetime',
             'valide_at' => 'datetime',
+            'annule_at' => 'datetime',
             'poids_brut_g' => 'integer',
             'tare_g' => 'integer',
             'poids_net_g' => 'integer',
