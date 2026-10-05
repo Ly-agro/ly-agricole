@@ -16,6 +16,8 @@ $vercelDefaults = [
     'VIEW_COMPILED_PATH' => '/tmp/views',
     'LOG_CHANNEL' => 'stderr',
     'SESSION_DRIVER' => 'cookie',
+    // libpq sans SNI : identifiant Neon dans le mot de passe (config/database.php).
+    'DB_NEON_ENDPOINT' => 'true',
 ];
 
 foreach ($vercelDefaults as $key => $value) {
