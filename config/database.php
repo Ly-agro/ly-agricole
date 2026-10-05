@@ -3,6 +3,32 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+/*
+ * PostgreSQL : DB_* d'abord, sinon les POSTGRES_* posés par l'intégration Neon de
+ * Vercel. Une valeur vide compte comme absente (piège « clé .env vide »).
+ */
+$pg = static function (string $cle, string $repli, ?string $defaut = null): ?string {
+    foreach ([$cle, $repli] as $nom) {
+        $valeur = env($nom);
+        if ($valeur !== null && $valeur !== '') {
+            return (string) $valeur;
+        }
+    }
+
+    return $defaut;
+};
+$pgHote = $pg('DB_HOST', 'POSTGRES_HOST', '127.0.0.1');
+$pgMotDePasse = $pg('DB_PASSWORD', 'POSTGRES_PASSWORD', '');
+// La libpq du runtime PHP de Vercel n'envoie pas le SNI : Neon exige alors l'identifiant
+// du point d'accès dans le mot de passe (neon.tech/sni). Seulement là (DB_NEON_ENDPOINT,
+// posé par api/index.php) : avec une libpq récente (XAMPP), ce préfixe fait REFUSER le
+// mot de passe (vu le 2026-10-05).
+if (filter_var(env('DB_NEON_ENDPOINT', false), FILTER_VALIDATE_BOOL)
+    && preg_match('/^(ep-[a-z0-9-]+?)(-pooler)?\.[^.]+.*\.neon\.tech$/', $pgHote, $m)
+    && ! str_starts_with($pgMotDePasse, 'endpoint=')) {
+    $pgMotDePasse = 'endpoint='.$m[1].';'.$pgMotDePasse;
+}
+
 return [
 
     /*
@@ -87,16 +113,16 @@ return [
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
+            'host' => $pgHote,
             'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            'database' => $pg('DB_DATABASE', 'POSTGRES_DATABASE', 'laravel'),
+            'username' => $pg('DB_USERNAME', 'POSTGRES_USER', 'root'),
+            'password' => $pgMotDePasse,
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            'sslmode' => env('DB_SSLMODE', str_ends_with($pgHote, '.neon.tech') ? 'require' : 'prefer'),
         ],
 
         'sqlsrv' => [
