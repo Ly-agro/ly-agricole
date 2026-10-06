@@ -43,6 +43,7 @@ use App\Models\Zone;
 use App\Services\Journal;
 use App\Services\Sms\EnvoyeurSms;
 use App\Services\Sms\EnvoyeurSmsJournal;
+use App\Support\ConnecteurPostgresNeon;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -63,6 +64,9 @@ class AppServiceProvider extends ServiceProvider
             'journal' => new EnvoyeurSmsJournal,
             default => throw new \InvalidArgumentException('Pilote SMS inconnu : '.config('services.sms.pilote')),
         });
+
+        // Neon sans SNI (Vercel) : point d'accès passé en option de connexion.
+        $this->app->bind('db.connector.pgsql', ConnecteurPostgresNeon::class);
     }
 
     /**
