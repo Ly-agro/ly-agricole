@@ -33,13 +33,18 @@ if (is_array($u) && in_array($u['scheme'] ?? '', ['postgres', 'postgresql', 'pgs
     $pgUrl = null;
 }
 // La libpq du runtime PHP de Vercel n'envoie pas le SNI : Neon exige alors l'identifiant
-// du point d'accès dans le mot de passe (neon.tech/sni). Seulement là (DB_NEON_ENDPOINT,
-// posé par api/index.php) : avec une libpq récente (XAMPP), ce préfixe fait REFUSER le
-// mot de passe (vu le 2026-10-05).
+// du point d'accès, passé en option de connexion par App\Support\ConnecteurPostgresNeon.
+// Seulement là (DB_NEON_ENDPOINT, posé par api/index.php) : avec une libpq qui envoie le
+// SNI (XAMPP), Neon refuse un hôte « -pooler » dont l'option diffère.
+$pgPointAcces = null;
 if (filter_var(env('DB_NEON_ENDPOINT', false), FILTER_VALIDATE_BOOL)
-    && preg_match('/^(ep-[a-z0-9-]+?)(-pooler)?\.[^.]+.*\.neon\.tech$/', $pgHote, $m)
-    && ! str_starts_with($pgMotDePasse, 'endpoint=')) {
-    $pgMotDePasse = 'endpoint='.$m[1].';'.$pgMotDePasse;
+    && preg_match('/^(ep-[a-z0-9-]+?)(-pooler)?\.[^.]+.*\.neon\.tech$/', $pgHote, $m)) {
+    $pgPointAcces = $m[1];
+}
+// Ancienne astuce (préfixe « endpoint=…; » dans le mot de passe) : on la retire si elle
+// traîne dans Vercel, l'option ci-dessus la remplace.
+if (str_starts_with($pgMotDePasse, 'endpoint=') && str_contains($pgMotDePasse, ';')) {
+    $pgMotDePasse = substr($pgMotDePasse, strpos($pgMotDePasse, ';') + 1);
 }
 
 return [
@@ -136,6 +141,7 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', str_ends_with($pgHote, '.neon.tech') ? 'require' : 'prefer'),
+            'neon_endpoint' => $pgPointAcces,
         ],
 
         'sqlsrv' => [
