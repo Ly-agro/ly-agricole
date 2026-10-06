@@ -14,7 +14,6 @@ $vercelDefaults = [
     'APP_ROUTES_CACHE' => '/tmp/routes.php',
     'APP_SERVICES_CACHE' => '/tmp/services.php',
     'VIEW_COMPILED_PATH' => '/tmp/views',
-    'LOG_CHANNEL' => 'stderr',
     'SESSION_DRIVER' => 'cookie',
     // Pas de serveur WebSocket (Reverb) en serverless : avis en direct coupés, la liste
     // des avis et le push restent.
@@ -25,6 +24,8 @@ $vercelDefaults = [
 $vercelForces = [
     // La page d'erreur détaillée publiait cookies, en-têtes et jetons Vercel (2026-10-06).
     'APP_DEBUG' => 'false',
+    // Journaux lisibles dans Vercel : message sans la pile (config/logging.php).
+    'LOG_CHANNEL' => 'vercel',
     // libpq sans SNI : point d'accès Neon en option de connexion (config/database.php).
     'DB_NEON_ENDPOINT' => 'true',
 ];
