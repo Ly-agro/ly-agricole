@@ -16,6 +16,9 @@ $vercelDefaults = [
     'VIEW_COMPILED_PATH' => '/tmp/views',
     'LOG_CHANNEL' => 'stderr',
     'SESSION_DRIVER' => 'cookie',
+    // Pas de serveur WebSocket (Reverb) en serverless : avis en direct coupés, la liste
+    // des avis et le push restent.
+    'BROADCAST_CONNECTION' => 'log',
     // libpq sans SNI : identifiant Neon dans le mot de passe (config/database.php).
     'DB_NEON_ENDPOINT' => 'true',
 ];
