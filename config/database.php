@@ -19,6 +19,19 @@ $pg = static function (string $cle, string $repli, ?string $defaut = null): ?str
 };
 $pgHote = $pg('DB_HOST', 'POSTGRES_HOST', '127.0.0.1');
 $pgMotDePasse = $pg('DB_PASSWORD', 'POSTGRES_PASSWORD', '');
+$pgUtilisateur = $pg('DB_USERNAME', 'POSTGRES_USER', 'root');
+$pgBase = $pg('DB_DATABASE', 'POSTGRES_DATABASE', 'laravel');
+// Une DB_URL serait appliquée par Laravel À LA CONNEXION, par-dessus le mot de passe
+// préfixé ci-dessous : on la décompose ici et on ne la transmet pas.
+$pgUrl = env('DB_URL') ?: null;
+$u = is_string($pgUrl) ? parse_url($pgUrl) : false;
+if (is_array($u) && in_array($u['scheme'] ?? '', ['postgres', 'postgresql', 'pgsql'], true)) {
+    $pgHote = $u['host'] ?? $pgHote;
+    $pgUtilisateur = isset($u['user']) ? urldecode($u['user']) : $pgUtilisateur;
+    $pgMotDePasse = isset($u['pass']) ? urldecode($u['pass']) : $pgMotDePasse;
+    $pgBase = isset($u['path']) && $u['path'] !== '/' ? urldecode(ltrim($u['path'], '/')) : $pgBase;
+    $pgUrl = null;
+}
 // La libpq du runtime PHP de Vercel n'envoie pas le SNI : Neon exige alors l'identifiant
 // du point d'accès dans le mot de passe (neon.tech/sni). Seulement là (DB_NEON_ENDPOINT,
 // posé par api/index.php) : avec une libpq récente (XAMPP), ce préfixe fait REFUSER le
@@ -112,11 +125,11 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DB_URL'),
+            'url' => $pgUrl,
             'host' => $pgHote,
             'port' => env('DB_PORT', '5432'),
-            'database' => $pg('DB_DATABASE', 'POSTGRES_DATABASE', 'laravel'),
-            'username' => $pg('DB_USERNAME', 'POSTGRES_USER', 'root'),
+            'database' => $pgBase,
+            'username' => $pgUtilisateur,
             'password' => $pgMotDePasse,
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',

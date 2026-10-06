@@ -34,6 +34,12 @@ return [
         'pilote' => env('SMS_PILOTE') ?: 'journal',
     ],
 
+    // Tâches planifiées appelées par Vercel Cron (vercel.json), qui envoie ce secret en
+    // « Authorization: Bearer ». Absent ou vide : les adresses /cron/* refusent tout.
+    'cron' => [
+        'secret' => env('CRON_SECRET') ?: null,
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

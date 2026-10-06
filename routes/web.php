@@ -9,6 +9,7 @@ use App\Http\Controllers\PrixController;
 use App\Http\Controllers\ProducteurController;
 use App\Http\Controllers\RapportCampagneController;
 use App\Http\Controllers\RapportController;
+use App\Http\Controllers\TacheCronController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\VitrineController;
 use App\Livewire\Achats\FormulaireAchat;
@@ -72,6 +73,9 @@ Route::get('/', [VitrineController::class, 'accueil'])->name('accueil');
 Route::get('/prix', [PrixController::class, 'evolution'])->name('prix.evolution');
 Route::get('/actualites', [VitrineController::class, 'actualites'])->name('actualites');
 Route::get('/actualites/{actualite}', [VitrineController::class, 'actualite'])->name('actualites.voir');
+
+// Tâches planifiées appelées par Vercel Cron (protégées par CRON_SECRET).
+Route::get('/cron/{tache}', TacheCronController::class)->name('cron');
 
 // Nommée `login` : c'est la route où Laravel renvoie un visiteur non connecté.
 Route::get('/connexion', Connexion::class)->middleware('guest')->name('login');
