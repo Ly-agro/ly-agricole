@@ -64,6 +64,8 @@ use App\Livewire\Ventes\FicheVente;
 use App\Livewire\Ventes\FormulaireVente;
 use App\Livewire\Ventes\ListeVentes;
 use App\Livewire\Visites\ListeVisites;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 // Vitrine publique : on n'atterrit plus directement sur la connexion. Sans aucune donnée
@@ -76,6 +78,39 @@ Route::get('/actualites/{actualite}', [VitrineController::class, 'actualite'])->
 
 // Tâches planifiées appelées par Vercel Cron (protégées par CRON_SECRET).
 Route::get('/cron/{tache}', TacheCronController::class)->name('cron');
+
+// TEMPORAIRE (2026-10-06) : diagnostic de la connexion Neon sur Vercel, dont les journaux
+// coupent le message. Jeton hors dépôt, seule son empreinte est ici. À RETIRER.
+Route::get('/diagnostic/base', function (Request $request) {
+    $jeton = (string) $request->bearerToken();
+    abort_unless(hash_equals('fdf4b7219556d9de088916af15702ae57743d5c81b612c4064aa9ae35db7e8e9', hash('sha256', $jeton)), 404);
+
+    $c = config('database.connections.pgsql');
+    $present = fn (string $cle) => match (true) {
+        env($cle) === null => 'absente',
+        env($cle) === '' => 'vide',
+        default => 'definie',
+    };
+    $masquer = fn (string $texte) => preg_replace('/npg_\w+/', 'npg_***', $texte);
+
+    try {
+        DB::connection()->getPdo();
+        $resultat = 'OK, prix_marche='.DB::table('prix_marche')->count().', users='.DB::table('users')->count();
+    } catch (Throwable $e) {
+        $resultat = $masquer(get_class($e).' : '.$e->getMessage());
+    }
+
+    return response()->json([
+        'defaut' => config('database.default'),
+        'hote' => $c['host'], 'base' => $c['database'], 'utilisateur' => $c['username'],
+        'sslmode' => $c['sslmode'], 'neon_endpoint' => $c['neon_endpoint'] ?? null, 'url' => $c['url'] !== null,
+        'mot_de_passe' => ['longueur' => strlen((string) $c['password']), 'debut' => substr((string) $c['password'], 0, 4)],
+        'variables' => collect(['DB_CONNECTION', 'DB_URL', 'DB_HOST', 'DB_PASSWORD', 'POSTGRES_HOST', 'POSTGRES_PASSWORD', 'POSTGRES_URL', 'DB_NEON_ENDPOINT', 'APP_KEY', 'CRON_SECRET', 'QUEUE_CONNECTION'])
+            ->mapWithKeys(fn ($cle) => [$cle => $present($cle)]),
+        'connecteur' => get_class(app('db.connector.pgsql')),
+        'resultat' => $resultat,
+    ]);
+});
 
 // Nommée `login` : c'est la route où Laravel renvoie un visiteur non connecté.
 Route::get('/connexion', Connexion::class)->middleware('guest')->name('login');
