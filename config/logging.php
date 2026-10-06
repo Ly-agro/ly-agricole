@@ -1,5 +1,6 @@
 <?php
 
+use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -110,6 +111,25 @@ return [
                 'stream' => 'php://stderr',
             ],
             'formatter' => env('LOG_STDERR_FORMATTER'),
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+
+        // Vercel (api/index.php) : une ligne courte par erreur, SANS la pile d'appels.
+        // Vercel ne garde que la fin d'une ligne trop longue : avec la pile, le message
+        // de l'exception était coupé et n'apparaissait nulle part (2026-10-06).
+        'vercel' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => 'php://stderr',
+            ],
+            'formatter' => LineFormatter::class,
+            'formatter_with' => [
+                'allowInlineLineBreaks' => false,
+                'ignoreEmptyContextAndExtra' => true,
+                'includeStacktraces' => false,
+            ],
             'processors' => [PsrLogMessageProcessor::class],
         ],
 
