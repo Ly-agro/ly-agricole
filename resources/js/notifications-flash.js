@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (corps.flashStatut) notifier(corps.flashStatut);
 });
 
-document.addEventListener('livewire:init', () => {
+function brancher() {
     const L = window.Livewire;
 
     L.hook('component.init', ({ component }) => {
@@ -70,7 +70,7 @@ document.addEventListener('livewire:init', () => {
     });
 
     L.hook('commit', ({ component, succeed }) => {
-        succeed(() => queueMicrotask(() => {
+        succeed(() => setTimeout(() => {
             const avant = vus.get(component.id) ?? { statut: '', erreurs: '{}' };
             const e = etat(component);
             if (e.erreurs !== avant.erreurs && e.erreurs !== '{}' && e.erreurs !== '[]') {
@@ -79,7 +79,7 @@ document.addEventListener('livewire:init', () => {
                 notifier(e.statut);
             }
             vus.set(component.id, { statut: e.statut, erreurs: e.erreurs });
-        }));
+        }, 0));
     });
 
     L.hook('request', ({ fail }) => {
@@ -94,4 +94,7 @@ document.addEventListener('livewire:init', () => {
             }
         });
     });
-});
+}
+
+if (window.Livewire) brancher();
+else document.addEventListener('livewire:init', brancher);

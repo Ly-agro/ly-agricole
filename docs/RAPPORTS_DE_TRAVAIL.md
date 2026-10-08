@@ -39,6 +39,19 @@ Vercel. `R2_BUCKET=s3` dans ce fichier : à vérifier (doit être le nom exact d
 
 **Visites.** Pas de création au back-office : voulu (saisie sur l'appli terrain, GPS et photos).
 
+**Listes en double (Trésorerie, Apports) — corrigé et VU dans Chrome (localhost, compte direction
+de dév.).** Deux erreurs dans `recherche-listes.js` : (1) garder le bloc Tom Select au morph
+(`morph.removing` + `skip`) laissait l'ancien bloc à côté du nouveau ; (2) le rééquipement partait
+dans `commit` → `succeed` + microtâche, donc AVANT le morph de Livewire 3 : il ne voyait pas les
+nouvelles listes. Désormais : rien n'est retenu, crochet `morphed` (+ `commit` en secours, différé),
+listes détachées sans `destroy()` (qui remettrait les anciennes options), blocs orphelins retirés ;
+crochets posés même si Livewire a démarré avant le script (même correctif pour
+`notifications-flash.js`). Vérifié : Apports → 3 listes, chacune une fois ; nom tapé « Kone
+Ibrahim » → « Utiliser « Kone Ibrahim » », apport enregistré, bandeau « Apport enregistré. »,
+part 6,6 % ; Trésorerie → Entrée, choix du compte, Virement : chaque liste une seule fois.
+R2 : `/diagnostic/fichiers` en production → R2 « OK » une fois la clé recréée ; `FICHIERS_DISK`
+mis par erreur à `lyagricole` (nom du compartiment) au lieu de `r2`.
+
 ---
 
 ## 2026-10-07 — 500 en production, ventes par l'agent, fin de campagne, apports, fichiers R2, listes avec recherche, bandeaux — FAIT, TESTÉ, PAS DÉPLOYÉ NI VU DANS LE NAVIGATEUR

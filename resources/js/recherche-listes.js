@@ -55,8 +55,17 @@ export function equiperTout() {
 
 document.addEventListener('DOMContentLoaded', () => equiperTout());
 
-document.addEventListener('livewire:init', () => {
-    window.Livewire.hook('commit', ({ succeed }) => succeed(() => queueMicrotask(() => equiperTout())));
-});
+function plusTard() {
+    setTimeout(equiperTout, 0);
+    setTimeout(equiperTout, 150);
+}
+
+function brancher() {
+    window.Livewire.hook('morphed', () => plusTard());
+    window.Livewire.hook('commit', ({ succeed }) => succeed(() => plusTard()));
+}
+
+if (window.Livewire) brancher();
+else document.addEventListener('livewire:init', brancher);
 
 document.addEventListener('livewire:navigated', () => equiperTout());
