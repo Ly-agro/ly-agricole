@@ -14,6 +14,9 @@ $vercelDefaults = [
     'APP_ROUTES_CACHE' => '/tmp/routes.php',
     'APP_SERVICES_CACHE' => '/tmp/services.php',
     'VIEW_COMPILED_PATH' => '/tmp/views',
+    // storage/ est en lecture seule : la façade temps réel de l'envoi Livewire
+    // (GenerateSignedUploadUrl) s'y écrit, d'où un 500 à chaque fichier choisi (2026-10-08).
+    'LARAVEL_STORAGE_PATH' => '/tmp/storage',
     'SESSION_DRIVER' => 'cookie',
     // Pas de serveur WebSocket (Reverb) en serverless : avis en direct coupés, la liste
     // des avis et le push restent.
@@ -38,8 +41,10 @@ foreach ($vercelDefaults + $vercelForces as $key => $value) {
     }
 }
 
-if (! is_dir('/tmp/views')) {
-    mkdir('/tmp/views', 0755, true);
+foreach (['/tmp/views', '/tmp/storage/framework/cache/data', '/tmp/storage/app/private', '/tmp/storage/logs'] as $dossier) {
+    if (! is_dir($dossier)) {
+        mkdir($dossier, 0755, true);
+    }
 }
 
 require __DIR__.'/../public/index.php';
