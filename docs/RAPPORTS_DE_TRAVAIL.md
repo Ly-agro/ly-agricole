@@ -5,6 +5,28 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-10-08 — Photo du producteur : le Village se vidait après le choix du fichier — FAIT, PAS DÉPLOYÉ
+
+**Constaté dans Chrome** (`localhost:8000`, compte agent d'essai, LYP-000001) : après le choix de
+la photo, le rendu Livewire remet les `<option>` du serveur sans `selected` ; Tom Select, rééquipé
+par `equiperTout()`, affiche alors « — Choisir — » pour le Village alors que le serveur garde
+`villageId = 1`. Le `required` du navigateur bloque « Enregistrer » : pour l'utilisateur, « la
+photo ne passe pas ». Touche toute liste à recherche après un rendu.
+
+**Fait.** `resources/js/recherche-listes.js` : après chaque équipement, `recaler()` remet Tom
+Select sur la valeur de la propriété Livewire liée par `wire:model`, sans événement (commit
+`54e3fce`).
+
+**Vérifié en l'exécutant** : photo choisie → Village toujours rempli → « Doublon possible »
+(téléphone partagé avec LYP-000002 et LYP-000009, confirmation cochée) → enregistré, nouvelle photo
+en base et affichée sur la fiche.
+
+**Reste.** Déployer (avec `npm run build`). Si l'envoi échoue encore en production, la cause est
+côté serveur (R2, `upload_max_filesize` / `post_max_size`) : voir `/diagnostic/fichiers` et le
+journal.
+
+---
+
 ## 2026-10-08 — Envois toujours en 500, clé R2 exposée, bandeaux seuls, champ fichier, commentaires, vidage de la base — FAIT, PAS DÉPLOYÉ
 
 **Constaté.** Après le déploiement de la veille (commits `kmp`, `vr`) et l'ajout des variables R2 :
