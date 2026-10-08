@@ -215,6 +215,15 @@ class Sauvegardes
         return is_file($fichier) ? json_decode((string) file_get_contents($fichier), true) : null;
     }
 
+    /**
+     * Cette sauvegarde (mysqldump, disque du serveur) s'applique-t-elle à la base en service ?
+     * Non sur PostgreSQL : c'est la production Vercel + Neon, protégée par l'historique de Neon.
+     */
+    public function gereLaBase(): bool
+    {
+        return DB::connection()->getDriverName() !== 'pgsql';
+    }
+
     public function horsSiteConfiguree(): bool
     {
         return config('sauvegardes.hors_site_disque') !== null || config('sauvegardes.hors_site_dossier') !== null;

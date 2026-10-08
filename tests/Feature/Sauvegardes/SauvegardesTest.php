@@ -286,6 +286,25 @@ class SauvegardesTest extends TestCase
     }
 
     #[Test]
+    public function sur_postgresql_neon_un_seul_rappel_remplace_les_alertes_de_sauvegarde(): void
+    {
+        $this->app->instance(Sauvegardes::class, new class extends Sauvegardes
+        {
+            public function gereLaBase(): bool
+            {
+                return false;
+            }
+        });
+
+        $alertes = array_column(app(Rapports::class)->alertes()->lignes, 0);
+
+        $this->assertContains('Sauvegardes : historique Neon', $alertes);
+        foreach (['Copie hors site absente', 'Sauvegardes non chiffrées', 'Sauvegarde non vérifiée'] as $trompeuse) {
+            $this->assertNotContains($trompeuse, $alertes);
+        }
+    }
+
+    #[Test]
     public function sans_copie_hors_site_ni_chiffrement_les_rapports_le_signalent(): void
     {
         $alertes = array_column(app(Rapports::class)->alertes()->lignes, 0);
