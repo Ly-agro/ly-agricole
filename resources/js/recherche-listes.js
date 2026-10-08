@@ -42,6 +42,26 @@ function retirerOrphelins() {
     });
 }
 
+// Valeur de la propriété Livewire liée par wire:model, ou undefined.
+function valeurLivewire(select) {
+    const modele = [...select.attributes].find((a) => a.name.startsWith('wire:model'));
+    const racine = select.closest('[wire\\:id]');
+    if (!modele || !racine || !window.Livewire) return undefined;
+    const valeur = window.Livewire.find(racine.getAttribute('wire:id'))?.get(modele.value);
+    return valeur === null || valeur === undefined ? undefined : String(valeur);
+}
+
+// Le morph de Livewire remet les <option> du serveur, sans `selected` : le select
+// retombe sur sa première option et Tom Select, rééquipé, l'affiche vide alors que
+// le serveur garde la valeur (vu le 2026-10-08 : village vidé après l'envoi d'une
+// photo, puis `required` bloquait l'enregistrement). On recale sans événement.
+function recaler(select) {
+    const ts = select.tomselect;
+    const attendu = valeurLivewire(select);
+    if (!ts || attendu === undefined || ts.getValue() === attendu) return;
+    ts.setValue(attendu, true);
+}
+
 export function equiperTout() {
     document.querySelectorAll('select').forEach((select) => {
         const ts = select.tomselect;
@@ -49,6 +69,7 @@ export function equiperTout() {
             detacher(select);
         }
         equiper(select);
+        recaler(select);
     });
     retirerOrphelins();
 }
