@@ -21,9 +21,18 @@ Select sur la valeur de la propriété Livewire liée par `wire:model`, sans év
 (téléphone partagé avec LYP-000002 et LYP-000009, confirmation cochée) → enregistré, nouvelle photo
 en base et affichée sur la fiche.
 
-**Reste.** Déployer (avec `npm run build`). Si l'envoi échoue encore en production, la cause est
-côté serveur (R2, `upload_max_filesize` / `post_max_size`) : voir `/diagnostic/fichiers` et le
-journal.
+**Puis, en production (journaux Vercel + `/diagnostic/fichiers`)** : deux causes de plus.
+
+- `POST /livewire/update` en 500 : « tempnam(): file created in the system's temporary directory »
+  (`AliasLoader.php:111`). L'envoi Livewire passe par une façade temps réel
+  (`Facades\…\GenerateSignedUploadUrl`) que Laravel écrit dans `storage/framework/cache`, en
+  lecture seule sur Vercel. Corrigé : `LARAVEL_STORAGE_PATH=/tmp/storage` dans `api/index.php`
+  (dossiers créés au démarrage). `storage/` ne contient aucun fichier suivi. Vérifié par un script
+  qui démarre Laravel avec ces variables : façade écrite dans le nouveau dossier.
+- `FICHIERS_DISK=lyagricole` dans Vercel (nom du compartiment) au lieu de `r2` : « Disk
+  [lyagricole] does not have a configured driver ». À corriger dans les réglages Vercel.
+
+**Reste.** Déployer, corriger `FICHIERS_DISK=r2` dans Vercel, puis refaire un envoi réel.
 
 ---
 
