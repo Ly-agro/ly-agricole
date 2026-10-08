@@ -19,26 +19,43 @@ function equiper(select) {
     });
 }
 
-function synchroniser(select) {
+function detacher(select) {
     const ts = select.tomselect;
-    if (!ts) return equiper(select);
-    select.classList.add(...CACHE);
-
-    ts.clearOptions();
-    ts.sync();
+    ts.wrapper?.remove();
+    ts.dropdown?.remove();
+    delete select.tomselect;
+    select.classList.remove(...CACHE);
+    select.removeAttribute('tabindex');
+    select.removeAttribute('hidden');
 }
 
-export function equiperTout(racine = document) {
-    racine.querySelectorAll('select').forEach((s) => (s.tomselect ? synchroniser(s) : equiper(s)));
+function retirerOrphelins() {
+    const vivants = new Set();
+    document.querySelectorAll('select').forEach((s) => {
+        if (s.tomselect) {
+            vivants.add(s.tomselect.wrapper);
+            vivants.add(s.tomselect.dropdown);
+        }
+    });
+    document.querySelectorAll('.ts-wrapper, .ts-dropdown').forEach((el) => {
+        if (!vivants.has(el)) el.remove();
+    });
+}
+
+export function equiperTout() {
+    document.querySelectorAll('select').forEach((select) => {
+        const ts = select.tomselect;
+        if (ts && (!ts.wrapper?.isConnected || !select.classList.contains('tomselected'))) {
+            detacher(select);
+        }
+        equiper(select);
+    });
+    retirerOrphelins();
 }
 
 document.addEventListener('DOMContentLoaded', () => equiperTout());
 
 document.addEventListener('livewire:init', () => {
-    window.Livewire.hook('morph.removing', ({ el, skip }) => {
-        if (el.classList?.contains('ts-wrapper') || el.classList?.contains('ts-dropdown')) skip();
-    });
-
     window.Livewire.hook('commit', ({ succeed }) => succeed(() => queueMicrotask(() => equiperTout())));
 });
 
