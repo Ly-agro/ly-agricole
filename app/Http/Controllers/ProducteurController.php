@@ -34,7 +34,7 @@ class ProducteurController extends Controller
         try {
             SuppressionFiches::producteur($producteur, auth()->user());
         } catch (OperationRefusee $e) {
-            return redirect()->route('producteurs.fiche', $producteur)->with('refus', $e->getMessage());
+            return redirect()->route('producteurs.fiche', $producteur)->with('erreur', $e->getMessage());
         }
 
         return redirect()->route('producteurs')->with('statut', "Fiche de {$producteur->nomComplet()} supprimée.");

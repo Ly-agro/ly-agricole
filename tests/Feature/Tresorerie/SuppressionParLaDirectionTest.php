@@ -89,7 +89,7 @@ class SuppressionParLaDirectionTest extends TestCase
             ->set('motifAnnulation', 'Mauvaise catégorie')
             ->call('annulerDepense')
             ->assertHasNoErrors()
-            ->assertSee('Dépense supprimée');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Dépense supprimée'));
 
         $this->assertSame(StatutDepense::Annulee, $depense->refresh()->statut);
         $this->assertSame(5_000_000, $this->caisse->refresh()->solde());

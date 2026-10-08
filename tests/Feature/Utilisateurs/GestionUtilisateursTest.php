@@ -40,7 +40,7 @@ class GestionUtilisateursTest extends TestCase
             ->call('enregistrer')
             ->assertHasNoErrors()
             ->assertSet('editionId', null)
-            ->assertSee('Compte de Koffi Agent créé.')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Compte de Koffi Agent créé.'))
             ->assertSee('Koffi Agent');
 
         $koffi = User::where('email', 'koffi@ly-agricole.test')->firstOrFail();
@@ -108,7 +108,7 @@ class GestionUtilisateursTest extends TestCase
             ->set('role', 'comptable')
             ->call('enregistrer')
             ->assertHasNoErrors()
-            ->assertSee('Compte de Nouveau Nom modifié.');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Compte de Nouveau Nom modifié.'));
 
         $agent->refresh();
         $this->assertSame('Nouveau Nom', $agent->nom);

@@ -1,12 +1,6 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
-/**
- * Avis en direct (Reverb) : seulement pour un utilisateur connecté (balise
- * <meta name="ly-utilisateur">), jamais sur la vitrine publique. Un avis arrive dans
- * la seconde : petit bandeau en bas à droite, compteur de la cloche mis à jour.
- * Sans serveur Reverb, rien ne casse : la liste des avis et le push restent.
- */
 const meta = document.querySelector('meta[name="ly-utilisateur"]');
 const cle = import.meta.env.VITE_REVERB_APP_KEY;
 

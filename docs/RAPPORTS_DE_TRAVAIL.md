@@ -5,6 +5,42 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-10-08 — Envois toujours en 500, clé R2 exposée, bandeaux seuls, champ fichier, commentaires, vidage de la base — FAIT, PAS DÉPLOYÉ
+
+**Constaté.** Après le déploiement de la veille (commits `kmp`, `vr`) et l'ajout des variables R2 :
+l'ajout d'une image reste en 500. **La clé R2 (identifiant et secret) a été poussée dans
+`.env.example` au commit `249e36e`** (dépôt GitHub **public**), retirée au commit suivant mais
+présente dans l'historique : à révoquer dans Cloudflare, en recréer une, la mettre seulement dans
+Vercel. `R2_BUCKET=s3` dans ce fichier : à vérifier (doit être le nom exact du compartiment).
+
+**Fait.**
+
+- `/diagnostic/fichiers` (direction, `DiagnosticFichiersController`) : disques utilisés, variables
+  posées (oui / non, jamais leur valeur), puis écriture → lecture → suppression réelles sur le
+  disque, avec le message d'erreur exact. Temporaire : à retirer quand R2 marche.
+- Disque `r2` sans `visibility` (R2 n'accepte pas bien les en-têtes d'ACL).
+- **Bandeaux seuls** : 34 anciens messages en ligne retirés (succès `$statut`, `session('statut')`,
+  erreurs générales `action` / `achat` / `vente` / `ligne`) ; les erreurs **sous chaque champ**
+  restent. La fiche vente passait par la session sans redirection (son bandeau n'apparaissait
+  qu'à la page suivante) : propriété `statut`. Refus de suppression d'un producteur : `erreur`.
+  34 tests adaptés : message vérifié sur la propriété `statut` (`assertSet`), ou la clé d'erreur.
+- **Champ fichier** `<x-champ-fichier>` : zone à glisser-déposer, formats, barre de progression,
+  carte du fichier (miniature si image), Remplacer / Retirer. Les 5 envois l'utilisent
+  (justificatif de dépense, reçu de versement, accord écrit, photo du producteur, GeoJSON).
+- **Commentaires retirés de `resources/`** (demande expresse) : 34 fichiers, `{{-- --}}`, JS,
+  CSS, `@php`. Contrôle : mêmes nombres de `<script>`, `<style>`, `@php`, `@if`, `@foreach`
+  avant / après ; vues compilées (`view:cache`), `npm run build` passe.
+- **`php artisan ly:vider-donnees`** (préparée, PAS lancée) : vide les données d'essai (38 tables
+  d'opérations, campagnes, producteurs, journal, compteurs) ; garde comptes, produits, prix
+  publiés, actualités, paramètres, référentiels (`--referentiels` les vide aussi) ;
+  `--fichiers` supprime les fichiers envoyés. Montre les lignes, exige `VIDER` ; en production
+  `--force`. PostgreSQL : un seul `TRUNCATE … RESTART IDENTITY` (refus complet si une table
+  gardée pointe vers une table vidée). Testée sur sqlite (références qui repartent à 000001).
+
+**Visites.** Pas de création au back-office : voulu (saisie sur l'appli terrain, GPS et photos).
+
+---
+
 ## 2026-10-07 — 500 en production, ventes par l'agent, fin de campagne, apports, fichiers R2, listes avec recherche, bandeaux — FAIT, TESTÉ, PAS DÉPLOYÉ NI VU DANS LE NAVIGATEUR
 
 **Signalé en production (ylagro.com, PostgreSQL Neon).** `/rapports` en 500 ; « la plupart des

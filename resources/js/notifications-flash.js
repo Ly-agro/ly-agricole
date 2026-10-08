@@ -1,15 +1,5 @@
-// Notifications « flash » (demande du 2026-10-07) : un bandeau qui apparaît en haut à droite
-// et disparaît seul, pour chaque succès et chaque erreur — sans toucher aux écrans.
-//
-// - Succès : la propriété `statut` d'un composant Livewire (convention du projet) qui change,
-//   ou le message de session `statut` / `erreur` après une redirection (data-flash du <body>).
-// - Erreurs de saisie : les erreurs de validation renvoyées par le serveur (le détail reste
-//   sous chaque champ).
-// - Panne : une requête Livewire en erreur (500, session expirée…) affiche un bandeau au lieu
-//   de la fenêtre de Livewire.
-
 const DUREE = { succes: 4500, erreur: 8000 };
-const vus = new Map(); // id du composant → { statut, erreurs } déjà montrés
+const vus = new Map();
 
 function pile() {
     let p = document.getElementById('notifications-flash');
@@ -66,7 +56,6 @@ function etat(component) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Message de session posé avant une redirection.
     const corps = document.body.dataset;
     if (corps.flashErreur) notifier(corps.flashErreur, 'erreur');
     else if (corps.flashStatut) notifier(corps.flashStatut);
@@ -75,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('livewire:init', () => {
     const L = window.Livewire;
 
-    // État de départ : pas de bandeau pour ce qui était déjà affiché au chargement.
     L.hook('component.init', ({ component }) => {
         const e = etat(component);
         vus.set(component.id, { statut: e.statut, erreurs: e.erreurs });
@@ -94,7 +82,6 @@ document.addEventListener('livewire:init', () => {
         }));
     });
 
-    // Panne côté serveur : bandeau au lieu de la fenêtre de Livewire.
     L.hook('request', ({ fail }) => {
         fail(({ status, preventDefault }) => {
             preventDefault();

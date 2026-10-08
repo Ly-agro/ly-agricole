@@ -16,10 +16,6 @@
         </div>
     </div>
 
-    @if ($statut !== '')
-        <p class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     @if ($campagne !== null)
         <div class="rounded-md border px-4 py-3 text-sm {{ $definitif ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900' }}">
             <p>

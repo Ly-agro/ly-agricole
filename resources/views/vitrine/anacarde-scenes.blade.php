@@ -1,4 +1,3 @@
-{{-- Illustrations de l'anacarde (SVG, animées en CSS quand l'étape est active : voir vitrine/style). --}}
 <svg width="0" height="0" class="absolute" aria-hidden="true" focusable="false">
     <defs>
         <linearGradient id="ana-ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbe3a6" /><stop offset="1" stop-color="#fdf4dc" /></linearGradient>
@@ -18,7 +17,6 @@
     </defs>
 </svg>
 
-{{-- 1. La noix semée : la pluie tombe, une pousse sort de terre. --}}
 <svg data-ana-scene="0" class="v-ana-svg est-active" viewBox="0 0 400 300" role="img" aria-label="Une noix de cajou dans la terre, d'où sort une jeune pousse sous la pluie">
     <rect width="400" height="300" fill="url(#ana-ciel)" />
     <g class="ana-pluie" fill="#7fb3d5">
@@ -34,7 +32,6 @@
     </g>
 </svg>
 
-{{-- 2. Le jeune anacardier : il grandit et se balance au vent. --}}
 <svg data-ana-scene="1" class="v-ana-svg" viewBox="0 0 400 300" role="img" aria-label="Un jeune anacardier qui grandit">
     <rect width="400" height="300" fill="url(#ana-ciel)" />
     <circle class="ana-soleil-doux" cx="330" cy="60" r="28" fill="#f2b632" />
@@ -43,7 +40,6 @@
     <g fill="#4b7a3a"><path d="M40 232c6-14 10-14 16 0Z" /><path d="M330 232c6-12 9-12 14 0Z" /><path d="M90 232c4-9 7-9 10 0Z" /></g>
 </svg>
 
-{{-- 3. La floraison : les fleurs s'ouvrent, une abeille passe. --}}
 <svg data-ana-scene="2" class="v-ana-svg" viewBox="0 0 400 300" role="img" aria-label="L'anacardier en fleurs, visité par une abeille">
     <rect width="400" height="300" fill="url(#ana-ciel)" />
     <rect y="228" width="400" height="72" fill="url(#ana-sol)" />
@@ -59,7 +55,6 @@
     </g>
 </svg>
 
-{{-- 4. La pomme et sa noix : le fruit se balance sous sa branche. --}}
 <svg data-ana-scene="3" class="v-ana-svg" viewBox="0 0 400 300" role="img" aria-label="Une pomme de cajou rouge et jaune, avec sa noix accrochée dessous">
     <rect width="400" height="300" fill="url(#ana-ciel)" />
     <path d="M0 40C90 30 200 46 400 30" stroke="#6b4a2f" stroke-width="10" stroke-linecap="round" fill="none" />
@@ -73,7 +68,6 @@
     </g>
 </svg>
 
-{{-- 5. La récolte : les fruits tombent, on remplit le panier. --}}
 <svg data-ana-scene="4" class="v-ana-svg" viewBox="0 0 400 300" role="img" aria-label="Des noix de cajou tombent de l'arbre et sont ramassées dans un panier">
     <rect width="400" height="300" fill="url(#ana-ciel)" />
     <rect y="228" width="400" height="72" fill="url(#ana-sol)" />
@@ -88,7 +82,6 @@
     </g>
 </svg>
 
-{{-- 6. Le séchage : le soleil tourne, la chaleur monte des noix étalées. --}}
 <svg data-ana-scene="5" class="v-ana-svg" viewBox="0 0 400 300" role="img" aria-label="Des noix étalées sur une bâche sèchent au soleil">
     <rect width="400" height="300" fill="url(#ana-ciel)" />
     <g class="ana-rayons" transform="translate(320 70)" stroke="#f2b632" stroke-width="5" stroke-linecap="round">
@@ -107,7 +100,6 @@
     </g>
 </svg>
 
-{{-- 7. La pesée : l'aiguille oscille puis se fixe ; la qualité est notée. --}}
 <svg data-ana-scene="6" class="v-ana-svg" viewBox="0 0 400 300" role="img" aria-label="Un sac de noix pesé sur une balance, avec le contrôle de qualité">
     <rect width="400" height="300" fill="url(#ana-ciel)" />
     <rect y="248" width="400" height="52" fill="url(#ana-sol)" />
@@ -129,7 +121,6 @@
     </g>
 </svg>
 
-{{-- 8. Le stockage : les sacs arrivent et s'empilent au magasin. --}}
 <svg data-ana-scene="7" class="v-ana-svg" viewBox="0 0 400 300" role="img" aria-label="Des sacs de noix empilés dans un magasin">
     <rect width="400" height="300" fill="url(#ana-ciel)" />
     <path d="M40 120 200 50l160 70v130H40Z" fill="#efe2c8" stroke="#8d6a3a" stroke-width="5" stroke-linejoin="round" />
@@ -143,7 +134,6 @@
     @endforeach
 </svg>
 
-{{-- 9. La transformation : la coque s'ouvre, l'amande apparaît. --}}
 <svg data-ana-scene="8" class="v-ana-svg" viewBox="0 0 400 300" role="img" aria-label="Une noix décortiquée laisse apparaître l'amande de cajou">
     <rect width="400" height="300" fill="url(#ana-ciel)" />
     <ellipse cx="200" cy="236" rx="140" ry="18" fill="#e9dcc0" />

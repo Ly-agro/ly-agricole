@@ -2,7 +2,6 @@
     <h1 class="text-xl font-semibold text-stone-900">Rapports</h1>
     <p class="mt-1 text-sm text-stone-500">Chiffres du {{ now()->format('d/m/Y à H:i') }}, recalculés à partir des registres.</p>
 
-    {{-- Les trois questions de la direction, sans aide (livrable de la semaine 10). --}}
     <div class="mt-6 grid gap-4 md:grid-cols-3">
         <a href="{{ route('rapports.voir', 'prets') }}" class="rounded-xl border border-stone-200 bg-white p-5 hover:border-emerald-600">
             <p class="text-sm text-stone-500">Combien reste dû ?</p>

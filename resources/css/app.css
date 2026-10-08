@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-/* Listes déroulantes avec recherche (resources/js/recherche-listes.js). */
+
 @import 'tom-select/dist/css/tom-select.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -11,8 +11,6 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-/* Tom Select : le bloc reprend les classes Tailwind du <select> d'origine (bordure, marges) ;
-   on neutralise donc le cadre propre à Tom Select pour ne pas en avoir deux. */
 .ts-wrapper.single .ts-control,
 .ts-wrapper.single.input-active .ts-control {
     border: 0;
@@ -38,4 +36,8 @@
 .ts-dropdown .active {
     background-color: var(--color-emerald-50);
     color: var(--color-emerald-900);
+}
+
+[x-cloak] {
+    display: none !important;
 }

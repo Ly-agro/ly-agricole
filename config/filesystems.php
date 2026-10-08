@@ -64,7 +64,8 @@ return [
             // https://<id du compte>.r2.cloudflarestorage.com
             'endpoint' => env('R2_ENDPOINT') ?: null,
             'use_path_style_endpoint' => true,
-            'visibility' => 'private',
+            // Pas de « visibility » : un compartiment R2 est privé par défaut, et R2 gère mal les
+            // en-têtes d'ACL qu'elle ajouterait à chaque écriture.
             'throw' => true,
             'report' => true,
         ],

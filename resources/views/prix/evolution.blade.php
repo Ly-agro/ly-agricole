@@ -6,7 +6,6 @@
         <h1 class="mt-2 text-3xl font-semibold tracking-tight">Les prix, campagne après campagne</h1>
         <p class="v-texte-doux mt-2 max-w-2xl">D'abord le tableau d'ensemble de toutes nos cultures sur les sept dernières campagnes, puis, plus bas, la courbe détaillée de chaque produit. Chaque prix est daté et sourcé. Ces prix sont indicatifs : ils ne remplacent pas le prix officiel fixé pour la campagne.</p>
 
-        {{-- Tableau d'ensemble : une ligne par culture, une colonne par campagne (la plus récente à droite). --}}
         <div class="mt-8">
             <h2 class="text-xl font-semibold">Toutes les cultures, {{ count($tableau['campagnes']) > 1 ? 'les '.count($tableau['campagnes']).' dernières campagnes' : 'la campagne connue' }}</h2>
             <p class="v-texte-doux mt-1 text-sm">Dernier prix publié de chaque campagne, en FCFA par kg, avec l'écart par rapport à la campagne précédente de la culture. Une case « — » : prix pas encore relevé. Les colonnes sont des années de campagne, d'octobre à septembre : la campagne de l'anacarde ouverte en février 2024 figure dans « 2023-2024 ». Quand un prix change en cours de campagne (campagne intermédiaire), c'est le dernier prix qui est indiqué.</p>
@@ -69,7 +68,6 @@
             <p class="v-carte mt-8 rounded-2xl p-6">Aucun prix publié pour le moment.</p>
         @else
             <div data-zone-courbes>
-            {{-- Filtres : une seule ligne, au-dessus des graphiques ; appliqués dès qu'on choisit (bouton seulement sans JavaScript). --}}
             <form method="GET" action="{{ route('prix.evolution') }}#courbes" data-filtres-prix class="v-carte mt-8 flex flex-wrap items-end gap-4 rounded-2xl p-4 text-sm">
                 <div>
                     <label for="produit" class="mb-1 block text-xs font-medium">Produit</label>
@@ -86,7 +84,6 @@
                         <option value="tout" @selected($periode === 'tout')>Toute la période</option>
                         <option value="6m" @selected($periode === '6m')>6 derniers mois</option>
                         <option value="12m" @selected($periode === '12m')>12 derniers mois</option>
-                        {{-- Les campagnes du produit choisi seulement : toutes les cultures en donneraient plus de cent. --}}
                         @foreach ($campagnes->when($produitChoisi !== null, fn ($liste) => $liste->where('produit_id', $produitChoisi->id)) as $c)
                             <option value="campagne-{{ $c->id }}" @selected($periode === 'campagne-'.$c->id)>Campagne {{ $c->produit->nom }} {{ $c->code }}</option>
                         @endforeach
@@ -149,7 +146,6 @@
                                         </linearGradient>
                                     </defs>
 
-                                    {{-- Grille : filets fins et discrets ; la ligne de base un peu plus marquée. --}}
                                     @foreach ($c['graduations_y'] as $grad)
                                         <line x1="{{ $c['zone']['gauche'] }}" x2="{{ $c['zone']['droite'] }}" y1="{{ $grad['y'] }}" y2="{{ $grad['y'] }}" stroke="#34251a" stroke-opacity="{{ $loop->first ? '0.28' : '0.08' }}" stroke-width="1" shape-rendering="crispEdges" />
                                         <text x="{{ $c['zone']['gauche'] - 12 }}" y="{{ $grad['y'] + 4 }}" text-anchor="end" font-size="11" fill="#7a6450" style="font-variant-numeric: tabular-nums">{{ Format::entier($grad['valeur']) }}</text>
@@ -162,26 +158,22 @@
                                     <path d="{{ $c['aire'] }}" fill="url(#{{ $idg }})" stroke="none" />
                                     <path d="{{ $c['chemin'] }}" fill="none" stroke="#1f7a45" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
 
-                                    {{-- Chaque changement de prix : point cerclé de la couleur du fond ; le prix déjà en vigueur au début est creux. --}}
                                     @foreach ($c['marqueurs'] as $m)
                                         @php($pt = $g['serie']['points'][$m['index']])
                                         <circle cx="{{ $m['x'] }}" cy="{{ $m['y'] }}" r="4" fill="{{ $pt['report'] ? '#f3ebdc' : '#1f7a45' }}" stroke="{{ $pt['report'] ? '#1f7a45' : '#f3ebdc' }}" stroke-width="2" pointer-events="none" />
                                     @endforeach
 
-                                    {{-- Dernier prix : pastille à droite de la courbe. --}}
                                     @php($texteFin = Format::entier($r['dernier']))
                                     @php($largeurPastille = 16 + 7.5 * mb_strlen($texteFin))
                                     <circle cx="{{ $c['fin']['x'] }}" cy="{{ $c['fin']['y'] }}" r="5" fill="#1f7a45" stroke="#f3ebdc" stroke-width="2" />
                                     <rect x="{{ $c['fin']['x'] + 10 }}" y="{{ $c['fin']['y'] - 11 }}" width="{{ $largeurPastille }}" height="22" rx="11" fill="#1f7a45" />
                                     <text x="{{ $c['fin']['x'] + 10 + $largeurPastille / 2 }}" y="{{ $c['fin']['y'] + 4 }}" text-anchor="middle" font-size="12" font-weight="600" fill="#ffffff" style="font-variant-numeric: tabular-nums">{{ $texteFin }}</text>
 
-                                    {{-- Réticule : suit le pointeur, le point se pose sur le prix en vigueur à cette date. --}}
                                     <g data-reticule visibility="hidden" pointer-events="none">
                                         <line data-reticule-ligne x1="0" x2="0" y1="{{ $c['zone']['haut'] }}" y2="{{ $c['zone']['bas'] }}" stroke="#34251a" stroke-opacity="0.35" stroke-width="1" />
                                         <circle data-reticule-point cx="0" cy="0" r="6" fill="#1f7a45" stroke="#f3ebdc" stroke-width="2.5" />
                                     </g>
 
-                                    {{-- Cibles clavier (Tab) : une par changement de prix, invisibles. --}}
                                     @foreach ($c['marqueurs'] as $m)
                                         @php($pt = $g['serie']['points'][$m['index']])
                                         <circle cx="{{ $m['x'] }}" cy="{{ $m['y'] }}" r="12" fill="transparent" tabindex="0" pointer-events="none" style="outline: none"
@@ -248,7 +240,7 @@
     @verbatim
     <script>
         (function () {
-            // Recherche dans le tableau des cultures, à chaque lettre tapée ; sans tenir compte des accents.
+
             var recherche = document.querySelector('[data-recherche-culture]');
             if (recherche) {
                 var sansAccent = function (t) { return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
@@ -268,7 +260,6 @@
                 });
             }
 
-            // Filtres des courbes : appliqués dès qu'on choisit ; seule la zone des courbes est rechargée.
             var zone = document.querySelector('[data-zone-courbes]');
             var enCours = null;
             function brancherFiltres() {
@@ -278,7 +269,7 @@
                 var dates = form.querySelector('[data-dates-perso]');
                 form.addEventListener('submit', function (e) { e.preventDefault(); rafraichir(form); });
                 produit.addEventListener('change', function () {
-                    // Une campagne appartient à un produit : on revient à « toute la période » en changeant de produit.
+
                     if (periode.value.indexOf('campagne-') === 0) { periode.value = 'tout'; }
                     rafraichir(form);
                 });
@@ -317,7 +308,7 @@
                     })
                     .catch(function (err) {
                         if (err.name === 'AbortError') { return; }
-                        // En cas d'échec, on recharge la page entière : le filtre s'applique quand même.
+
                         window.location.href = url + '#courbes';
                     });
             }
@@ -326,8 +317,6 @@
             brancherCourbes(document);
         })();
 
-        // Réticule + info-bulle : la souris ou le doigt n'a pas à viser la ligne, seulement une date.
-        // Au clavier (Tab), chaque changement de prix donne la même info-bulle.
         function brancherCourbes(racine) {
             racine.querySelectorAll('[data-courbe]').forEach(function (bloc) {
                 var svg = bloc.querySelector('svg');
@@ -362,7 +351,7 @@
                     bulle.style.top = Math.max(0, y * echelle - bulle.offsetHeight - 16) + 'px';
                 }
                 function cacher() { bulle.classList.add('hidden'); reticule.setAttribute('visibility', 'hidden'); }
-                // Prix en vigueur à l'abscisse x : le dernier changement à gauche (ou le premier).
+
                 function enVigueur(x) {
                     var choisi = cibles[0];
                     cibles.forEach(function (c) { if (parseFloat(c.dataset.x) <= x) { choisi = c; } });

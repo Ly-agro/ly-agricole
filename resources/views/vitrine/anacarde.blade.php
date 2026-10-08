@@ -1,6 +1,5 @@
 @php
-    // L'anacarde, notre filière phare : de la noix semée à l'amande, en 9 étapes illustrées.
-    // Le prix affiché est le dernier prix bord-champ publié (registre des prix), jamais inventé.
+
     $etapesAnacarde = [
         ['semis', 'La noix semée', 'Mai à juillet', 'Aux premières pluies, on sème directement des noix choisies sur les meilleurs arbres. Une pousse sort de terre en deux à trois semaines.'],
         ['croissance', 'Le jeune anacardier', '3 à 4 ans', 'L\'arbre grandit pendant trois à quatre ans avant sa première vraie récolte. Désherbage, taille et pare-feu le protègent.'],
@@ -32,7 +31,6 @@
         </div>
 
         <div class="mt-10 grid items-center gap-8 lg:grid-cols-[1.15fr_1fr]" data-ana>
-            {{-- La scène : une illustration animée par étape, une seule visible à la fois. --}}
             <div class="v-ana-scene relative aspect-[4/3] w-full overflow-hidden rounded-[1.75rem]">
                 @include('vitrine.anacarde-scenes')
             </div>
@@ -54,7 +52,6 @@
             </div>
         </div>
 
-        {{-- Le chemin : chaque étape est cliquable ; la barre montre où l'on en est. --}}
         <ol class="v-ana-chemin mt-10 flex gap-2 overflow-x-auto pb-2" aria-label="Les étapes de l'anacarde">
             @foreach ($etapesAnacarde as $i => [$cle, $titre])
                 <li class="min-w-[6.5rem] flex-1">
@@ -94,7 +91,7 @@
             clearTimeout(minuteur);
             section.style.setProperty('--ana-duree', DUREE + 'ms');
             section.classList.toggle('est-en-lecture', enLecture && visible);
-            // Relance l'animation de la barre de l'étape courante.
+
             var barre = pas[courant].querySelector('.v-ana-barre span');
             barre.style.animation = 'none'; void barre.offsetWidth; barre.style.animation = '';
             if (enLecture && visible) { minuteur = setTimeout(function () { montrer(courant + 1); }, DUREE); }
@@ -110,7 +107,7 @@
         pas.forEach(function (p) { p.addEventListener('click', function () { montrer(parseInt(p.dataset.anaAller, 10)); }); });
         lecture.addEventListener('click', function () { basculer(!enLecture); });
         if (reduit) { basculer(false); }
-        // Défile seulement quand la section est à l'écran.
+
         if ('IntersectionObserver' in window) {
             new IntersectionObserver(function (e) { visible = e[0].isIntersecting; relancer(); }, { threshold: 0.35 }).observe(bloc);
         } else { visible = true; }

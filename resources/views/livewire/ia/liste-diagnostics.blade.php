@@ -28,9 +28,6 @@
     @if (! $peutValider)
         <p class="mb-4 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm text-stone-700">Seul un agronome confirme un diagnostic ou demande un conseil. Sans agronome, rien n'est validé ni conseillé.</p>
     @endif
-    @if ($statut !== '')
-        <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
 
     <div class="space-y-4">
         @forelse ($diagnostics as $d)

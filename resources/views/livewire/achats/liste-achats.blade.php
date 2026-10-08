@@ -17,13 +17,6 @@
         </div>
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-    @error('action')
-        <p class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">{{ $message }}</p>
-    @enderror
-
     @if ($aRefuser !== null)
         <form wire:submit="refuser" class="mb-6 rounded-xl border border-red-200 bg-red-50 p-5">
             <label for="motifRefus" class="block text-sm font-medium text-red-950">Motif du refus</label>

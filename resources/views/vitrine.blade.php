@@ -29,7 +29,7 @@
         @include('vitrine.entete')
 
         <main id="contenu">
-            
+
             <section class="v-hero relative overflow-hidden text-white">
                 <div class="v-soleil" aria-hidden="true"></div>
                 <div class="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.5fr_1fr]">
@@ -103,7 +103,6 @@
                 </p>
             </section>
 
-            
             <section id="prix" class="mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20">
                 <p data-reveal class="text-sm font-medium uppercase tracking-widest text-emerald-800">Prix bord-champ</p>
                 <h2 data-reveal style="--d: .1s" class="mt-2 max-w-2xl text-3xl font-semibold tracking-tight">Les prix du moment, avec leur source.</h2>
@@ -135,7 +134,7 @@
                     </div>
 
                 @endif
-                
+
                 @if ($prix->isNotEmpty())
                     <p data-reveal class="mt-5"><a href="{{ route('prix.evolution') }}" class="v-bouton inline-block rounded-md bg-emerald-800 px-5 py-3 text-sm font-medium text-white hover:bg-emerald-900">Voir tous les prix et les courbes <span class="v-fleche" aria-hidden="true">→</span></a></p>
                 @endif
@@ -144,7 +143,6 @@
 
             <svg class="v-vague text-[#dccdb2]" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 60V28C180 4 360 4 540 26s360 34 540 12 270-30 360-14v38Z" /></svg>
 
-            
             <section id="chaine" class="v-alt -mt-px">
                 <div class="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pb-20">
                     <p data-reveal class="text-sm font-medium uppercase tracking-widest text-emerald-800">Comment nous travaillons</p>
@@ -179,7 +177,6 @@
 
             <svg class="v-vague -mt-px rotate-180 text-[#dccdb2]" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 60V28C180 4 360 4 540 26s360 34 540 12 270-30 360-14v38Z" /></svg>
 
-            
             <section id="actualites" class="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
                 <div class="flex flex-wrap items-end justify-between gap-3">
                     <div>
@@ -206,7 +203,6 @@
                 @endif
             </section>
 
-            
             <section id="mission" class="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
                 <div class="grid gap-6 lg:grid-cols-2">
                     <div data-reveal="gauche" class="rounded-2xl p-8 text-white" style="background: linear-gradient(140deg, #123524, #1f4d33);">
@@ -233,7 +229,6 @@
                 </div>
             </section>
 
-            
             <section id="contact" class="v-alt">
                 <div class="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 sm:py-16 md:grid-cols-2">
                     <div data-reveal="gauche">

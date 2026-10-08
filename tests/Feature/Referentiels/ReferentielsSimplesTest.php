@@ -43,7 +43,7 @@ class ReferentielsSimplesTest extends TestCase
             ->set('donnees.nom', 'Korhogo')
             ->call('enregistrer')
             ->assertHasNoErrors()
-            ->assertSee('Zone Korhogo : créé(e).');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Zone Korhogo : créé(e).'));
 
         $zone = Zone::where('nom', 'Korhogo')->firstOrFail();
         $this->assertTrue($zone->actif);

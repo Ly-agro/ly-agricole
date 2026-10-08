@@ -12,16 +12,6 @@
         </button>
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">
-            {{ $statut }}
-        </p>
-    @endif
-
-    @error('ligne')
-        <p class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">{{ $message }}</p>
-    @enderror
-
     @if ($editionId !== null)
         <form wire:submit="enregistrer" class="mb-8 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
             <h2 class="mb-4 font-semibold">{{ $editionId === 0 ? 'Nouvelle ligne' : 'Modifier' }}</h2>

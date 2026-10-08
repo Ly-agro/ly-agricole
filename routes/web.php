@@ -3,6 +3,7 @@
 use App\Http\Controllers\AchatController;
 use App\Http\Controllers\Auth\DeconnexionController;
 use App\Http\Controllers\DepenseController;
+use App\Http\Controllers\DiagnosticFichiersController;
 use App\Http\Controllers\PhotoTerrainController;
 use App\Http\Controllers\PretController;
 use App\Http\Controllers\PrixController;
@@ -212,6 +213,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/nouvelle', FormulaireDepense::class)->middleware('can:saisir-depenses')->name('.nouvelle');
         Route::get('/{depense}/justificatif', [DepenseController::class, 'justificatif'])->name('.justificatif');
     });
+
+    Route::get('/diagnostic/fichiers', DiagnosticFichiersController::class)->name('diagnostic.fichiers');
 
     Route::post('/deconnexion', DeconnexionController::class)->name('logout');
 });

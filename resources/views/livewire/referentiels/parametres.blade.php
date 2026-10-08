@@ -7,10 +7,6 @@
         Un plafond non défini ne bloque rien, la validation restant obligatoire.
     </p>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     <div class="divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white shadow-sm">
         @foreach ($cles as $cle)
             @php($actuelle = $valeurs[$cle->value] ?? null)

@@ -16,7 +16,6 @@
             .v-carte:hover { transform: translateY(-6px); box-shadow: 0 18px 32px -14px rgba(52, 37, 26, .35); border-color: rgba(31, 122, 69, .55); }
             .v-texte-doux { color: var(--brun-doux); }
 
-            /* En-tête : se resserre et prend une ombre quand on défile. */
             .v-entete { background: rgba(232, 220, 200, .85); backdrop-filter: blur(8px); transition: padding .3s ease, box-shadow .3s ease, background .3s ease; }
             .v-entete.est-defile { background: rgba(232, 220, 200, .97); box-shadow: 0 8px 24px -14px rgba(52, 37, 26, .5); }
             .v-entete.est-defile .v-entete-in { padding-top: .35rem; padding-bottom: .35rem; }
@@ -25,7 +24,6 @@
             .v-lien::after { content: ''; position: absolute; left: .5rem; right: .5rem; bottom: .15rem; height: 2px; background: var(--vert-vif); transform: scaleX(0); transform-origin: left; transition: transform .3s ease; }
             .v-lien:hover::after { transform: scaleX(1); }
 
-            /* Accueil */
             .v-hero { background: radial-gradient(60rem 32rem at 82% -5%, rgba(242, 182, 50, .38), transparent 60%), radial-gradient(48rem 30rem at -5% 105%, rgba(31, 122, 69, .55), transparent 62%), linear-gradient(160deg, #123524 0%, #1c2a1d 55%, #2b2118 100%); }
             .v-soleil { position: absolute; right: -6rem; top: -6rem; width: 26rem; height: 26rem; border-radius: 9999px; background: radial-gradient(circle, rgba(242, 182, 50, .55), rgba(242, 182, 50, 0) 65%); animation: v-pulse 7s ease-in-out infinite; }
             .v-logo-boite { animation: v-flotte 6s ease-in-out infinite; transition: transform .2s ease-out; will-change: transform; }
@@ -34,22 +32,18 @@
             .v-fleche { display: inline-block; transition: transform .25s ease; }
             .v-bouton:hover .v-fleche { transform: translateX(5px); }
 
-            /* Bandeau défilant */
             .v-bandeau { background: var(--vert); color: #f3ebdc; overflow: hidden; }
             .v-bandeau-piste { display: flex; width: max-content; animation: v-defile 32s linear infinite; }
             .v-bandeau:hover .v-bandeau-piste { animation-play-state: paused; }
 
-            /* Bouton flottant « haut de page » */
             .v-haut { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 50; display: flex; height: 3rem; width: 3rem; align-items: center; justify-content: center; border-radius: 9999px; background: var(--vert); color: #f3ebdc; box-shadow: 0 10px 24px -8px rgba(18, 53, 36, .7); opacity: 0; visibility: hidden; transform: translateY(16px) scale(.9); transition: opacity .3s ease, transform .3s ease, visibility .3s, background-color .25s ease; }
             .v-haut.est-visible { opacity: 1; visibility: visible; transform: none; }
             .v-haut:hover { background: var(--vert-vif); transform: translateY(-3px); }
             .v-haut:focus-visible { outline: 3px solid var(--or); outline-offset: 3px; }
             @media (max-width: 640px) { .v-haut { right: 1rem; bottom: 1rem; } }
 
-            /* Vagues */
             .v-vague { display: block; width: 100%; height: 3.5rem; }
 
-            /* Chaîne */
             .v-etapes { position: relative; }
             .v-ligne { position: absolute; left: 1.35rem; top: 1.5rem; bottom: 1.5rem; width: 3px; background: rgba(52, 37, 26, .15); border-radius: 3px; overflow: hidden; }
             .v-ligne::after { content: ''; position: absolute; inset: 0; background: linear-gradient(var(--vert-vif), var(--or)); transform: scaleY(0); transform-origin: top; transition: transform 1.6s ease-out .2s; }
@@ -57,7 +51,6 @@
             .v-pastille { transition: transform .35s cubic-bezier(.3, 1.6, .5, 1), background-color .3s ease; }
             .v-etape:hover .v-pastille { transform: scale(1.18) rotate(-6deg); background: var(--or); color: var(--brun); }
 
-            /* Anacarde : filière phare, histoire animée de la noix à l'amande. */
             .v-ana { background: radial-gradient(50rem 26rem at 90% 0%, rgba(242, 182, 50, .28), transparent 60%), linear-gradient(165deg, #123524 0%, #173f2a 60%, #2b2118 100%); }
             .v-ana-prix { display: block; background: rgba(255, 255, 255, .08); border: 1px solid rgba(242, 182, 50, .4); transition: background .25s ease, transform .25s ease; }
             .v-ana-prix:hover { background: rgba(255, 255, 255, .14); transform: translateY(-3px); }
@@ -75,7 +68,6 @@
             .v-ana-chemin { scrollbar-width: thin; }
             @keyframes ana-remplit { from { width: 0; } to { width: 100%; } }
 
-            /* Les scènes : chaque animation part quand son étape devient active. */
             .v-ana-svg * { transform-box: fill-box; }
             .est-active .ana-pluie rect { animation: ana-pluie 1.1s linear infinite; }
             .est-active .ana-pluie rect:nth-child(2n) { animation-delay: .4s; }
@@ -136,13 +128,11 @@
             @keyframes ana-ouvre-d { to { transform: translate(56px, 10px) rotate(14deg); } }
             @keyframes ana-amande { from { transform: scale(.7); } to { transform: scale(1.06); } }
 
-            /* Apparition au défilement : seulement si JavaScript est actif. */
             .js [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity .8s ease, transform .8s cubic-bezier(.2, .7, .2, 1); transition-delay: var(--d, 0s); }
             .js [data-reveal="gauche"] { transform: translateX(-30px); }
             .js [data-reveal="droite"] { transform: translateX(30px); }
             .js [data-reveal].est-visible { opacity: 1; transform: none; }
 
-            /* Entrée de l'accueil */
             .v-entree { opacity: 0; animation: v-monte .9s cubic-bezier(.2, .7, .2, 1) forwards; animation-delay: var(--d, 0s); }
 
             @keyframes v-monte { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }

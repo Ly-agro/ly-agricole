@@ -1,4 +1,3 @@
-{{-- Vue PDF (dompdf) : CSS 2.1 en ligne, pas de Tailwind ni de flexbox. Dimensions réelles d'une carte ID-1 : 85,6 × 54 mm. --}}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -12,7 +11,7 @@
             width: 85.6mm; height: 54mm; border: 0.3mm dashed #a8a29e; border-radius: 3mm;
             position: relative; overflow: hidden;
         }
-        /* Padding plutôt que line-height : dompdf place mal le texte avec un line-height haut (texte coupé). */
+
         .bandeau { background: #065f46; color: #fff; height: 6.4mm; padding: 2.6mm 3mm 0 3mm; }
         .bandeau .marque { font-weight: bold; font-size: 10pt; letter-spacing: 0.5pt; }
         .bandeau .devise { float: right; font-size: 6pt; padding-top: 1mm; }

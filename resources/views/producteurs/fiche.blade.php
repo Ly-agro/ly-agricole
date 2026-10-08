@@ -3,10 +3,6 @@
         <a href="{{ route('producteurs') }}" class="text-sm text-emerald-800 hover:underline">← Producteurs</a>
     </div>
 
-    @if (session('statut'))
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ session('statut') }}</p>
-    @endif
-
     <div class="flex flex-wrap items-start justify-between gap-6">
         <div class="flex items-start gap-5">
             @if ($producteur->photo)
@@ -33,7 +29,6 @@
                     class="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm text-stone-800 hover:bg-stone-50">Modifier</a>
             @endcan
             @can('annuler-operation', $producteur)
-                {{-- Confirmation dans la page (pas de boîte du navigateur). --}}
                 <details class="relative">
                     <summary class="cursor-pointer list-none rounded-md border border-red-200 bg-white px-4 py-2 text-sm text-red-800 hover:bg-red-50 [&::-webkit-details-marker]:hidden">Supprimer</summary>
                     <form method="POST" action="{{ route('producteurs.supprimer', $producteur) }}" class="absolute right-0 z-10 mt-2 w-72 rounded-xl border border-red-200 bg-white p-4 text-sm shadow-lg">
@@ -46,10 +41,6 @@
             @endcan
         </div>
     </div>
-
-    @if (session('refus'))
-        <p class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">{{ session('refus') }}</p>
-    @endif
 
     <dl class="mt-8 grid gap-x-8 gap-y-4 rounded-xl border border-stone-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-3">
         <div><dt class="text-stone-500">Sexe</dt><dd>{{ $producteur->sexe?->libelle() ?? '—' }}</dd></div>

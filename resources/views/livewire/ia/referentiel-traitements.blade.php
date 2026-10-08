@@ -20,10 +20,6 @@
         </div>
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     @if ($formulaire)
         <form wire:submit="enregistrer" class="mb-6 space-y-4 rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
             <div class="grid gap-4 sm:grid-cols-3">

@@ -312,7 +312,7 @@ class NotificationsTest extends TestCase
         Livewire::test(ListeNotifications::class)
             ->call('enregistrerAbonnement', ['endpoint' => 'https://push.exemple/ok', 'keys' => ['p256dh' => 'c', 'auth' => 'a']], 'PC')
             ->assertHasNoErrors()
-            ->assertSee('Notifications activées sur ce navigateur.');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Notifications activées sur ce navigateur.'));
 
         $this->assertSame(1, AbonnementPush::query()->where('canal', AbonnementPush::WEB)->count());
     }

@@ -1,4 +1,3 @@
-{{-- Onglets des référentiels : seulement ceux que l'utilisateur a le droit d'ouvrir. --}}
 <nav class="mb-6 flex flex-wrap gap-1 border-b border-stone-200 text-sm">
     @foreach (\App\Livewire\Referentiels\EcranReferentiel::onglets() as $route => $onglet)
         @can($onglet['droit'])

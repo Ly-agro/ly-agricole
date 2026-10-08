@@ -4,10 +4,6 @@
         <p class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">À l'enregistrement, la vente {{ $venteCorrigee->reference }} passe « annulée » (ses kilos reviennent dans le lot, ses encaissements sont contre-passés) et celle-ci la remplace. L'ancienne reste visible.</p>
     @endif
 
-    @error('vente')
-        <p class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">{{ $message }}</p>
-    @enderror
-
     <form wire:submit="enregistrer" class="space-y-5 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
         <div>
             <label for="campagneId" class="mb-1 block text-sm font-medium text-stone-700">Campagne</label>

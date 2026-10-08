@@ -10,10 +10,6 @@
         </div>
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     @if ($formulaire !== null)
         <form wire:submit="enregistrer" class="mb-8 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
             <h2 class="mb-4 font-semibold">
@@ -87,7 +83,6 @@
                         @if ($nature === 'apport_campagne')
                             <div>
                                 <label for="investisseurId" class="mb-1 block text-sm font-medium text-stone-700">Investisseur</label>
-                                {{-- Liste ET saisie : choisir, ou taper un nom (investisseur sans compte). --}}
                                 <select wire:model="investisseurId" id="investisseurId" data-recherche-creer class="{{ $champ }}">
                                     <option value="">— Choisir ou taper un nom —</option>
                                     @foreach ($investisseurs as $i)

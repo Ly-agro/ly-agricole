@@ -38,7 +38,7 @@ class GroupesTest extends TestCase
             ->set('donnees.responsable_id', $awa->id)
             ->call('enregistrer')
             ->assertHasNoErrors()
-            ->assertSee('Groupe Groupe des femmes : créé(e).');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Groupe Groupe des femmes : créé(e).'));
 
         $groupe = GroupeProducteur::firstOrFail();
         $this->assertSame($awa->id, $groupe->responsable_id);

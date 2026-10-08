@@ -84,7 +84,7 @@ class EcransApportsTest extends TestCase
             ->set('montant', '3 000 000')
             ->call('enregistrer')
             ->assertHasNoErrors()
-            ->assertSee('Apport enregistré');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Apport enregistré'));
 
         $apport = Apport::firstOrFail();
         $this->assertSame(3_000_000, $apport->montant_fcfa);
@@ -125,7 +125,7 @@ class EcransApportsTest extends TestCase
             ->set('motifContrePassation', 'Virement jamais reçu')
             ->call('contrePasser')
             ->assertHasNoErrors()
-            ->assertSee('Apport contre-passé');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Apport contre-passé'));
 
         $this->assertSame(0, $this->compteDedie->solde());
     }

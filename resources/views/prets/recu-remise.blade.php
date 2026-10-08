@@ -1,4 +1,3 @@
-{{-- Vue PDF (dompdf) : CSS 2.1 en ligne. A5, à faire signer par le producteur. --}}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -29,7 +28,6 @@
     </style>
 </head>
 <body>
-    {{-- Tableau plutôt que float : dompdf faisait déborder le bloc de droite sous le filet. --}}
     <table class="entete">
         <tr>
             <td><div class="marque">LY AGRICOLE</div><div class="devise">Cultiver – Élever – Durer</div></td>

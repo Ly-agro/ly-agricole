@@ -10,7 +10,6 @@
             <meta name="description" content="{{ $description }}">
             <meta property="og:description" content="{{ $description }}">
         @endif
-        {{-- Adresse officielle de la page : sans les filtres d'affichage (période, dates). --}}
         <link rel="canonical" href="{{ $canonique ?? request()->url() }}">
         <meta property="og:title" content="{{ $titre }} — LY AGRICOLE">
         <meta property="og:type" content="website">

@@ -216,7 +216,7 @@ class EcransAchatsTest extends TestCase
             ->assertSeeHtml("wire:click=\"valider('{$achat->id}')\"")
             ->call('valider', $achat->id)
             ->assertHasNoErrors()
-            ->assertSee('Achat validé');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Achat validé'));
 
         $this->assertSame(100_000, $this->lot->stock());
         $this->assertSame(960_000, $this->caisseAgent->solde());
@@ -248,7 +248,7 @@ class EcransAchatsTest extends TestCase
             ->assertSet('campagneId', (string) $this->campagne->id)
             ->set('magasinId', (string) $this->magasin->id)
             ->call('creer')
-            ->assertSee('Lot LOT-00002 créé.');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Lot LOT-00002 créé.'));
 
         $this->actingAs($this->agent);
         Livewire::test(FormulaireAchat::class)->set('lotId', (string) $this->lot->id)->set('producteurId', $this->producteur->id)
@@ -289,7 +289,7 @@ class EcransAchatsTest extends TestCase
             ->set('referenceRemboursement', 'RECU-7')
             ->call('encaisserRemboursement')
             ->assertHasNoErrors()
-            ->assertSee('Remboursement encaissé')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Remboursement encaissé'))
             ->assertSeeHtml('id="restant-du">180'.self::FINE.'000 FCFA</dd>');
 
         $this->assertSame(180_000, $pret->refresh()->restantDu());

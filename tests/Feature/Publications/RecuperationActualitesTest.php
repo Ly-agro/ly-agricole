@@ -244,7 +244,7 @@ class RecuperationActualitesTest extends TestCase
             ->set('onglet', 'sources')
             ->set('fluxNom', 'Presse agricole')->set('fluxUrl', self::URL)->call('ajouterSource')
             ->assertHasNoErrors()->assertSee('Presse agricole')
-            ->call('recupererTout')->assertSee('1 nouvelle(s) actualité(s) en brouillon');
+            ->call('recupererTout')->assertSet('statut', fn ($s) => str_contains((string) $s, '1 nouvelle(s) actualité(s) en brouillon'));
 
         $this->assertSame(1, Actualite::query()->count());
     }

@@ -199,7 +199,7 @@ class DecisionPlafondTest extends TestCase
             ->assertSee('Enregistrer une décision')
             ->call('ouvrirDecision')->assertSet('plafondRetenu', '300000')
             ->set('plafondRetenu', '0')->set('motifDecision', 'Retard récurrent')
-            ->call('decider')->assertHasNoErrors()->assertSee('Décision enregistrée');
+            ->call('decider')->assertHasNoErrors()->assertSet('statut', fn ($s) => str_contains((string) $s, 'Décision enregistrée'));
 
         $this->assertSame(0, DecisionsPlafond::historique($this->producteur)->first()->plafond_retenu_fcfa);
     }

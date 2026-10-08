@@ -278,7 +278,7 @@ class ResultatCampagneTest extends TestCase
             ->set('valeurRetenue', '85 000')
             ->call('valoriser')
             ->assertHasNoErrors()
-            ->assertSee('Valorisation du stock enregistrée')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Valorisation du stock enregistrée'))
             ->assertSee('Ivoire Export')->assertSee('Usine Korhogo')
             // 117 500 + 85 000 = 202 500
             ->assertSee('202'.self::FINE.'500 FCFA');

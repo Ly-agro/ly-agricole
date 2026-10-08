@@ -50,7 +50,7 @@ class ChangerMotDePasseTest extends TestCase
     {
         $jetonAvant = $this->user->remember_token;
 
-        $this->formulaire('ancien-mdp-1', 'nouveau-mdp-2')->assertHasNoErrors()->assertSee('Mot de passe changé.');
+        $this->formulaire('ancien-mdp-1', 'nouveau-mdp-2')->assertHasNoErrors()->assertSet('statut', fn ($s) => str_contains((string) $s, 'Mot de passe changé.'));
 
         $this->user->refresh();
         $this->assertTrue(Hash::check('nouveau-mdp-2', $this->user->password));
