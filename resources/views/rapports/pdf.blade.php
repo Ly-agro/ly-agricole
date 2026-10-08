@@ -1,4 +1,3 @@
-{{-- Vue PDF (dompdf) : CSS 2.1 en ligne. --}}
 @php($numerique = ['fcfa', 'kg', 'pour_mille', 'nombre'])
 <!DOCTYPE html>
 <html lang="fr">
@@ -17,7 +16,7 @@
         .note { color: #57534e; margin: 0 0 3mm 0; }
         .donnees th { text-align: left; color: #57534e; font-weight: normal; border-bottom: 0.3mm solid #a8a29e; padding: 1.5mm 1mm; }
         .donnees td { border-bottom: 0.2mm solid #e7e5e4; padding: 1.2mm 1mm; }
-        /* Plus spécifique que « .donnees th » : sinon les en-têtes chiffrés restent à gauche. */
+
         .donnees .nombre { text-align: right; white-space: nowrap; }
         .total td { font-weight: bold; border-top: 0.4mm solid #1c1917; border-bottom: none; }
     </style>

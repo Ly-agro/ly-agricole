@@ -327,7 +327,7 @@ class PublicationsTest extends TestCase
 
         Livewire::test(GestionPublications::class)
             ->set('produitId', (string) $this->cacao->id)->set('prixKg', '1 800')->set('source', 'Communiqué du Conseil')
-            ->call('publierPrix')->assertHasNoErrors()->assertSee('Prix publié')
+            ->call('publierPrix')->assertHasNoErrors()->assertSet('statut', fn ($s) => str_contains((string) $s, 'Prix publié'))
             ->set('prixKg', '1850')->set('source', 'Nouveau communiqué')->call('publierPrix')->assertHasNoErrors()
             ->assertSee('Historique')->assertSee('Communiqué du Conseil');
 
@@ -365,16 +365,16 @@ class PublicationsTest extends TestCase
 
         $ecran = Livewire::test(GestionPublications::class)->set('onglet', 'actualites')
             ->call('nouvelleActualite')->set('titre', 'Mon actualité')->set('contenu', 'Un texte assez long pour être publié.')
-            ->call('enregistrerActualite')->assertHasNoErrors()->assertSee('Brouillon enregistré');
+            ->call('enregistrerActualite')->assertHasNoErrors()->assertSet('statut', fn ($s) => str_contains((string) $s, 'Brouillon enregistré'));
 
         $a = Actualite::query()->sole();
         $this->assertFalse($a->publie);
         $this->get('/actualites/'.$a->id)->assertNotFound();
 
-        $ecran->call('basculerPublication', $a->id)->assertSee('Actualité publiée');
+        $ecran->call('basculerPublication', $a->id)->assertSet('statut', fn ($s) => str_contains((string) $s, 'Actualité publiée'));
         $this->get('/actualites/'.$a->id)->assertOk();
 
-        $ecran->call('basculerPublication', $a->id)->assertSee('retirée de la vitrine');
+        $ecran->call('basculerPublication', $a->id)->assertSet('statut', fn ($s) => str_contains((string) $s, 'retirée de la vitrine'));
         $this->get('/actualites/'.$a->id)->assertNotFound();
     }
 }

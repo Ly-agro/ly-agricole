@@ -1,4 +1,3 @@
-{{-- Vue PDF (dompdf) : CSS 2.1 en ligne. A5, à faire signer par le fournisseur. --}}
 @php($f = \App\Support\Format::class)
 <!DOCTYPE html>
 <html lang="fr">
@@ -52,7 +51,6 @@
             <tr><td>Poids brut</td><td class="nombre">{{ $f::kg($achat->poids_brut_g) }}</td></tr>
             <tr><td>Tare (sacs)</td><td class="nombre">{{ $f::kg($achat->tare_g) }}</td></tr>
             <tr><td><strong>Poids net</strong></td><td class="nombre"><strong>{{ $f::kg($achat->poids_net_g) }}</strong></td></tr>
-            {{-- Qualité en entiers stockés (‰, centièmes de lbs) : affichage sans float. --}}
             <tr><td>Humidité</td><td class="nombre">{{ $achat->humidite_pour_mille === null ? '—' : intdiv($achat->humidite_pour_mille, 10).','.($achat->humidite_pour_mille % 10).' %' }}</td></tr>
             <tr><td>KOR (lbs / sac de 80 kg)</td><td class="nombre">{{ $achat->kor_centieme_lbs === null ? '—' : intdiv($achat->kor_centieme_lbs, 100).','.str_pad((string) ($achat->kor_centieme_lbs % 100), 2, '0', STR_PAD_LEFT) }}</td></tr>
             <tr><td>Grainage (noix / kg)</td><td class="nombre">{{ $achat->grainage_noix_kg ?? '—' }}</td></tr>

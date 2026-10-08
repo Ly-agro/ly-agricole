@@ -79,7 +79,7 @@ class EcranBudgetTest extends TestCase
             ->set('note', 'Deux camions')
             ->call('enregistrer')
             ->assertHasNoErrors()
-            ->assertSee('Budget enregistré.')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Budget enregistré.'))
             ->assertSee('1'.self::FINE.'500'.self::FINE.'000 FCFA')
             ->assertSee('Deux camions');
 

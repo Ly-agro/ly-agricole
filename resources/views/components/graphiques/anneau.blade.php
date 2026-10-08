@@ -1,17 +1,16 @@
 @props(['lignes', 'vide' => 'Rien à afficher pour l\'instant.'])
 
 @php
-    // Classes complètes (jamais concaténées) pour que Tailwind les génère.
+
     $traits = ['stroke-emerald-800', 'stroke-amber-500', 'stroke-emerald-500', 'stroke-stone-500', 'stroke-amber-700', 'stroke-stone-300'];
     $pastilles = ['bg-emerald-800', 'bg-amber-500', 'bg-emerald-500', 'bg-stone-500', 'bg-amber-700', 'bg-stone-300'];
 
-    // Au-delà de 5 lignes, le reste est regroupé pour que l'anneau reste lisible.
     $lignes = collect($lignes)->values();
     if ($lignes->count() > 6) {
         $lignes = $lignes->take(5)->push(['label' => 'Autres', 'valeur' => (int) $lignes->slice(5)->sum('valeur')]);
     }
     $total = (int) $lignes->sum('valeur');
-    $rayon = 15.9155; // circonférence = 100 : les longueurs d'arc sont directement des pourcentages
+    $rayon = 15.9155;
     $decalage = 0;
 @endphp
 

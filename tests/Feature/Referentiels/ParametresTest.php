@@ -45,7 +45,7 @@ class ParametresTest extends TestCase
             ->set('valeur', '500000')
             ->call('enregistrer')
             ->assertHasNoErrors()
-            ->assertSee('Seuil de validation des dépenses : enregistré.')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Seuil de validation des dépenses : enregistré.'))
             ->assertSee("500\u{202F}000 FCFA");
 
         $this->assertSame(500_000, Parametre::entier(CleParametre::SeuilValidationDepense));

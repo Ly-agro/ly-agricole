@@ -41,6 +41,8 @@ class FicheVente extends Component
 
     public string $motifContrePassation = '';
 
+    public string $statut = '';
+
     public bool $annulationOuverte = false;
 
     public string $motifAnnulation = '';
@@ -86,7 +88,7 @@ class FicheVente extends Component
         }
 
         $this->formulaireEncaissement = false;
-        session()->flash('statut', 'Encaissement enregistré.');
+        $this->statut = 'Encaissement enregistré.';
     }
 
     public function preparerContrePassation(int $id): void
@@ -109,7 +111,7 @@ class FicheVente extends Component
         }
 
         $this->aContrePasser = null;
-        session()->flash('statut', 'Encaissement contre-passé.');
+        $this->statut = 'Encaissement contre-passé.';
     }
 
     public function ouvrirAnnulation(): void
@@ -132,7 +134,7 @@ class FicheVente extends Component
         }
 
         $this->annulationOuverte = false;
-        session()->flash('statut', 'Vente supprimée (annulée) : stock et comptes remis comme avant, la trace reste.');
+        $this->statut = 'Vente supprimée (annulée) : stock et comptes remis comme avant, la trace reste.';
     }
 
     private function vente(): Vente

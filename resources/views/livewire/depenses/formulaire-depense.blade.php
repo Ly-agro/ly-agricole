@@ -68,10 +68,8 @@
                 @error('description') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
             </div>
             <div class="sm:col-span-2">
-                <label for="justificatif" class="mb-1 block text-sm font-medium text-stone-700">Justificatif (photo du reçu ou PDF)</label>
-                <input wire:model="justificatif" id="justificatif" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" class="block text-sm">
-                <div wire:loading wire:target="justificatif" class="mt-1 text-sm text-stone-500">Envoi du fichier…</div>
-                @error('justificatif') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                <x-champ-fichier modele="justificatif" label="Justificatif (photo du reçu ou PDF)" :fichier="$justificatif"
+                    accept="image/jpeg,image/png,image/webp,application/pdf" formats="Photo (JPG, PNG, WebP) ou PDF — 8 Mo au plus" />
             </div>
         </div>
 

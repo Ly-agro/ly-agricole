@@ -50,13 +50,8 @@
                     @error('pieceNumero') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
                 </div>
                 <div class="sm:col-span-2">
-                    <label for="photo" class="mb-1 block text-sm font-medium text-stone-700">Photo <span class="font-normal text-stone-500">(facultatif, pour la carte)</span></label>
-                    <input wire:model="photo" id="photo" type="file" accept="image/jpeg,image/png,image/webp" class="block text-sm">
-                    <div wire:loading wire:target="photo" class="mt-1 text-sm text-stone-500">Envoi de la photo…</div>
-                    @if ($photo && ! $errors->has('photo') && $photo->isPreviewable())
-                        <img src="{{ $photo->temporaryUrl() }}" alt="Aperçu" class="mt-2 h-24 w-24 rounded-md object-cover">
-                    @endif
-                    @error('photo') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    <x-champ-fichier modele="photo" label="Photo (pour la carte)" :fichier="$photo" facultatif
+                        accept="image/jpeg,image/png,image/webp" formats="Photo JPG, PNG ou WebP" />
                 </div>
             </div>
         </section>

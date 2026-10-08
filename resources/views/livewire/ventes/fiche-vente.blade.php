@@ -32,9 +32,6 @@
         </form>
     @endif
 
-    @if (session('statut'))
-        <p class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ session('statut') }}</p>
-    @endif
     @if ($vente->motif_annulation)
         <p class="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800" id="annulation">Annulée par {{ $vente->annuleur?->nom }}, le {{ $vente->annule_at?->format('d/m/Y') }} : {{ $vente->motif_annulation }}</p>
     @endif

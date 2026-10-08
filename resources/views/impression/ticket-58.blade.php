@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $titre }} — ticket 58 mm</title>
     <style>
-        /* Papier 58 mm : zone imprimable d'environ 48 mm, 32 caractères par ligne. */
         @page { size: 58mm auto; margin: 0; }
         * { box-sizing: border-box; }
         body { margin: 0; background: #e7e5e4; font-family: Consolas, "Courier New", monospace; color: #000; }

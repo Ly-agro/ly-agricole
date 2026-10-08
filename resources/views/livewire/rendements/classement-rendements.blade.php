@@ -62,7 +62,7 @@
 
         @if ($carte !== null && $carte['parcelles'] !== [])
             @php
-                // Du plus clair (rendement faible) au plus foncé (fort) ; gris = pas de rendement.
+
                 $couleurs = ['#d9f0d3', '#a6dba0', '#5aae61', '#1b7837', '#00441b'];
             @endphp
             <div class="rounded-xl border border-stone-200 bg-white p-5">

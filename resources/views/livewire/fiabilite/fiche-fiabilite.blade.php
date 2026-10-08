@@ -37,10 +37,6 @@
         <p class="mt-2 text-xs text-emerald-800">Proposition indicative : elle n'accorde ni ne refuse aucun prêt. <strong class="font-medium">Règle provisoire</strong>, sans coefficient d'augmentation : la politique définitive de notation est à valider par la direction.</p>
     </div>
 
-    @if ($statut !== '')
-        <p class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     <div class="rounded-xl border border-stone-200 bg-white p-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <h2 class="font-semibold">Décision de la direction</h2>

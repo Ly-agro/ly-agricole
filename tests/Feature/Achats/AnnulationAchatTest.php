@@ -195,7 +195,7 @@ class AnnulationAchatTest extends TestCase
             ->set('motifAnnulation', 'Saisi sur le mauvais lot')
             ->call('annulerAchat')
             ->assertHasNoErrors()
-            ->assertSee('supprimé (annulé)');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'supprimé (annulé)'));
 
         $this->assertSame(StatutAchat::Annule, $achat->refresh()->statut);
 

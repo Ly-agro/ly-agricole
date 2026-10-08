@@ -33,13 +33,6 @@
         </form>
     @endif
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-    @error('action')
-        <p class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">{{ $message }}</p>
-    @enderror
-
     <dl class="grid gap-4 rounded-xl border border-stone-200 bg-white p-6 text-sm shadow-sm sm:grid-cols-2 lg:grid-cols-4">
         <div><dt class="text-stone-500">Montant du prêt</dt><dd class="text-base font-semibold tabular-nums">{{ \App\Support\Format::fcfa($pret->montant_fcfa) }}</dd></div>
         <div>
@@ -167,10 +160,8 @@
                         </div>
                     @else
                         <div>
-                            <label for="recu" class="mb-1 block text-sm font-medium text-stone-700">Reçu signé par le producteur</label>
-                            <input wire:model="recu" id="recu" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" class="block text-sm">
-                            <div wire:loading wire:target="recu" class="mt-1 text-sm text-stone-500">Envoi du reçu…</div>
-                            @error('recu') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                            <x-champ-fichier modele="recu" label="Reçu signé par le producteur" :fichier="$recu"
+                                accept="image/jpeg,image/png,image/webp,application/pdf" formats="Photo du reçu signé ou PDF" />
                         </div>
                     @endif
                 </div>

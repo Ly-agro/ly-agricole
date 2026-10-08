@@ -9,7 +9,6 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        {{-- Avis en direct (Reverb) : Echo s'abonne au canal privé de cet utilisateur. --}}
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @auth
             <meta name="ly-utilisateur" content="{{ auth()->id() }}">
@@ -21,9 +20,7 @@
         @include('partials.icones')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    {{-- Messages posés avant une redirection : affichés en bandeau (resources/js/notifications-flash.js). --}}
     <body class="min-h-screen bg-stone-100 text-stone-900 antialiased" data-flash-statut="{{ session('statut') }}" data-flash-erreur="{{ session('erreur') ?? $errors->first() }}">
-        {{-- Voile derrière le menu sur téléphone --}}
         <div data-menu-voile class="fixed inset-0 z-30 hidden bg-stone-900/40 lg:hidden"></div>
 
         <aside data-menu id="menu"
@@ -36,7 +33,6 @@
                 </a>
             </div>
 
-            {{-- Chaque lien n'apparaît qu'avec le droit correspondant ; la route le revérifie. --}}
             <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="Menu principal">
                 <div class="space-y-1">
                     <x-nav-lien route="tableau-de-bord" motif="tableau-de-bord" icone="accueil">Tableau de bord</x-nav-lien>

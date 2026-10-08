@@ -3,7 +3,6 @@
             (function () {
                 var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-                // En-tête : se resserre quand on défile.
                 var entete = document.getElementById('entete');
                 var haut = document.getElementById('haut');
                 function defile() {
@@ -13,7 +12,6 @@
                 defile();
                 window.addEventListener('scroll', defile, { passive: true });
 
-                // Menu mobile.
                 var bouton = document.getElementById('menu-bouton');
                 var menu = document.getElementById('menu-mobile');
                 function fermer() {
@@ -28,7 +26,6 @@
                 });
                 menu.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', fermer); });
 
-                // Apparition au défilement.
                 var cibles = document.querySelectorAll('[data-reveal], #etapes');
                 if (reduit || !('IntersectionObserver' in window)) {
                     cibles.forEach(function (c) { c.classList.add('est-visible'); });
@@ -41,7 +38,6 @@
                     cibles.forEach(function (c) { obs.observe(c); });
                 }
 
-                // Le logo suit doucement le pointeur (ordinateur seulement).
                 var boite = document.getElementById('logo-boite');
                 if (!reduit && boite && window.matchMedia('(hover: hover)').matches) {
                     var zone = boite.closest('section');

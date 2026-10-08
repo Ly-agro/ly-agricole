@@ -18,10 +18,6 @@
         </div>
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     @if ($campagne && $comptesDedies->isEmpty())
         <p class="mb-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
             Aucun compte de trésorerie n'est dédié à cette campagne (contrat art. 5). Créez-en un depuis la Trésorerie avant d'enregistrer un apport.
@@ -33,7 +29,6 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="investisseurId" class="mb-1 block text-sm font-medium text-stone-700">Investisseur</label>
-                    {{-- Liste ET saisie : choisir, ou taper un nom (investisseur sans compte). --}}
                     <select wire:model="investisseurId" id="investisseurId" data-recherche-creer class="block w-full rounded-md border border-stone-300 px-3 py-2 focus:border-emerald-600 focus:outline-none">
                         <option value="">— Apport de LY elle-même —</option>
                         @foreach ($investisseurs as $i)

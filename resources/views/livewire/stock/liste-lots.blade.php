@@ -5,10 +5,6 @@
         <button type="button" wire:click="ouvrir" class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800">Nouveau lot</button>
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     @if ($formulaireOuvert)
         <form wire:submit="creer" class="mb-8 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
             <div class="grid gap-4 sm:grid-cols-3">

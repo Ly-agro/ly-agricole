@@ -1,4 +1,3 @@
-{{-- Vue PDF (dompdf) : CSS 2.1 en ligne. Note d'avancement, contrat de campagne art. 18.1. --}}
 @php($f = \App\Support\Format::class)
 <!DOCTYPE html>
 <html lang="fr">

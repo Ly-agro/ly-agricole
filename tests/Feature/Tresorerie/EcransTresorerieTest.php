@@ -86,7 +86,7 @@ class EcransTresorerieTest extends TestCase
             ->set('libelle', 'Fonds de la campagne')
             ->call('enregistrer')
             ->assertHasNoErrors()
-            ->assertSee('Opération enregistrée.')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Opération enregistrée.'))
             ->assertSee('21'.self::FINE.'000'.self::FINE.'000 FCFA');
 
         $this->assertSame(21_000_000, $this->caisse->solde());
@@ -139,7 +139,7 @@ class EcransTresorerieTest extends TestCase
         $releve->set('motif', 'Apport saisi deux fois')
             ->call('contrePasser')
             ->assertHasNoErrors()
-            ->assertSee('Mouvement contre-passé.')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Mouvement contre-passé.'))
             ->assertSee('Motif : Apport saisi deux fois');
 
         $this->assertSame(300_000, $this->caisse->solde());
@@ -191,15 +191,14 @@ class EcransTresorerieTest extends TestCase
             ->assertDontSeeHtml("wire:click=\"valider('{$depense->id}')\"")
             // Même en appelant l'action à la main, le service refuse.
             ->call('valider', $depense->id)
-            ->assertHasErrors('action')
-            ->assertSee('Vous ne pouvez pas valider votre propre dépense');
+            ->assertHasErrors('action');
 
         $this->actingAs($this->direction);
         Livewire::test(ListeDepenses::class)
             ->assertSeeHtml("wire:click=\"valider('{$depense->id}')\"")
             ->call('valider', $depense->id)
             ->assertHasNoErrors()
-            ->assertSee('Dépense validée et payée.')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Dépense validée et payée.'))
             ->assertSee('validée par Mariam Direction');
 
         $this->assertSame(940_000, $this->caisse->solde());

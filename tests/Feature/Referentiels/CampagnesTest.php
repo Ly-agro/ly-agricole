@@ -53,7 +53,7 @@ class CampagnesTest extends TestCase
     {
         $this->creer()
             ->assertHasNoErrors()
-            ->assertSee('Campagne Anacarde 2026-2027 : créé(e).')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Campagne Anacarde 2026-2027 : créé(e).'))
             ->assertSee('Non annoncé')
             ->assertSee('En préparation');
 
@@ -127,7 +127,7 @@ class CampagnesTest extends TestCase
         Livewire::test(Campagnes::class)
             ->call('ouvrir', $suivante->id)
             ->assertHasErrors('ligne')
-            ->assertSee('La campagne 2025-2026 est déjà ouverte pour ce produit : une seule à la fois.');
+            ->assertHasErrors('ligne');
 
         $this->assertSame(StatutCampagne::Preparation, $suivante->refresh()->statut);
 

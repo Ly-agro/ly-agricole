@@ -7,10 +7,6 @@
         </div>
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     @if ($aContrePasser !== null)
         <form wire:submit="contrePasser" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
             <h2 class="font-semibold text-amber-950">Contre-passer le mouvement n° {{ $aContrePasser }}</h2>

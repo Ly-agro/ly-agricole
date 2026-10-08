@@ -313,7 +313,7 @@ class IaTest extends TestCase
         Livewire::test(ListeVisites::class)
             ->assertSee('Demander un avis IA sur les photos')
             ->call('demanderAvisIa', $this->visite->id)
-            ->assertSee('2 photo(s) confiée(s) au service IA.');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, '2 photo(s) confiée(s) au service IA.'));
 
         $this->actingAs($this->agronome);
         Livewire::test(ListeDiagnostics::class)

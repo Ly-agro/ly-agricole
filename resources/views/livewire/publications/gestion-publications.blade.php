@@ -17,10 +17,6 @@
             class="-mb-px border-b-2 px-4 py-2 {{ $onglet === 'sources' ? 'border-emerald-700 font-medium text-emerald-900' : 'border-transparent text-stone-600 hover:text-stone-900' }}">Sources d'actualités</button>
     </div>
 
-    @if ($statut !== '')
-        <p class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     @if ($onglet === 'prix')
         <p class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <strong class="font-semibold">Information, pas le prix officiel.</strong> Un prix publié ici s'affiche sur la vitrine avec sa source et sa date.

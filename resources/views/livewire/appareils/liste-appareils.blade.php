@@ -7,10 +7,6 @@
         </p>
     </div>
 
-    @if ($statut !== '')
-        <p class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     @if ($aCouper !== null || $aCouperTous !== null)
         <form wire:submit="couper" class="rounded-xl border border-red-200 bg-red-50 p-5">
             <label for="motif" class="block text-sm font-medium text-red-950">

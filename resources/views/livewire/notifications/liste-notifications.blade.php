@@ -1,5 +1,5 @@
 @php
-    // Une couleur et une icône par sorte d'avis : on voit d'un coup d'œil ce qui attend.
+
     $sortes = [
         'a_valider' => ['libelle' => 'À valider', 'pastille' => 'bg-amber-100 text-amber-900', 'rond' => 'bg-amber-100 text-amber-800', 'fond' => 'bg-amber-50/70',
             'trace' => 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'],
@@ -12,7 +12,7 @@
         'activite' => ['libelle' => 'Activité agent', 'pastille' => 'bg-stone-200 text-stone-800', 'rond' => 'bg-stone-200 text-stone-700', 'fond' => 'bg-stone-50',
             'trace' => 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 20a8 8 0 0 1 16 0'],
     ];
-    // Avis d'avant la distinction validé / refusé : présentés comme « validé ».
+
     $sortes['traite'] = $sortes['valide'];
 @endphp
 
@@ -36,11 +36,6 @@
         @endif
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
-    {{-- Activation du push sur CE navigateur : l'état dépend du navigateur, lu en JavaScript. --}}
     <section wire:ignore data-push data-cle="{{ $clePublique }}"
         class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-emerald-900/10 bg-gradient-to-r from-emerald-900 to-emerald-800 p-4 text-emerald-50 shadow-sm sm:p-5">
         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10" aria-hidden="true">
@@ -125,7 +120,6 @@
     const retirer = bloc.querySelector('[data-push-retirer]');
     const cle = bloc.dataset.cle;
 
-    // Clé VAPID publique (base64url) → octets attendus par PushManager.subscribe().
     const octets = (b64) => {
         const brut = atob((b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
         return Uint8Array.from(brut, (c) => c.charCodeAt(0));

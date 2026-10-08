@@ -90,9 +90,8 @@
             </label>
             @if ($partieLiee)
                 <div class="mt-3">
-                    <label for="accordEcrit" class="mb-1 block text-sm font-medium text-stone-700">Accord écrit (PDF ou photo)</label>
-                    <input wire:model="accordEcrit" id="accordEcrit" type="file" accept="application/pdf,image/jpeg,image/png" class="block text-sm">
-                    @error('accordEcrit') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                    <x-champ-fichier modele="accordEcrit" label="Accord écrit" :fichier="$accordEcrit"
+                        accept="application/pdf,image/jpeg,image/png" formats="PDF ou photo (JPG, PNG) — 8 Mo au plus" />
                 </div>
             @endif
         </section>

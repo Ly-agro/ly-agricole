@@ -139,7 +139,7 @@ class EcransVentesTest extends TestCase
             ->assertSeeHtml("wire:click=\"valider('{$vente->id}')\"")
             ->call('valider', $vente->id)
             ->assertHasNoErrors()
-            ->assertSee('Vente validée');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Vente validée'));
 
         $this->assertSame(400_000, $this->lot->stock());
     }
@@ -161,7 +161,7 @@ class EcransVentesTest extends TestCase
             ->set('montantEncaisse', '200 000')
             ->call('encaisser')
             ->assertHasNoErrors()
-            ->assertSee('Encaissement enregistré')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Encaissement enregistré'))
             ->assertSeeHtml('160'.self::FINE.'000 FCFA'); // reste à encaisser : 360 000 − 200 000
 
         $encaissement = $vente->encaissements()->firstOrFail();
@@ -172,7 +172,7 @@ class EcransVentesTest extends TestCase
             ->set('motifContrePassation', 'Chèque rejeté par la banque')
             ->call('contrePasser')
             ->assertHasNoErrors()
-            ->assertSee('Encaissement contre-passé');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Encaissement contre-passé'));
 
         $this->assertSame(0, $vente->encaisse());
         $this->assertSame(4_000_000, $this->caisseCentrale->solde());

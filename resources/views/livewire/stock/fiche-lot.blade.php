@@ -11,10 +11,6 @@
         </div>
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     <div class="mb-6 flex flex-wrap items-center gap-2 text-sm">
         @foreach ($parMagasin as $magasinId => $g)
             <span class="rounded-full border border-stone-200 bg-white px-3 py-1">{{ $magasins->firstWhere('id', $magasinId)?->nom }} : <strong class="tabular-nums">{{ \App\Support\Format::kg($g) }}</strong></span>

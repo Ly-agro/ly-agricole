@@ -109,7 +109,7 @@ class EcransIntrantsTest extends TestCase
             ->set('motif', 'Livraison fournisseur BL 2231')
             ->call('enregistrer')
             ->assertHasNoErrors()
-            ->assertSee('Mouvement enregistré.')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Mouvement enregistré.'))
             ->assertSeeHtml('id="total-'.$this->npk->id.'">120 sacs</td>');
 
         $this->assertSame(120, $this->npk->stock());
@@ -155,7 +155,7 @@ class EcransIntrantsTest extends TestCase
             ->assertSee('370'.self::FINE.'000 FCFA')
             ->call('remettreIntrants')
             ->assertHasNoErrors()
-            ->assertSee('Intrants remis')
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Intrants remis'))
             ->assertSeeHtml('id="restant-du">370'.self::FINE.'000 FCFA</dd>')
             ->assertSeeHtml('id="reste">630'.self::FINE.'000 FCFA</dd>');
 

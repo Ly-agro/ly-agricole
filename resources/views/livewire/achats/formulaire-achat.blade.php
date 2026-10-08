@@ -16,10 +16,6 @@
         @endif
     </div>
 
-    @error('achat')
-        <p class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800" id="erreur-achat">{{ $message }}</p>
-    @enderror
-
     <form wire:submit="enregistrer" class="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div class="space-y-6">
             <section class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">

@@ -49,7 +49,6 @@
             @endcan
         </div>
     @else
-        {{-- Prix bord-champ + chiffres clés --}}
         <section class="grid gap-4 lg:grid-cols-3" aria-label="Prix et chiffres clés">
             <div class="rounded-xl bg-emerald-900 p-6 text-white">
                 <p class="text-sm text-emerald-100">Prix officiel bord-champ · {{ $campagne->produit->nom }}</p>
@@ -102,7 +101,6 @@
             </dl>
         </section>
 
-        {{-- Argent : flux et revenus --}}
         @if ($voitArgent)
             <section class="grid gap-4 lg:grid-cols-3" aria-label="Flux d'argent">
                 <div class="rounded-xl border border-stone-200 bg-white p-5 lg:col-span-2">
@@ -130,7 +128,6 @@
             </section>
         @endif
 
-        {{-- Analyses de la campagne --}}
         <section class="grid gap-4 lg:grid-cols-3" aria-label="Analyses de la campagne">
             @if ($voitDepenses)
                 <div class="rounded-xl border border-stone-200 bg-white p-5">
@@ -155,7 +152,6 @@
             </div>
         </section>
 
-        {{-- À faire + actualité --}}
         <section class="grid gap-4 lg:grid-cols-2">
             <div class="rounded-xl border border-stone-200 bg-white p-5">
                 <h2 class="font-semibold">Actions à mener</h2>
@@ -202,7 +198,6 @@
             </div>
         </section>
 
-        {{-- Bilan par campagne --}}
         @if ($bilan->isNotEmpty())
             <section class="rounded-xl border border-stone-200 bg-white p-5" aria-label="Bilan par campagne">
                 <h2 class="font-semibold">Ce qui a été fait, campagne par campagne</h2>
@@ -238,7 +233,6 @@
             </section>
         @endif
 
-        {{-- Filière : kilos achetés, stock, remboursements --}}
         @if ($filiere !== null || ($chiffres !== null && $voitPrets))
             <section class="grid gap-4 lg:grid-cols-3" aria-label="Kilos, stock et remboursements">
                 <dl class="grid grid-cols-2 gap-4 lg:col-span-2">

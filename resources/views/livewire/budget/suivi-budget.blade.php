@@ -18,10 +18,6 @@
         </div>
     </div>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
-    @endif
-
     @if ($campagne === null)
         <p class="rounded-md border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">Aucune campagne.</p>
     @else

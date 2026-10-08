@@ -4,10 +4,6 @@
         Au moins {{ \App\Livewire\Utilisateurs\GestionUtilisateurs::MOT_DE_PASSE_MIN }} caractères. Mot de passe oublié : contactez l'administrateur.
     </p>
 
-    @if ($statut !== '')
-        <p class="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900" role="status">{{ $statut }}</p>
-    @endif
-
     <form wire:submit="changer" class="space-y-5 rounded-xl border border-stone-200 bg-white p-5">
         <div>
             <label for="actuel" class="mb-1 block text-sm font-medium text-stone-700">Mot de passe actuel</label>

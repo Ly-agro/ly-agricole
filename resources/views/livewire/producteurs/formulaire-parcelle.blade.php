@@ -12,10 +12,8 @@
             <div class="grid gap-6 md:grid-cols-[1fr_auto]">
                 <div class="space-y-4">
                     <div>
-                        <label for="fichierContour" class="mb-1 block text-sm font-medium text-stone-700">Importer un fichier GeoJSON</label>
-                        <input wire:model="fichierContour" id="fichierContour" type="file" accept=".geojson,.json,application/geo+json,application/json" class="block text-sm">
-                        <div wire:loading wire:target="fichierContour" class="mt-1 text-sm text-stone-500">Lecture du fichier…</div>
-                        @error('fichierContour') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                        <x-champ-fichier modele="fichierContour" label="Importer un fichier GeoJSON" :fichier="$fichierContour"
+                            accept=".geojson,.json,application/geo+json,application/json" formats="Fichier .geojson ou .json du contour" />
                     </div>
 
                     <div>

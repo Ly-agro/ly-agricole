@@ -209,7 +209,7 @@ class AppareilsTest extends TestCase
             ->call('demanderCoupure', $jeton->id)->assertSee('Couper cet appareil')
             ->set('motif', '')->call('couper')->assertHasErrors(['motif'])
             ->set('motif', 'Téléphone perdu')->call('couper')->assertHasNoErrors()
-            ->assertSee('Appareil coupé')->assertDontSee('LY Terrain a1b2c3d4');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, 'Appareil coupé'))->assertDontSee('LY Terrain a1b2c3d4');
 
         $this->nouvelleRequete();
         $this->withToken($texte)->getJson('/api/referentiels')->assertUnauthorized();
@@ -225,7 +225,7 @@ class AppareilsTest extends TestCase
         Livewire::test(ListeAppareils::class)
             ->call('demanderCoupureTous', $this->agent->id)->assertSee('TOUS les appareils')
             ->set('motif', 'Départ de l\'agent')->call('couper')
-            ->assertSee('2 appareil(s) coupé(s)');
+            ->assertSet('statut', fn ($s) => str_contains((string) $s, '2 appareil(s) coupé(s)'));
 
         $this->assertSame(0, $this->agent->tokens()->count());
     }
