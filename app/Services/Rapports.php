@@ -251,21 +251,27 @@ class Rapports
         }
 
         // Une sauvegarde jamais restaurée n'est pas une sauvegarde (vérification hebdomadaire).
+        // PostgreSQL = production Neon : ly:sauvegarder (mysqldump, disque local) n'y tourne pas,
+        // la base est protégée par l'historique de restauration de Neon (2026-10-08).
         $sauvegardes = app(Sauvegardes::class);
         $copie = $sauvegardes->derniereCopieHorsSite();
-        if (! $sauvegardes->horsSiteConfiguree()) {
+        if (! $sauvegardes->gereLaBase()) {
+            $lignes[] = ['Sauvegardes : historique Neon', '—', 'La base est sauvegardée par l\'historique de restauration de Neon, pas par « ly:sauvegarder ». Vérifier sa durée : Neon → Settings → Backup & restore.', null];
+        } elseif (! $sauvegardes->horsSiteConfiguree()) {
             $lignes[] = ['Copie hors site absente', '—', 'Les sauvegardes restent sur le serveur : un vol, un incendie ou un piratage les emporterait avec la base.', null];
         } elseif ($copie !== null && ! $copie['ok']) {
             $lignes[] = ['Copie hors site en échec', $copie['archive'], (string) $copie['erreur'], Carbon::parse($copie['copie_at'])];
         } elseif ($copie === null || Carbon::parse($copie['copie_at'])->lt($aujourdhui->copy()->subDays(2))) {
             $lignes[] = ['Copie hors site ancienne', $copie['archive'] ?? '—', 'Aucune copie hors site réussie depuis plus de 2 jours.', $copie === null ? null : Carbon::parse($copie['copie_at'])];
         }
-        if (config('sauvegardes.mot_de_passe') === null) {
+        if ($sauvegardes->gereLaBase() && config('sauvegardes.mot_de_passe') === null) {
             $lignes[] = ['Sauvegardes non chiffrées', '—', 'Données personnelles en clair dans les archives : « php artisan ly:mot-de-passe-sauvegardes ».', null];
         }
 
         $verification = $sauvegardes->derniereVerification();
-        if ($verification === null) {
+        if (! $sauvegardes->gereLaBase()) {
+            // Rien à vérifier ici : voir la ligne « historique Neon » ci-dessus.
+        } elseif ($verification === null) {
             $lignes[] = ['Sauvegarde non vérifiée', '—', 'Aucune restauration de sauvegarde vérifiée : lancer « php artisan ly:sauvegarder --verifier ».', null];
         } elseif (! $verification['ok']) {
             $lignes[] = ['Sauvegarde en échec', $verification['archive'], implode(' ', array_slice($verification['erreurs'], 0, 2)), Carbon::parse($verification['verifie_at'])];
