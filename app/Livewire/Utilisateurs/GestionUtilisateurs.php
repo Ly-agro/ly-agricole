@@ -147,6 +147,8 @@ class GestionUtilisateurs extends Component
             'email' => $donnees['email'],
             'role' => $donnees['role'],
             'actif' => $donnees['actif'],
+            // Un compte direction est approuvé dès sa création : aucune confirmation externe n'est requise.
+            'email_verified_at' => in_array($donnees['role'], [Role::Admin->value, Role::Direction->value], true) ? now() : null,
         ];
 
         if (filled($donnees['motDePasse'])) {
