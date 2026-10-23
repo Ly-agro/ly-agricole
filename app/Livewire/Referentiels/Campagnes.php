@@ -114,13 +114,51 @@ class Campagnes extends EcranReferentiel
     protected function peutModifier(Model $ligne): bool
     {
         /** @var Campagne $ligne */
-        return $ligne->statut !== StatutCampagne::Cloturee;
+        return ! in_array($ligne->statut, [StatutCampagne::Suspendue, StatutCampagne::Cloturee], true);
     }
 
     protected function actionsLigne(Model $ligne): array
     {
         /** @var Campagne $ligne */
-        return $ligne->statut === StatutCampagne::Preparation ? ['ouvrir' => 'Ouvrir'] : [];
+        return match ($ligne->statut) {
+            StatutCampagne::Preparation => ['ouvrir' => 'Ouvrir'],
+            StatutCampagne::Ouverte => ['suspendre' => 'Suspendre', 'cloturer' => 'Clôturer'],
+            StatutCampagne::Suspendue => ['reactiver' => 'Réactiver'],
+            StatutCampagne::Cloturee => [],
+        };
+    }
+
+    public function suspendre(int $id): void
+    {
+        $this->changerStatut($id, StatutCampagne::Suspendue, 'suspendue');
+    }
+
+    public function reactiver(int $id): void
+    {
+        $this->changerStatut($id, StatutCampagne::Ouverte, 'réactivée');
+    }
+
+    public function cloturer(int $id): void
+    {
+        $this->changerStatut($id, StatutCampagne::Cloturee, 'clôturée');
+    }
+
+    private function changerStatut(int $id, StatutCampagne $statut, string $libelle): void
+    {
+        $this->authorize($this->droit());
+        DB::transaction(function () use ($id, $statut, $libelle): void {
+            $campagne = Campagne::query()->lockForUpdate()->findOrFail($id);
+            $autorises = match ($statut) {
+                StatutCampagne::Suspendue, StatutCampagne::Cloturee => [StatutCampagne::Ouverte],
+                StatutCampagne::Ouverte => [StatutCampagne::Suspendue],
+                default => [],
+            };
+            if (! in_array($campagne->statut, $autorises, true)) {
+                throw ValidationException::withMessages(['ligne' => 'Cette transition de statut est impossible.']);
+            }
+            $campagne->update(['statut' => $statut]);
+            $this->statut = $this->nomLigne($campagne)." : {$libelle}.";
+        });
     }
 
     public function ouvrir(int $id): void

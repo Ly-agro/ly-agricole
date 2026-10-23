@@ -55,7 +55,7 @@ class Groupes extends EcranReferentiel
         return [
             'nom' => ['libelle' => 'Nom', 'type' => 'text'],
             'village_id' => ['libelle' => 'Village', 'type' => 'select', 'options' => OptionsVillages::toutes(), 'live' => true],
-            'responsable_id' => ['libelle' => 'Responsable', 'type' => 'select', 'aide' => 'Facultatif. Un producteur du village.',
+            'responsable_id' => ['libelle' => 'Responsable du groupe', 'type' => 'select', 'aide' => 'Désignez un producteur actif du même village.',
                 'options' => blank($villageId) ? [] : Producteur::query()->where('village_id', (int) $villageId)->where('actif', true)
                     ->orderBy('nom')->get()->mapWithKeys(fn (Producteur $p) => [$p->id => $p->nomComplet().' ('.$p->code.')'])->all()],
             'actif' => ['libelle' => 'Actif', 'type' => 'checkbox'],

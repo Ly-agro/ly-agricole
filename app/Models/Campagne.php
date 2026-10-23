@@ -44,7 +44,8 @@ class Campagne extends Model
      */
     public function estTerminee(?Carbon $au = null): bool
     {
-        return $this->statut === StatutCampagne::Cloturee || ($au ?? Carbon::now())->gt($this->fin->copy()->endOfDay());
+        return in_array($this->statut, [StatutCampagne::Suspendue, StatutCampagne::Cloturee], true)
+            || ($au ?? Carbon::now())->gt($this->fin->copy()->endOfDay());
     }
 
     /**
