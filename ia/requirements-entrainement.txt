@@ -1,0 +1,6 @@
+# Entraînement du modèle de vision : sur une machine LOUÉE avec carte graphique, pas sur le
+# serveur IA (docs/INSTALLATION_IA.md §1 bis). Versions à fixer à la première utilisation.
+torch
+torchvision
+onnx
+pillow
