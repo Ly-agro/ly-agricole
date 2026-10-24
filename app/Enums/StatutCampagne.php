@@ -2,7 +2,6 @@
 
 namespace App\Enums;
 
-/**
 enum StatutCampagne: string
 {
     case Preparation = 'preparation';
