@@ -5,14 +5,19 @@ namespace Tests\Feature\Tresorerie;
 use App\Enums\CleParametre;
 use App\Enums\NatureMouvement;
 use App\Enums\Role;
+use App\Enums\StatutCampagne;
 use App\Enums\StatutDepense;
+use App\Enums\TypeCompte;
 use App\Livewire\Depenses\FormulaireDepense;
 use App\Livewire\Depenses\ListeDepenses;
 use App\Livewire\Tresorerie\Comptes;
 use App\Livewire\Tresorerie\ReleveCompte;
+use App\Models\Apport;
+use App\Models\Campagne;
 use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\Depense;
+use App\Models\MouvementTresorerie;
 use App\Models\Parametre;
 use App\Models\User;
 use App\Services\Depenses;
@@ -93,6 +98,27 @@ class EcransTresorerieTest extends TestCase
     }
 
     #[Test]
+    public function un_apport_de_campagne_depuis_la_tresorerie_preselectionne_ly(): void
+    {
+        $campagne = Campagne::factory()->statut(StatutCampagne::Ouverte)->create();
+        $compte = CompteTresorerie::factory()->create(['campagne_id' => $campagne->id]);
+        $this->actingAs($this->comptable);
+
+        Livewire::test(Comptes::class)
+            ->call('ouvrir', 'entree')
+            ->set('compteId', (string) $compte->id)
+            ->set('nature', 'apport_campagne')
+            ->assertSet('investisseurId', 'ly')
+            ->assertSet('campagneId', (string) $campagne->id)
+            ->set('montant', '25 000')
+            ->set('libelle', 'Apport propre de LY')
+            ->call('enregistrer')
+            ->assertHasNoErrors();
+
+        $this->assertTrue(Apport::query()->sole()->estDeLy());
+    }
+
+    #[Test]
     public function un_montant_ambigu_ou_un_virement_a_decouvert_est_explique(): void
     {
         $this->actingAs($this->comptable);
@@ -120,6 +146,37 @@ class EcransTresorerieTest extends TestCase
             ->assertSee('Solde insuffisant sur « Caisse centrale »');
 
         $this->assertSame(100_000, $this->caisse->solde());
+    }
+
+    #[Test]
+    public function un_retrait_est_un_virement_lie_vers_un_compte_de_caisse(): void
+    {
+        $banque = CompteTresorerie::factory()->create(['nom' => 'Banque retrait', 'type' => TypeCompte::Banque]);
+        $caisseEspeces = CompteTresorerie::factory()->create(['nom' => 'Caisse espèces']);
+        Tresorerie::entree($banque, 100_000, NatureMouvement::Apport, Carbon::today(), 'Fonds', $this->direction);
+        $this->actingAs($this->comptable);
+
+        Livewire::test(Comptes::class)
+            ->assertSee('Retrait')
+            ->call('ouvrir', 'retrait')
+            ->set('compteId', (string) $banque->id)
+            ->set('compteDestinationId', (string) $caisseEspeces->id)
+            ->set('montant', '40 000')
+            ->set('libelle', 'Retrait espèces pour la caisse')
+            ->call('enregistrer')
+            ->assertHasNoErrors()
+            ->assertSet('statut', 'Opération enregistrée.');
+
+        $journal = MouvementTresorerie::query()->get()->sortBy('id')->values();
+        $this->assertSame(['apport', 'retrait', 'retrait'], $journal->map(fn (MouvementTresorerie $mouvement) => $mouvement->nature->value)->all());
+        $mouvements = $journal
+            ->filter(fn (MouvementTresorerie $mouvement) => $mouvement->nature === NatureMouvement::Retrait)
+            ->values();
+        $this->assertCount(2, $mouvements);
+        $this->assertSame(['entree', 'sortie'], $mouvements->pluck('sens')->map(fn ($sens) => $sens->value)->sort()->values()->all());
+        $this->assertSame(1, $mouvements->pluck('lien')->unique()->count());
+        $this->assertSame(60_000, $banque->refresh()->solde());
+        $this->assertSame(40_000, $caisseEspeces->refresh()->solde());
     }
 
     #[Test]

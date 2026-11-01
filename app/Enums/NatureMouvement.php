@@ -2,15 +2,13 @@
 
 namespace App\Enums;
 
-/**
- * Pourquoi l'argent a bougé. Viendront : décaissement de prêt (sem. 4), achat (sem. 6),
- * remboursement en espèces, encaissement de vente (phase 2).
- */
+/** Pourquoi l'argent a bougé. */
 enum NatureMouvement: string
 {
     case Apport = 'apport';
     case AutreEntree = 'autre_entree';
     case Virement = 'virement';
+    case Retrait = 'retrait';
     case AvanceAgent = 'avance_agent';
     case Depense = 'depense';
     case DecaissementPret = 'decaissement_pret';
@@ -27,6 +25,7 @@ enum NatureMouvement: string
             self::Apport => 'Apport de fonds',
             self::AutreEntree => 'Autre entrée',
             self::Virement => 'Virement interne',
+            self::Retrait => 'Retrait d\'espèces',
             self::AvanceAgent => 'Avance à un agent',
             self::Depense => 'Dépense',
             self::DecaissementPret => 'Décaissement de prêt',

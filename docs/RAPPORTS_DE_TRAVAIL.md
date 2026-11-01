@@ -4,7 +4,27 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
-## 2026-11-01 — Réactivation d'une campagne : unicité par produit — FAIT, VÉRIFIÉ
+## 2026-11-01 — Retrait d'espèces en trésorerie — CODE FAIT, PARCOURS NAVIGATEUR À FAIRE
+
+**Fait.** « Retrait d'espèces » est traité prudemment comme un transfert interne lié d'un compte
+bancaire ou Mobile Money vers une caisse : deux mouvements immuables de même nature et même lien,
+et aucun argent ne disparaît du registre. Le service refuse une caisse comme source et tout compte
+non-caisse comme destination. Cette interprétation reste à confirmer par le responsable projet.
+
+**Vérifié en l'exécutant.** Le test ciblé vérifie les deux jambes du retrait et les soldes. Après
+`php artisan config:clear`, les tests Trésorerie hors deux cas d'envoi d'image : 37 tests, 37 passés,
+158 assertions. L'exécution complète de ces tests a 2 erreurs préexistantes, car l'extension PHP GD
+est absente. Pint et PHPStan passent (0 erreur).
+
+**À faire avant de déclarer le parcours fini.** Essayer dans le navigateur un retrait d'une banque
+vers une caisse, puis vérifier les deux lignes liées dans les relevés. Aucun navigateur ou outil
+d'automatisation n'est installé ici ; ne pas lancer le serveur avant d'isoler la base du `.env`.
+
+**Toujours en attente.** Le virement compté comme apport doit rester bloqué tant que la règle
+d'attribution d'un virement à plusieurs investisseurs n'est pas décidée.
+
+---
+
 ## 2026-11-01 — Vente du stock restant après clôture — CODE FAIT, NAVIGATEUR À VÉRIFIER
 
 **Constaté.** `App\Services\Ventes` permettait déjà une vente après clôture si le lot gardait du
@@ -39,6 +59,8 @@ du même produit est déjà ouverte.
 **Vérifié en l'exécutant.** Après `php artisan config:clear`,
 `./vendor/bin/phpunit tests/Feature/Referentiels/CampagnesTest.php` : 13 tests, 13 passés,
 68 assertions. Pint passe sur les deux fichiers PHP touchés.
+
+---
 
 ## 2026-11-01 — Correction du partage de résultat avec investisseur sans compte — FAIT, VÉRIFIÉ
 

@@ -263,6 +263,17 @@ class ResultatCampagneTest extends TestCase
     }
 
     #[Test]
+    public function le_partage_n_affiche_pas_l_apport_de_ly_quand_il_est_nul(): void
+    {
+        Apports::enregistrer($this->fondsA->id, $this->campagne->id, $this->compteDedie->id, 1_000_000, Carbon::today(), $this->direction);
+        $this->actingAs($this->direction);
+
+        Livewire::test(ResultatDeCampagne::class)
+            ->assertSee('Fonds A')
+            ->assertDontSee('Apport propre de LY');
+    }
+
+    #[Test]
     public function l_ecran_enregistre_la_valorisation_du_stock_a_partir_de_deux_offres(): void
     {
         $this->apports();

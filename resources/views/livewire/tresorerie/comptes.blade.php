@@ -5,6 +5,7 @@
         <div class="flex flex-wrap gap-2 text-sm">
             <button type="button" wire:click="ouvrir('entree')" class="rounded-md border border-stone-300 bg-white px-3 py-2 hover:bg-stone-50">Entrée d'argent</button>
             <button type="button" wire:click="ouvrir('virement')" class="rounded-md border border-stone-300 bg-white px-3 py-2 hover:bg-stone-50">Virement interne</button>
+            <button type="button" wire:click="ouvrir('retrait')" class="rounded-md border border-stone-300 bg-white px-3 py-2 hover:bg-stone-50">Retrait d'espèces</button>
             <button type="button" wire:click="ouvrir('avance')" class="rounded-md border border-stone-300 bg-white px-3 py-2 hover:bg-stone-50">Avance à un agent</button>
             <button type="button" wire:click="ouvrir('compte')" class="rounded-md bg-emerald-700 px-3 py-2 font-medium text-white hover:bg-emerald-800">Nouveau compte</button>
         </div>
@@ -13,7 +14,7 @@
     @if ($formulaire !== null)
         <form wire:submit="enregistrer" class="mb-8 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
             <h2 class="mb-4 font-semibold">
-                {{ ['compte' => 'Nouveau compte', 'entree' => 'Entrée d\'argent', 'virement' => 'Virement interne', 'avance' => 'Avance à un agent'][$formulaire] }}
+                {{ ['compte' => 'Nouveau compte', 'entree' => 'Entrée d\'argent', 'virement' => 'Virement interne', 'retrait' => 'Retrait d\'espèces', 'avance' => 'Avance à un agent'][$formulaire] }}
             </h2>
 
             @if ($formulaire === 'compte')
@@ -109,11 +110,11 @@
                         @endif
                     @else
                         <div>
-                            <label for="compteDestinationId" class="mb-1 block text-sm font-medium text-stone-700">{{ $formulaire === 'avance' ? 'Vers la caisse de l\'agent' : 'Vers le compte' }}</label>
+                            <label for="compteDestinationId" class="mb-1 block text-sm font-medium text-stone-700">{{ $formulaire === 'avance' ? 'Vers la caisse de l\'agent' : ($formulaire === 'retrait' ? 'Vers la caisse' : 'Vers le compte') }}</label>
                             <select wire:model="compteDestinationId" id="compteDestinationId" class="{{ $champ }}">
                                 <option value="">— Choisir —</option>
                                 @foreach ($comptes->where('actif', true) as $c)
-                                    @if ($formulaire !== 'avance' || $c->titulaire_id !== null)
+                                    @if (($formulaire !== 'avance' || $c->titulaire_id !== null) && ($formulaire !== 'retrait' || $c->type === \App\Enums\TypeCompte::Caisse))
                                         <option value="{{ $c->id }}">{{ $c->nom }}</option>
                                     @endif
                                 @endforeach

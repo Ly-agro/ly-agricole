@@ -11,6 +11,7 @@ use App\Models\Campagne;
 use App\Models\CompteTresorerie;
 use App\Models\User;
 use App\Services\Apports;
+use App\Services\DeclarationsApport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
@@ -142,6 +143,7 @@ class EcransApportsTest extends TestCase
             ->assertSee('60,0 %')
             ->assertSee('Fonds B')
             ->assertSee('40,0 %')
+            ->assertDontSee('Apport propre de LY')
             ->assertSee('pas une quote-part du résultat');
     }
 
@@ -161,6 +163,71 @@ class EcransApportsTest extends TestCase
     public function un_investisseur_sans_apport_voit_un_message_clair(): void
     {
         Livewire::actingAs($this->investisseurA)->test(PortailInvestisseur::class)
-            ->assertSee('Aucun apport enregistré à votre nom');
+            ->assertSee('Aucun apport confirmé à votre nom');
+    }
+
+    #[Test]
+    public function un_investisseur_declare_son_apport_sans_creer_le_registre_comptable(): void
+    {
+        Livewire::actingAs($this->investisseurA)->test(PortailInvestisseur::class)
+            ->call('ouvrirDeclaration')
+            ->set('campagneDeclarationId', (string) $this->campagne->id)
+            ->set('montantDeclaration', '3 000 000')
+            ->set('dateVirement', Carbon::today()->toDateString())
+            ->set('referenceVirement', 'VIR-INV-001')
+            ->call('declarerApport')
+            ->assertHasNoErrors()
+            ->assertSee('en attente de confirmation du bureau');
+
+        $this->assertSame(0, Apport::count());
+        $this->assertSame(0, $this->compteDedie->solde());
+        $this->assertDatabaseHas('declarations_apports', [
+            'investisseur_id' => $this->investisseurA->id,
+            'campagne_id' => $this->campagne->id,
+            'montant_fcfa' => 3_000_000,
+            'reference_virement' => 'VIR-INV-001',
+            'statut' => 'en_attente',
+        ]);
+    }
+
+    #[Test]
+    public function le_bureau_confirme_une_declaration_sur_le_compte_actif_choisi(): void
+    {
+        $declaration = DeclarationsApport::declarer(
+            $this->investisseurA, $this->campagne->id, 1_500_000, Carbon::today(), 'VIR-CONF-1',
+        );
+        $compteLibre = CompteTresorerie::factory()->create(['nom' => 'Banque de dépôt']);
+        $this->actingAs($this->direction);
+
+        Livewire::test(GestionApports::class, ['campagneId' => (string) $this->campagne->id])
+            ->assertSee('Déclarations à traiter')
+            ->set("comptesConfirmation.{$declaration->id}", (string) $compteLibre->id)
+            ->call('confirmerDeclaration', $declaration->id)
+            ->assertHasNoErrors()
+            ->assertSet('statut', 'Apport confirmé et enregistré.');
+
+        $this->assertSame('confirmee', $declaration->refresh()->statut->value);
+        $this->assertSame(1_500_000, $compteLibre->refresh()->solde());
+        $this->assertSame($this->investisseurA->id, Apport::query()->sole()->investisseur_id);
+    }
+
+    #[Test]
+    public function le_refus_d_une_declaration_mentionne_le_motif_sans_creer_d_apport(): void
+    {
+        $declaration = DeclarationsApport::declarer(
+            $this->investisseurA, $this->campagne->id, 1_500_000, Carbon::today(), 'VIR-REF-1',
+        );
+        $this->actingAs($this->comptable);
+
+        Livewire::test(GestionApports::class, ['campagneId' => (string) $this->campagne->id])
+            ->set("motifsRefusDeclaration.{$declaration->id}", 'Virement non reçu')
+            ->call('refuserDeclaration', $declaration->id)
+            ->assertHasNoErrors();
+
+        $this->assertSame('refusee', $declaration->refresh()->statut->value);
+        $this->assertSame(0, Apport::count());
+        Livewire::actingAs($this->investisseurA)->test(PortailInvestisseur::class)
+            ->assertSee('Virement non reçu')
+            ->assertSee('Refusée');
     }
 }

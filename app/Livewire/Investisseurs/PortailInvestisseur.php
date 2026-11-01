@@ -2,10 +2,20 @@
 
 namespace App\Livewire\Investisseurs;
 
+use App\Enums\StatutCampagne;
+use App\Enums\StatutDeclarationApport;
+use App\Exceptions\OperationRefusee;
 use App\Models\Apport;
+use App\Models\Campagne;
+use App\Models\DeclarationApport;
 use App\Models\User;
 use App\Services\Apports;
+use App\Services\DeclarationsApport;
+use App\Support\Montant;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -19,9 +29,65 @@ use Livewire\Component;
 #[Title('Mon investissement')]
 class PortailInvestisseur extends Component
 {
+    public bool $formulaireDeclaration = false;
+
+    public string $campagneDeclarationId = '';
+
+    public string $montantDeclaration = '';
+
+    public string $dateVirement = '';
+
+    public string $referenceVirement = '';
+
+    public string $statutDeclaration = '';
+
     public function mount(): void
     {
         $this->authorize('voir-portail-investisseur');
+        $this->campagneDeclarationId = (string) (Campagne::query()->where('statut', StatutCampagne::Ouverte)->orderByDesc('debut')->value('id') ?? '');
+        $this->dateVirement = Carbon::today()->toDateString();
+    }
+
+    public function ouvrirDeclaration(): void
+    {
+        $this->authorize('voir-portail-investisseur');
+        $this->resetErrorBag();
+        $this->reset('montantDeclaration', 'referenceVirement', 'statutDeclaration');
+        $this->dateVirement = Carbon::today()->toDateString();
+        $this->formulaireDeclaration = true;
+    }
+
+    public function declarerApport(): void
+    {
+        $this->authorize('voir-portail-investisseur');
+        $this->resetErrorBag();
+
+        $this->validate([
+            'campagneDeclarationId' => ['required', 'integer', Rule::exists('campagnes', 'id')->where('statut', StatutCampagne::Ouverte->value)],
+            'montantDeclaration' => ['required', Montant::regle()],
+            'dateVirement' => ['required', 'date', 'before_or_equal:today'],
+            'referenceVirement' => ['nullable', 'string', 'max:150'],
+        ], attributes: [
+            'campagneDeclarationId' => 'campagne',
+            'montantDeclaration' => 'montant',
+            'dateVirement' => 'date du virement',
+            'referenceVirement' => 'référence du virement',
+        ]);
+
+        try {
+            DeclarationsApport::declarer(
+                $this->moi(),
+                (int) $this->campagneDeclarationId,
+                (int) Montant::depuisSaisie($this->montantDeclaration),
+                Carbon::parse($this->dateVirement),
+                $this->referenceVirement,
+            );
+        } catch (OperationRefusee $e) {
+            throw ValidationException::withMessages(['montantDeclaration' => $e->getMessage()]);
+        }
+
+        $this->formulaireDeclaration = false;
+        $this->statutDeclaration = 'Déclaration enregistrée, en attente de confirmation du bureau.';
     }
 
     private function moi(): User
@@ -54,6 +120,13 @@ class PortailInvestisseur extends Component
             ];
         });
 
-        return view('livewire.investisseurs.portail-investisseur', ['lignes' => $lignes]);
+        return view('livewire.investisseurs.portail-investisseur', [
+            'lignes' => $lignes,
+            'campagnesOuvertes' => Campagne::query()->with('produit')->where('statut', StatutCampagne::Ouverte)->orderByDesc('debut')->get(),
+            'declarations' => DeclarationApport::query()->where('investisseur_id', $moi->id)
+                ->with('campagne.produit')->orderByDesc('id')->get(),
+            'declarationsEnAttente' => DeclarationApport::query()->where('investisseur_id', $moi->id)
+                ->where('statut', StatutDeclarationApport::EnAttente)->exists(),
+        ]);
     }
 }

@@ -3,12 +3,15 @@
 namespace App\Livewire\Investisseurs;
 
 use App\Enums\Role;
+use App\Enums\StatutDeclarationApport;
 use App\Exceptions\OperationRefusee;
 use App\Models\Apport;
 use App\Models\Campagne;
 use App\Models\CompteTresorerie;
+use App\Models\DeclarationApport;
 use App\Models\User;
 use App\Services\Apports;
+use App\Services\DeclarationsApport;
 use App\Support\Montant;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
@@ -45,6 +48,12 @@ class GestionApports extends Component
     public string $motifContrePassation = '';
 
     public string $statut = '';
+
+    /** @var array<int, string> */
+    public array $comptesConfirmation = [];
+
+    /** @var array<int, string> */
+    public array $motifsRefusDeclaration = [];
 
     public function mount(): void
     {
@@ -140,6 +149,56 @@ class GestionApports extends Component
         $this->statut = 'Apport contre-passé.';
     }
 
+    public function confirmerDeclaration(int $id): void
+    {
+        $this->authorize('gerer-apports');
+        $this->resetErrorBag();
+        $this->validate([
+            "comptesConfirmation.$id" => ['required', 'integer', Rule::exists('comptes_tresorerie', 'id')->where('actif', true)],
+        ], attributes: ["comptesConfirmation.$id" => 'compte de trésorerie']);
+
+        /** @var User $auteur */
+        $auteur = auth()->user();
+
+        try {
+            DeclarationsApport::confirmer(
+                DeclarationApport::query()->findOrFail($id),
+                (int) $this->comptesConfirmation[$id],
+                $auteur,
+            );
+        } catch (OperationRefusee $e) {
+            throw ValidationException::withMessages(["comptesConfirmation.$id" => $e->getMessage()]);
+        }
+
+        unset($this->comptesConfirmation[$id]);
+        $this->statut = 'Apport confirmé et enregistré.';
+    }
+
+    public function refuserDeclaration(int $id): void
+    {
+        $this->authorize('gerer-apports');
+        $this->resetErrorBag();
+        $this->validate([
+            "motifsRefusDeclaration.$id" => ['required', 'string', 'min:5', 'max:255'],
+        ], attributes: ["motifsRefusDeclaration.$id" => 'motif du refus']);
+
+        /** @var User $auteur */
+        $auteur = auth()->user();
+
+        try {
+            DeclarationsApport::refuser(
+                DeclarationApport::query()->findOrFail($id),
+                $this->motifsRefusDeclaration[$id],
+                $auteur,
+            );
+        } catch (OperationRefusee $e) {
+            throw ValidationException::withMessages(["motifsRefusDeclaration.$id" => $e->getMessage()]);
+        }
+
+        unset($this->motifsRefusDeclaration[$id]);
+        $this->statut = 'Déclaration refusée.';
+    }
+
     public function render(): View
     {
         $campagne = $this->campagneId === '' ? null : Campagne::query()->with('produit')->find((int) $this->campagneId);
@@ -152,6 +211,9 @@ class GestionApports extends Component
                 ->orderByRaw('CASE WHEN campagne_id = ? THEN 0 ELSE 1 END', [$campagne->id ?? 0])->orderBy('nom')->get(),
             'nomsSansCompte' => Apport::query()->whereNotNull('apporteur_nom')->distinct()->orderBy('apporteur_nom')->pluck('apporteur_nom'),
             'investisseurs' => User::query()->where('role', Role::Investisseur->value)->where('actif', true)->orderBy('nom')->get(),
+            'declarations' => DeclarationApport::query()->where('statut', StatutDeclarationApport::EnAttente)
+                ->with('investisseur', 'campagne.produit')->orderBy('date_virement')->orderBy('id')->get(),
+            'comptesActifs' => CompteTresorerie::query()->where('actif', true)->orderBy('nom')->get(),
             'apports' => $campagne
                 ? Apport::query()->where('campagne_id', $campagne->id)->with('investisseur', 'auteur', 'contrePassation')
                     ->orderByDesc('id')->get()

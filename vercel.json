@@ -16,6 +16,10 @@
     {
       "path": "/cron/alertes",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/cron/suspendre-campagnes",
+      "schedule": "5 0 * * *"
     }
   ],
   "rewrites": [

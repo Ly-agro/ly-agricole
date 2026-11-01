@@ -28,7 +28,7 @@ use Livewire\Component;
 #[Title('Trésorerie')]
 class Comptes extends Component
 {
-    /** null | 'compte' | 'entree' | 'virement' | 'avance' */
+    /** null | 'compte' | 'entree' | 'virement' | 'retrait' | 'avance' */
     public ?string $formulaire = null;
 
     public string $statut = '';
@@ -68,7 +68,7 @@ class Comptes extends Component
     public function ouvrir(string $formulaire): void
     {
         $this->authorize('gerer-tresorerie');
-        abort_unless(in_array($formulaire, ['compte', 'entree', 'virement', 'avance'], true), 404);
+        abort_unless(in_array($formulaire, ['compte', 'entree', 'virement', 'retrait', 'avance'], true), 404);
 
         $this->resetErrorBag();
         $this->reset('nom', 'type', 'titulaireId', 'campagneId', 'compteId', 'compteDestinationId', 'nature', 'investisseurId', 'montant', 'libelle', 'reference', 'statut');
@@ -89,7 +89,7 @@ class Comptes extends Component
 
         match ($this->formulaire) {
             'compte' => $this->creerCompte(),
-            'entree', 'virement', 'avance' => $this->saisirOperation(),
+            'entree', 'virement', 'retrait', 'avance' => $this->saisirOperation(),
             default => abort(404),
         };
     }
@@ -124,6 +124,7 @@ class Comptes extends Component
 
     public function updatedNature(): void
     {
+        $this->investisseurId = $this->nature === NatureMouvement::ApportCampagne->value ? 'ly' : '';
         $this->updatedCompteId();
     }
 
@@ -176,6 +177,7 @@ class Comptes extends Component
                 ),
                 $this->formulaire === 'entree' => Tresorerie::entree($compte, $montant, NatureMouvement::from($this->nature), $date, $this->libelle, $auteur, $this->reference ?: null),
                 $this->formulaire === 'virement' => Tresorerie::virement($compte, CompteTresorerie::query()->findOrFail((int) $this->compteDestinationId), $montant, $date, $this->libelle, $auteur, reference: $this->reference ?: null),
+                $this->formulaire === 'retrait' => Tresorerie::virement($compte, CompteTresorerie::query()->findOrFail((int) $this->compteDestinationId), $montant, $date, $this->libelle, $auteur, nature: NatureMouvement::Retrait, reference: $this->reference ?: null),
                 $this->formulaire === 'avance' => Tresorerie::avanceAgent($compte, CompteTresorerie::query()->findOrFail((int) $this->compteDestinationId), $montant, $date, $this->libelle, $auteur),
                 default => abort(404),
             };

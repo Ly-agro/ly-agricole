@@ -6,6 +6,7 @@ use App\Enums\NatureMouvement;
 use App\Enums\SensMouvement;
 use App\Enums\StatutDepense;
 use App\Enums\StatutPret;
+use App\Enums\TypeCompte;
 use App\Exceptions\OperationRefusee;
 use App\Models\Achat;
 use App\Models\Campagne;
@@ -74,6 +75,14 @@ class Tresorerie
 
         return DB::transaction(function () use ($depuis, $vers, $montant, $date, $libelle, $auteur, $nature, $reference) {
             $comptes = self::verrouiller([$depuis->id, $vers->id]);
+            if ($nature === NatureMouvement::Retrait) {
+                if ($comptes[$depuis->id]->type === TypeCompte::Caisse) {
+                    throw new OperationRefusee('Un retrait doit partir d\'un compte bancaire ou Mobile Money.');
+                }
+                if ($comptes[$vers->id]->type !== TypeCompte::Caisse) {
+                    throw new OperationRefusee('Un retrait doit arriver sur un compte de caisse.');
+                }
+            }
             $lien = (string) Str::uuid7();
 
             return [

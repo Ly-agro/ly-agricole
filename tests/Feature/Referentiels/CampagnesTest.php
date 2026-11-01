@@ -9,12 +9,15 @@ use App\Enums\StatutCampagne;
 use App\Livewire\Referentiels\Campagnes;
 use App\Models\Campagne;
 use App\Models\CompteTresorerie;
+use App\Models\DeclarationApport;
 use App\Models\JournalActivite;
 use App\Models\Produit;
 use App\Models\User;
+use App\Services\DeclarationsApport;
 use App\Services\Tresorerie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
@@ -225,6 +228,57 @@ class CampagnesTest extends TestCase
 
         $this->assertSame(StatutCampagne::Cloturee, $campagne->refresh()->statut);
         $this->assertFalse($compte->refresh()->actif);
+    }
+
+    #[Test]
+    public function une_campagne_ne_peut_pas_se_cloturer_avec_une_declaration_d_apport_en_attente(): void
+    {
+        $campagne = Campagne::factory()->statut(StatutCampagne::Ouverte)->create();
+        DeclarationApport::query()->create([
+            'investisseur_id' => User::factory()->role(Role::Investisseur)->create()->id,
+            'campagne_id' => $campagne->id,
+            'montant_fcfa' => 100_000,
+            'date_virement' => Carbon::today(),
+            'statut' => 'en_attente',
+        ]);
+
+        Livewire::test(Campagnes::class)
+            ->call('cloturer', $campagne->id)
+            ->assertHasErrors('ligne');
+
+        $this->assertSame(StatutCampagne::Ouverte, $campagne->refresh()->statut);
+    }
+
+    #[Test]
+    public function la_commande_suspend_une_campagne_expiree_et_permet_de_confirmer_un_virement_declare_a_temps(): void
+    {
+        $campagneExpiree = Campagne::factory()->statut(StatutCampagne::Ouverte)->create([
+            'produit_id' => $this->anacarde->id,
+            'fin' => '2027-09-30',
+        ]);
+        $campagneEnCours = Campagne::factory()->statut(StatutCampagne::Ouverte)->create(['fin' => '2027-10-10']);
+        $investisseur = User::factory()->role(Role::Investisseur)->create();
+        $compte = CompteTresorerie::factory()->create(['actif' => true]);
+
+        Carbon::setTestNow('2027-09-30 15:00:00');
+        $declaration = DeclarationsApport::declarer($investisseur, $campagneExpiree->id, 250_000, Carbon::today(), 'VIR-FIN-1');
+        Carbon::setTestNow('2027-10-01 00:06:00');
+
+        try {
+            Artisan::call('campagnes:suspendre-expirees');
+            DeclarationsApport::confirmer($declaration, $compte->id, auth()->user());
+        } finally {
+            Carbon::setTestNow();
+        }
+
+        $this->assertSame(StatutCampagne::Suspendue, $campagneExpiree->refresh()->statut);
+        $this->assertSame(StatutCampagne::Ouverte, $campagneEnCours->refresh()->statut);
+        $this->assertSame(250_000, $compte->refresh()->solde());
+        $this->assertSame('confirmee', $declaration->refresh()->statut->value);
+
+        $journal = JournalActivite::query()->where('objet_type', 'campagne')->where('objet_id', $campagneExpiree->id)->latest('id')->firstOrFail();
+        $this->assertSame(['statut' => 'ouverte'], $journal->avant);
+        $this->assertSame(['statut' => 'suspendue'], $journal->apres);
     }
 
     #[Test]

@@ -5,6 +5,7 @@ namespace App\Livewire\Referentiels;
 use App\Enums\StatutCampagne;
 use App\Models\Campagne;
 use App\Models\CompteTresorerie;
+use App\Models\DeclarationApport;
 use App\Models\Produit;
 use App\Support\Format;
 use Illuminate\Database\Eloquent\Builder;
@@ -163,6 +164,11 @@ class Campagnes extends EcranReferentiel
             }
 
             if ($statut === StatutCampagne::Cloturee) {
+                if (DeclarationApport::query()->where('campagne_id', $campagne->id)->where('statut', 'en_attente')->exists()) {
+                    throw ValidationException::withMessages([
+                        'ligne' => 'La campagne ne peut pas être clôturée tant qu’une déclaration d’apport reste à confirmer ou à refuser.',
+                    ]);
+                }
                 $comptes = CompteTresorerie::query()->where('campagne_id', $campagne->id)->get();
                 $soldeNonNul = $comptes->first(fn (CompteTresorerie $compte) => $compte->solde() !== 0);
                 if ($soldeNonNul !== null) {

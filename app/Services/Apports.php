@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\Role;
+use App\Enums\StatutCampagne;
 use App\Exceptions\OperationRefusee;
 use App\Models\Apport;
 use App\Models\Campagne;
@@ -29,7 +30,7 @@ class Apports
      * @param  int|null  $investisseurId  investisseur à compte ; null avec `$apporteurNom` null = LY elle-même.
      * @param  string|null  $apporteurNom  investisseur sans compte (exclusif de `$investisseurId`).
      */
-    public static function enregistrer(?int $investisseurId, int $campagneId, int $compteId, int $montant, Carbon $date, User $auteur, ?string $motif = null, ?string $apporteurNom = null): Apport
+    public static function enregistrer(?int $investisseurId, int $campagneId, int $compteId, int $montant, Carbon $date, User $auteur, ?string $motif = null, ?string $apporteurNom = null, bool $declarationPrealable = false): Apport
     {
         if (! $auteur->can('gerer-apports')) {
             throw new OperationRefusee('Votre rôle ne permet pas d\'enregistrer un apport.');
@@ -39,12 +40,19 @@ class Apports
             throw new OperationRefusee('Choisir un investisseur à compte OU saisir un nom, pas les deux.');
         }
 
-        return DB::transaction(function () use ($investisseurId, $campagneId, $compteId, $montant, $date, $auteur, $motif, $apporteurNom) {
+        return DB::transaction(function () use ($investisseurId, $campagneId, $compteId, $montant, $date, $auteur, $motif, $apporteurNom, $declarationPrealable) {
             $campagne = Campagne::query()->findOrFail($campagneId);
             $compte = CompteTresorerie::query()->findOrFail($compteId);
 
-            // Fin de campagne passée : plus d'argent qui entre (constaté en production le 2026-10-07).
-            $campagne->exigerEnCours('apport', $date);
+            // Une déclaration faite à temps peut être confirmée après la suspension automatique.
+            if ($declarationPrealable) {
+                if ($campagne->statut === StatutCampagne::Cloturee || $date->gt($campagne->fin->copy()->endOfDay())) {
+                    throw new OperationRefusee("La campagne {$campagne->code} est terminée : la date du virement ne permet pas de confirmer cet apport.");
+                }
+            } else {
+                // Fin de campagne passée : plus d'argent qui entre (constaté en production le 2026-10-07).
+                $campagne->exigerEnCours('apport', $date);
+            }
             if (! $compte->actif) {
                 throw new OperationRefusee("Le compte « {$compte->nom} » est désactivé.");
             }

@@ -12,6 +12,7 @@ use App\Models\CategorieDepense;
 use App\Models\CompteTresorerie;
 use App\Models\Decaissement;
 use App\Models\DecisionPlafond;
+use App\Models\DeclarationApport;
 use App\Models\Depense;
 use App\Models\Encaissement;
 use App\Models\GroupeProducteur;
@@ -116,6 +117,7 @@ class AppServiceProvider extends ServiceProvider
             'vente' => Vente::class,
             'encaissement' => Encaissement::class,
             'apport' => Apport::class,
+            'declaration_apport' => DeclarationApport::class,
             'ligne_budget' => LigneBudget::class,
             'visite' => Visite::class,
             'langue' => Langue::class,

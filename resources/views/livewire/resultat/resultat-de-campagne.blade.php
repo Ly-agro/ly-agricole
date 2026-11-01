@@ -141,7 +141,9 @@
                 @else
                     <dl class="space-y-2 text-sm">
                         <div class="flex justify-between gap-4"><dt class="text-stone-600">Collecté auprès des investisseurs</dt><dd class="tabular-nums">{{ Format::fcfa($partage['collecte']) }}</dd></div>
-                        <div class="flex justify-between gap-4"><dt class="text-stone-600">Apport propre de LY</dt><dd class="tabular-nums">{{ Format::fcfa($partage['apport_ly']) }}</dd></div>
+                        @if ($partage['apport_ly'] > 0)
+                            <div class="flex justify-between gap-4"><dt class="text-stone-600">Apport propre de LY</dt><dd class="tabular-nums">{{ Format::fcfa($partage['apport_ly']) }}</dd></div>
+                        @endif
                         <div class="flex justify-between gap-4"><dt class="text-stone-600">Fonds de la campagne</dt><dd class="tabular-nums">{{ Format::fcfa($partage['fonds']) }}</dd></div>
                         <div class="flex justify-between gap-4 border-t border-stone-200 pt-2">
                             <dt class="font-medium">{{ $partage['sens'] === PartageResultat::PERTE ? 'Part de perte des investisseurs' : 'Enveloppe investisseurs (40 %)' }}</dt>

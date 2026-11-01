@@ -6,6 +6,50 @@
         <div class="flex flex-wrap items-end gap-3 text-sm">
             <div>
                 <label for="campagneId" class="mb-1 block text-stone-600">Campagne</label>
+
+        @if ($statut !== '')
+            <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{{ $statut }}</p>
+        @endif
+
+        @if ($declarations->isNotEmpty())
+            <section class="mb-6 overflow-x-auto rounded-md border border-stone-200 bg-white">
+                <h2 class="px-4 pt-4 font-semibold">Déclarations à traiter</h2>
+                <table class="mt-3 min-w-full text-sm">
+                    <thead class="bg-stone-50 text-left text-stone-600">
+                        <tr><th class="px-4 py-3 font-medium">Investisseur</th><th class="px-4 py-3 font-medium">Campagne</th><th class="px-4 py-3 font-medium">Virement</th><th class="px-4 py-3 font-medium">Confirmation</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100">
+                        @foreach ($declarations as $declaration)
+                            <tr wire:key="declaration-a-traiter-{{ $declaration->id }}">
+                                <td class="px-4 py-3">{{ $declaration->investisseur->nom }}</td>
+                                <td class="px-4 py-3">{{ $declaration->campagne->produit->nom }} · {{ $declaration->campagne->code }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="block">{{ $declaration->date_virement->format('d/m/Y') }} · {{ Format::fcfa($declaration->montant_fcfa) }}</span>
+                                    @if ($declaration->reference_virement) <span class="text-xs text-stone-500">Réf. {{ $declaration->reference_virement }}</span> @endif
+                                </td>
+                                <td class="min-w-72 px-4 py-3">
+                                    <label for="compteConfirmation-{{ $declaration->id }}" class="sr-only">Compte à créditer pour {{ $declaration->investisseur->nom }}</label>
+                                    <select wire:model="comptesConfirmation.{{ $declaration->id }}" id="compteConfirmation-{{ $declaration->id }}" class="block w-full rounded-md border border-stone-300 px-3 py-2">
+                                        <option value="">— Choisir le compte crédité —</option>
+                                        @foreach ($comptesActifs as $compteActif)
+                                            <option value="{{ $compteActif->id }}">{{ $compteActif->nom }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error("comptesConfirmation.{$declaration->id}") <p class="mt-1 text-xs text-red-700">{{ $message }}</p> @enderror
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        <button type="button" wire:click="confirmerDeclaration({{ $declaration->id }})" class="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800">Confirmer le virement</button>
+                                        <button type="button" wire:click="refuserDeclaration({{ $declaration->id }})" class="rounded-md px-3 py-1.5 text-xs font-medium text-red-800 hover:bg-red-50">Refuser</button>
+                                    </div>
+                                    <label for="motifRefus-{{ $declaration->id }}" class="mt-2 block text-xs text-stone-600">Motif si refus</label>
+                                    <input wire:model="motifsRefusDeclaration.{{ $declaration->id }}" id="motifRefus-{{ $declaration->id }}" type="text" maxlength="255" class="mt-1 block w-full rounded-md border border-stone-300 px-3 py-1.5 text-sm">
+                                    @error("motifsRefusDeclaration.{$declaration->id}") <p class="mt-1 text-xs text-red-700">{{ $message }}</p> @enderror
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </section>
+        @endif
                 <select wire:model.live="campagneId" id="campagneId" class="rounded-md border border-stone-300 px-3 py-1.5 focus:border-emerald-600 focus:outline-none">
                     @foreach ($campagnes as $c)
                         <option value="{{ $c->id }}">{{ $c->produit->nom }} · {{ $c->code }}</option>
@@ -88,15 +132,17 @@
     @endif
 
     @if ($campagne && $repartition)
-        <div class="mb-6 grid gap-4 sm:grid-cols-3">
+        <div @class(['mb-6 grid gap-4', 'sm:grid-cols-3' => $repartition['parLy'] > 0, 'sm:grid-cols-2' => $repartition['parLy'] === 0])>
             <div class="rounded-xl border border-stone-200 bg-white p-4">
                 <p class="text-xs text-stone-500">Apports des investisseurs</p>
                 <p class="mt-1 text-xl font-semibold tabular-nums">{{ Format::fcfa($repartition['parInvestisseurs']) }}</p>
             </div>
-            <div class="rounded-xl border border-stone-200 bg-white p-4">
-                <p class="text-xs text-stone-500">Apport propre de LY</p>
-                <p class="mt-1 text-xl font-semibold tabular-nums">{{ Format::fcfa($repartition['parLy']) }}</p>
-            </div>
+            @if ($repartition['parLy'] > 0)
+                <div class="rounded-xl border border-stone-200 bg-white p-4">
+                    <p class="text-xs text-stone-500">Apport propre de LY</p>
+                    <p class="mt-1 text-xl font-semibold tabular-nums">{{ Format::fcfa($repartition['parLy']) }}</p>
+                </div>
+            @endif
             <div class="rounded-xl border border-stone-200 bg-white p-4">
                 <p class="text-xs text-stone-500">Total collecté</p>
                 <p class="mt-1 text-xl font-semibold tabular-nums">{{ Format::fcfa($repartition['parInvestisseurs'] + $repartition['parLy']) }}</p>

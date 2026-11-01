@@ -15,6 +15,7 @@ class TacheCronController extends Controller
     /** @var array<string, string> adresse => commande Artisan */
     public const TACHES = [
         'alertes' => 'notifications:alertes',
+        'suspendre-campagnes' => 'campagnes:suspendre-expirees',
     ];
 
     public function __invoke(Request $request, string $tache): JsonResponse
