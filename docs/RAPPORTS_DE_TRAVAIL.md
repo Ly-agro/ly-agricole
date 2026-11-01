@@ -5,6 +5,29 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 ---
 
 ## 2026-11-01 — Réactivation d'une campagne : unicité par produit — FAIT, VÉRIFIÉ
+## 2026-11-01 — Vente du stock restant après clôture — CODE FAIT, NAVIGATEUR À VÉRIFIER
+
+**Constaté.** `App\Services\Ventes` permettait déjà une vente après clôture si le lot gardait du
+stock, mais le formulaire n'affichait que la campagne ouverte. Une campagne clôturée avec du stock
+restant était donc inaccessible depuis l'écran.
+
+**Fait.** Le formulaire propose maintenant les campagnes ouvertes et clôturées. Les campagnes en
+préparation et suspendues restent hors de la liste ; la règle pour les campagnes suspendues reste
+à confirmer (question ouverte n° 20). Test écran ajouté : campagne clôturée, vente par la direction,
+100 kg sortis du lot.
+
+**Vérifié en l'exécutant.** Après `php artisan config:clear`, les suites
+`tests/Feature/Ventes` et `tests/Feature/CampagneTermineeTest.php` : 26 tests, 26 passés,
+74 assertions. Pint et PHPStan sur le composant touché : OK.
+
+**À faire avant de déclarer le parcours fini.** Essai dans le navigateur : ouvrir une vente, choisir
+une campagne clôturée avec du stock, enregistrer une vente et vérifier le stock affiché. Aucun
+navigateur ni outil d'automatisation n'est installé dans ce conteneur ; ne pas lancer le serveur
+local sans isoler la base, car le `.env` peut viser une base réelle.
+
+---
+
+## 2026-11-01 — Réactivation d'une campagne : unicité par produit — FAIT, VÉRIFIÉ
 
 **Constaté.** L'ouverture initiale vérifiait qu'aucune campagne du même produit n'était déjà
 ouverte, mais la réactivation d'une campagne suspendue contournait ce contrôle.
