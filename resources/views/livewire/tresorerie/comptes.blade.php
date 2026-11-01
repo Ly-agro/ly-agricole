@@ -111,7 +111,7 @@
                     @elseif (in_array($formulaire, ['virement', 'avance'], true))
                         <div>
                             <label for="compteDestinationId" class="mb-1 block text-sm font-medium text-stone-700">{{ $formulaire === 'avance' ? 'Vers la caisse de l\'agent' : 'Vers le compte' }}</label>
-                            <select wire:model="compteDestinationId" id="compteDestinationId" class="{{ $champ }}">
+                            <select wire:model.live="compteDestinationId" id="compteDestinationId" class="{{ $champ }}">
                                 <option value="">— Choisir —</option>
                                 @foreach ($comptes->where('actif', true) as $c)
                                     @if ($formulaire !== 'avance' || $c->titulaire_id !== null)
@@ -120,6 +120,15 @@
                                 @endforeach
                             </select>
                             @error('compteDestinationId') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                            @if ($formulaire === 'virement' && $compteDestination?->campagne_id !== null)
+                                <label class="mt-3 flex items-start gap-2 text-sm text-stone-700">
+                                    <input wire:model="marquerCommeApportLy" type="checkbox" class="mt-1 rounded border-stone-300 text-emerald-700">
+                                    <span>Comptabiliser comme apport propre de LY
+                                        <span class="block text-xs text-stone-500">Le virement reste le seul mouvement ; son entrée sera aussi inscrite au registre des apports de cette campagne.</span>
+                                    </span>
+                                </label>
+                                @error('marquerCommeApportLy') <p class="mt-1 text-xs text-red-700">{{ $message }}</p> @enderror
+                            @endif
                         </div>
                     @elseif ($formulaire === 'retrait')
                         <p class="self-end text-sm text-stone-600">Sortie externe : les fonds quittent la trésorerie LY. Saisir la référence du retrait pour le suivi.</p>

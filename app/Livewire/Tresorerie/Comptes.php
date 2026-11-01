@@ -16,6 +16,7 @@ use App\Services\Tresorerie;
 use App\Support\Montant;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
@@ -47,6 +48,8 @@ class Comptes extends Component
 
     public string $compteDestinationId = '';
 
+    public bool $marquerCommeApportLy = false;
+
     public string $nature = '';
 
     /** Nature « apport d'un investisseur » : qui apporte ('ly' = LY AGRICOLE elle-même). */
@@ -71,7 +74,7 @@ class Comptes extends Component
         abort_unless(in_array($formulaire, ['compte', 'entree', 'virement', 'retrait', 'avance'], true), 404);
 
         $this->resetErrorBag();
-        $this->reset('nom', 'type', 'titulaireId', 'campagneId', 'compteId', 'compteDestinationId', 'nature', 'investisseurId', 'montant', 'libelle', 'reference', 'statut');
+        $this->reset('nom', 'type', 'titulaireId', 'campagneId', 'compteId', 'compteDestinationId', 'nature', 'investisseurId', 'marquerCommeApportLy', 'montant', 'libelle', 'reference', 'statut');
         $this->dateOperation = Carbon::today()->toDateString();
         $this->formulaire = $formulaire;
     }
@@ -128,6 +131,17 @@ class Comptes extends Component
         $this->updatedCompteId();
     }
 
+    public function updatedCompteDestinationId(): void
+    {
+        $destination = $this->compteDestinationId === ''
+            ? null
+            : CompteTresorerie::query()->find((int) $this->compteDestinationId);
+
+        if ($destination?->campagne_id === null) {
+            $this->marquerCommeApportLy = false;
+        }
+    }
+
     private function saisirOperation(): void
     {
         $regles = [
@@ -146,6 +160,9 @@ class Comptes extends Component
             }
         } elseif (in_array($this->formulaire, ['virement', 'avance'], true)) {
             $regles['compteDestinationId'] = ['required', 'integer', 'different:compteId', Rule::exists('comptes_tresorerie', 'id')];
+            if ($this->formulaire === 'virement') {
+                $regles['marquerCommeApportLy'] = ['boolean'];
+            }
         }
 
         $this->validate($regles, [
@@ -176,7 +193,7 @@ class Comptes extends Component
                     GestionApports::apporteur($this->investisseurId)[1],
                 ),
                 $this->formulaire === 'entree' => Tresorerie::entree($compte, $montant, NatureMouvement::from($this->nature), $date, $this->libelle, $auteur, $this->reference ?: null),
-                $this->formulaire === 'virement' => Tresorerie::virement($compte, CompteTresorerie::query()->findOrFail((int) $this->compteDestinationId), $montant, $date, $this->libelle, $auteur, reference: $this->reference ?: null),
+                $this->formulaire === 'virement' => $this->effectuerVirement($compte, $montant, $date, $auteur),
                 $this->formulaire === 'retrait' => Tresorerie::retirer($compte, $montant, $date, $this->libelle, $auteur, $this->reference ?: null),
                 $this->formulaire === 'avance' => Tresorerie::avanceAgent($compte, CompteTresorerie::query()->findOrFail((int) $this->compteDestinationId), $montant, $date, $this->libelle, $auteur),
                 default => abort(404),
@@ -187,6 +204,35 @@ class Comptes extends Component
 
         $this->statut = 'Opération enregistrée.';
         $this->formulaire = null;
+    }
+
+    private function effectuerVirement(CompteTresorerie $source, int $montant, Carbon $date, User $auteur): void
+    {
+        $destination = CompteTresorerie::query()->findOrFail((int) $this->compteDestinationId);
+
+        DB::transaction(function () use ($source, $destination, $montant, $date, $auteur): void {
+            $virement = Tresorerie::virement(
+                $source, $destination, $montant, $date, $this->libelle, $auteur,
+                reference: $this->reference ?: null,
+            );
+
+            if (! $this->marquerCommeApportLy) {
+                return;
+            }
+            if ($destination->campagne_id === null) {
+                throw new OperationRefusee('Seul un virement vers un compte dédié à une campagne peut être comptabilisé comme apport de LY.');
+            }
+
+            Apports::enregistrerDepuisVirement(
+                $destination->campagne_id,
+                $destination->id,
+                $montant,
+                $date,
+                $auteur,
+                $virement['entree'],
+                trim($this->libelle.($this->reference !== '' ? ' — réf. '.$this->reference : '')),
+            );
+        });
     }
 
     /**
@@ -213,6 +259,7 @@ class Comptes extends Component
 
         return view('livewire.tresorerie.comptes', [
             'comptes' => $comptes,
+            'compteDestination' => $this->compteDestinationId === '' ? null : $comptes->firstWhere('id', (int) $this->compteDestinationId),
             'soldes' => $soldes,
             'types' => TypeCompte::cases(),
             'natures' => self::naturesEntree(),

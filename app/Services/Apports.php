@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\NatureMouvement;
 use App\Enums\Role;
+use App\Enums\SensMouvement;
 use App\Enums\StatutCampagne;
 use App\Exceptions\OperationRefusee;
 use App\Models\Apport;
@@ -76,6 +78,64 @@ class Apports
             return Apport::query()->create([
                 'investisseur_id' => $investisseur?->id,
                 'apporteur_nom' => $apporteurNom,
+                'campagne_id' => $campagne->id,
+                'montant_fcfa' => $montant,
+                'date_apport' => $date->toDateString(),
+                'motif' => filled($motif) ? trim($motif) : null,
+                'mouvement_id' => $mouvement->id,
+                'cree_par' => $auteur->id,
+            ]);
+        });
+    }
+
+    /** Enregistre LY comme apport en référençant la jambe entrante d'un virement existant. */
+    public static function enregistrerDepuisVirement(
+        int $campagneId,
+        int $compteId,
+        int $montant,
+        Carbon $date,
+        User $auteur,
+        MouvementTresorerie $entree,
+        ?string $motif = null,
+    ): Apport {
+        if (! $auteur->can('gerer-apports')) {
+            throw new OperationRefusee('Votre rôle ne permet pas d\'enregistrer un apport.');
+        }
+
+        return DB::transaction(function () use ($campagneId, $compteId, $montant, $date, $auteur, $entree, $motif) {
+            $campagne = Campagne::query()->lockForUpdate()->findOrFail($campagneId);
+            $compte = CompteTresorerie::query()->lockForUpdate()->findOrFail($compteId);
+            $mouvement = MouvementTresorerie::query()->lockForUpdate()->findOrFail($entree->id);
+
+            $campagne->exigerEnCours('apport', $date);
+            if (! $compte->actif || $compte->campagne_id !== $campagne->id) {
+                throw new OperationRefusee('Le compte de destination doit être actif et dédié à cette campagne.');
+            }
+            if ($montant <= 0) {
+                throw new OperationRefusee('Le montant apporté doit être supérieur à zéro.');
+            }
+            if ($mouvement->compte_id !== $compte->id
+                || $mouvement->sens !== SensMouvement::Entree
+                || $mouvement->nature !== NatureMouvement::Virement
+                || $mouvement->montant_fcfa !== $montant
+                || $mouvement->date_operation->toDateString() !== $date->toDateString()
+                || $mouvement->lien === null) {
+                throw new OperationRefusee('L’apport doit correspondre à la jambe entrante du virement vers le compte de campagne.');
+            }
+
+            $sortie = MouvementTresorerie::query()->where('lien', $mouvement->lien)
+                ->where('id', '!=', $mouvement->id)
+                ->where('sens', SensMouvement::Sortie)
+                ->where('nature', NatureMouvement::Virement)
+                ->where('montant_fcfa', $montant)
+                ->exists();
+            if (! $sortie || Apport::query()->where('mouvement_id', $mouvement->id)->exists()) {
+                throw new OperationRefusee('Ce virement ne peut pas être enregistré comme apport.');
+            }
+
+            return Apport::query()->create([
+                'investisseur_id' => null,
+                'apporteur_nom' => null,
                 'campagne_id' => $campagne->id,
                 'montant_fcfa' => $montant,
                 'date_apport' => $date->toDateString(),

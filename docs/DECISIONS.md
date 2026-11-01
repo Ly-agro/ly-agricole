@@ -193,7 +193,10 @@ les parts avant confirmation par la direction ou la comptabilité, qui choisit l
 crédité. Un refus exige un motif. Une déclaration encore en attente bloque la clôture formelle ;
 si la campagne est automatiquement suspendue après sa date de fin, un virement déclaré à temps
 reste confirmable tant que la campagne n'est pas clôturée. Depuis la trésorerie, la valeur initiale
-de l'apporteur pour une entrée « Apport campagne » est LY AGRICOLE.
+de l'apporteur pour une entrée « Apport campagne » est LY AGRICOLE. Pour un virement interne vers
+un compte de campagne, « Comptabiliser comme apport propre de LY » est une option décochée par
+défaut. Si elle est cochée, l'Apport référence la jambe entrante déjà créée par le virement ; aucun
+mouvement supplémentaire n'est écrit. La case n'est proposée que pour un compte dédié à une campagne.
 
 Après le dernier jour de la période, une campagne encore ouverte passe automatiquement à
 « Suspendue » chaque jour à 00:05 (commande `campagnes:suspendre-expirees`, planificateur et

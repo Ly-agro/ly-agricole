@@ -149,6 +149,62 @@ class EcransTresorerieTest extends TestCase
     }
 
     #[Test]
+    public function un_virement_vers_un_compte_de_campagne_ne_compte_pas_comme_apport_par_defaut(): void
+    {
+        $campagne = Campagne::factory()->statut(StatutCampagne::Ouverte)->create();
+        $banque = CompteTresorerie::factory()->create(['nom' => 'Ecobank', 'type' => TypeCompte::Banque]);
+        $compteCampagne = CompteTresorerie::factory()->create(['campagne_id' => $campagne->id]);
+        Tresorerie::entree($banque, 100_000, NatureMouvement::Apport, Carbon::today(), 'Solde initial', $this->direction);
+        $this->actingAs($this->comptable);
+
+        Livewire::test(Comptes::class)
+            ->call('ouvrir', 'virement')
+            ->set('compteId', (string) $banque->id)
+            ->set('compteDestinationId', (string) $compteCampagne->id)
+            ->assertSet('marquerCommeApportLy', false)
+            ->assertSee('Comptabiliser comme apport propre de LY')
+            ->set('montant', '40 000')
+            ->set('libelle', 'Virement interne Ecobank')
+            ->call('enregistrer')
+            ->assertHasNoErrors();
+
+        $this->assertSame(0, Apport::count());
+        $this->assertSame(60_000, $banque->refresh()->solde());
+        $this->assertSame(40_000, $compteCampagne->refresh()->solde());
+    }
+
+    #[Test]
+    public function un_virement_coche_est_enregistre_comme_apport_ly_sans_doubler_le_mouvement(): void
+    {
+        $campagne = Campagne::factory()->statut(StatutCampagne::Ouverte)->create();
+        $banque = CompteTresorerie::factory()->create(['nom' => 'Ecobank', 'type' => TypeCompte::Banque]);
+        $compteCampagne = CompteTresorerie::factory()->create(['campagne_id' => $campagne->id]);
+        Tresorerie::entree($banque, 100_000, NatureMouvement::Apport, Carbon::today(), 'Solde initial', $this->direction);
+        $this->actingAs($this->comptable);
+
+        Livewire::test(Comptes::class)
+            ->call('ouvrir', 'virement')
+            ->set('compteId', (string) $banque->id)
+            ->set('compteDestinationId', (string) $compteCampagne->id)
+            ->set('marquerCommeApportLy', true)
+            ->set('montant', '40 000')
+            ->set('libelle', 'Virement interne Ecobank')
+            ->set('reference', 'ECO-APPORT-001')
+            ->call('enregistrer')
+            ->assertHasNoErrors();
+
+        $mouvements = MouvementTresorerie::query()->where('nature', NatureMouvement::Virement)->get();
+        $apport = Apport::query()->sole();
+        $this->assertCount(2, $mouvements);
+        $this->assertTrue($apport->estDeLy());
+        $this->assertSame($campagne->id, $apport->campagne_id);
+        $this->assertSame(40_000, $apport->montant_fcfa);
+        $this->assertSame($mouvements->firstWhere('sens', 'entree')->id, $apport->mouvement_id);
+        $this->assertSame(60_000, $banque->refresh()->solde());
+        $this->assertSame(40_000, $compteCampagne->refresh()->solde());
+    }
+
+    #[Test]
     public function un_retrait_est_une_sortie_externe_sans_compte_de_destination(): void
     {
         $banque = CompteTresorerie::factory()->create(['nom' => 'Ecobank', 'type' => TypeCompte::Banque]);

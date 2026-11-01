@@ -4,6 +4,30 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-11-01 — Apport LY facultatif sur virement interne — CODE FAIT, NAVIGATEUR À VÉRIFIER
+
+**Fait.** Le formulaire « Virement interne » affiche, pour une destination dédiée à une campagne,
+une case « Comptabiliser comme apport propre de LY », décochée par défaut. Cochée, elle crée la
+ligne immuable `Apport` référençant la jambe entrante du virement dans la même transaction ; elle
+n'ajoute ni troisième mouvement ni crédit supplémentaire. Décochée, le virement ne touche qu'aux
+deux comptes et ne modifie pas les parts d'apport.
+
+**Vérifié en l'exécutant.** Les tests Trésorerie, Apports et Résultat concernés : 83 passés,
+307 assertions ; les deux tests d'images nécessitant GD ont été exclus. Pint et PHPStan passent
+(0 erreur).
+
+**À faire.** Vérifier la case et les deux scénarios de bout en bout dans le navigateur ; aucun
+navigateur automatisable n'est disponible ici.
+
+**Neon.** Le CLI actif est une build PHP 8.4.27 sans `pdo_pgsql`. Le pilote a été compilé dans
+`/tmp` pour ce binaire ; `migrate:status` a montré uniquement la migration
+`2027_01_17_000001_create_declarations_apports_table` en attente, puis `migrate --force` l'a
+appliquée. `optimize:clear` a ensuite réussi, cache compris. Le pilote temporaire disparaîtra
+avec `/tmp` ; les prochaines commandes Artisan PostgreSQL demanderont une installation durable ou
+le même chargement explicite de l'extension.
+
+---
+
 ## 2026-11-01 — Suspension automatique et déclarations d'apport — CODE FAIT, À DÉPLOYER
 
 **Campagnes.** La commande `campagnes:suspendre-expirees` passe à « suspendue » toute campagne
