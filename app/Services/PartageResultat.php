@@ -165,9 +165,13 @@ final class PartageResultat
         }
 
         $manque = $total - array_sum($parts);
-        // Plus fort reste d'abord ; à égalité, plus petit identifiant (l'ordre d'entrée, déjà trié).
+        // Plus fort reste d'abord ; à égalité, on garde l'ordre déjà trié des investisseurs.
         $ordre = array_keys($restes);
-        usort($ordre, fn (int $a, int $b) => $restes[$b] <=> $restes[$a] ?: $a <=> $b);
+        $positions = array_flip($ordre);
+        usort(
+            $ordre,
+            fn (int|string $a, int|string $b) => $restes[$b] <=> $restes[$a] ?: $positions[$a] <=> $positions[$b],
+        );
         foreach (array_slice($ordre, 0, $manque) as $id) {
             $parts[$id]++;
         }

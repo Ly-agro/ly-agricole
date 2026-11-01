@@ -5,6 +5,24 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-11-01 — Correction du partage de résultat avec investisseur sans compte — FAIT, VÉRIFIÉ
+
+**Constaté.** Un investisseur sans compte est représenté par une clé texte (`nom:…`) dans le
+registre des apports. Le service de partage de résultat triait les restes avec un comparateur
+`fn (int $a, int $b)` ; `usort()` recevait alors une clé texte et plantait en TypeError.
+
+**Fait.** `app/Services/PartageResultat.php` : le tri des restes accepte maintenant des clés
+`int|string`, et en cas d'égalité il garde l'ordre déjà trié par `ksort()` sur les investisseurs.
+Le calcul de la part répartie conserve la somme totale de l'enveloppe et reste stable pour les
+apports sans compte.
+
+**Vérifié en l'exécutant.** `./vendor/bin/phpunit tests/Unit/PartageResultatTest.php` : 25 tests,
+25 passés, 152 assertions. `./vendor/bin/pint --test app/Services/PartageResultat.php
+tests/Unit/PartageResultatTest.php` et `./vendor/bin/phpstan analyse
+app/Services/PartageResultat.php --no-progress --memory-limit=1G` : OK.
+
+---
+
 ## 2026-10-08 — Photo du producteur : le Village se vidait après le choix du fichier — FAIT, PAS DÉPLOYÉ
 
 **Constaté dans Chrome** (`localhost:8000`, compte agent d'essai, LYP-000001) : après le choix de

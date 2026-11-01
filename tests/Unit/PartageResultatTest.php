@@ -159,6 +159,16 @@ class PartageResultatTest extends TestCase
     }
 
     #[Test]
+    public function un_investisseur_sans_compte_avec_cle_texte_ne_fait_pas_crasher_le_partage(): void
+    {
+        $r = PartageResultat::calculer(100_000, [3 => 500_000, 1 => 500_000, 'nom:alice' => 500_000], 0);
+
+        $this->assertSame(40_000, $r['part_investisseurs']);
+        $this->assertSame(40_000, array_sum(array_column($r['lignes'], 'part')));
+        $this->assertSame([1 => 13_334, 3 => 13_333, 'nom:alice' => 13_333], array_map(fn (array $l) => $l['part'], $r['lignes']));
+    }
+
+    #[Test]
     public function le_reste_va_aux_plus_forts_restes_puis_au_plus_petit_identifiant(): void
     {
         // 100 000 × 40 % = 40 000 entre trois parts égales : 13 333 chacun, 1 franc de reste → investisseur 1.
