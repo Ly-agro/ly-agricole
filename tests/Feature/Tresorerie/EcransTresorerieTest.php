@@ -149,10 +149,10 @@ class EcransTresorerieTest extends TestCase
     }
 
     #[Test]
-    public function un_retrait_est_un_virement_lie_vers_un_compte_de_caisse(): void
+    public function un_retrait_est_une_sortie_externe_sans_compte_de_destination(): void
     {
-        $banque = CompteTresorerie::factory()->create(['nom' => 'Banque retrait', 'type' => TypeCompte::Banque]);
-        $caisseEspeces = CompteTresorerie::factory()->create(['nom' => 'Caisse espèces']);
+        $banque = CompteTresorerie::factory()->create(['nom' => 'Ecobank', 'type' => TypeCompte::Banque]);
+        $caisse = CompteTresorerie::factory()->create(['nom' => 'Caisse non concernée']);
         Tresorerie::entree($banque, 100_000, NatureMouvement::Apport, Carbon::today(), 'Fonds', $this->direction);
         $this->actingAs($this->comptable);
 
@@ -160,23 +160,20 @@ class EcransTresorerieTest extends TestCase
             ->assertSee('Retrait')
             ->call('ouvrir', 'retrait')
             ->set('compteId', (string) $banque->id)
-            ->set('compteDestinationId', (string) $caisseEspeces->id)
             ->set('montant', '40 000')
-            ->set('libelle', 'Retrait espèces pour la caisse')
+            ->set('libelle', 'Retrait externe')
+            ->set('reference', 'RET-ECO-001')
             ->call('enregistrer')
             ->assertHasNoErrors()
             ->assertSet('statut', 'Opération enregistrée.');
 
-        $journal = MouvementTresorerie::query()->get()->sortBy('id')->values();
-        $this->assertSame(['apport', 'retrait', 'retrait'], $journal->map(fn (MouvementTresorerie $mouvement) => $mouvement->nature->value)->all());
-        $mouvements = $journal
-            ->filter(fn (MouvementTresorerie $mouvement) => $mouvement->nature === NatureMouvement::Retrait)
-            ->values();
-        $this->assertCount(2, $mouvements);
-        $this->assertSame(['entree', 'sortie'], $mouvements->pluck('sens')->map(fn ($sens) => $sens->value)->sort()->values()->all());
-        $this->assertSame(1, $mouvements->pluck('lien')->unique()->count());
+        $mouvement = MouvementTresorerie::query()->where('nature', NatureMouvement::Retrait)->sole();
+        $this->assertSame('sortie', $mouvement->sens->value);
+        $this->assertSame(40_000, $mouvement->montant_fcfa);
+        $this->assertNull($mouvement->lien);
+        $this->assertSame('RET-ECO-001', $mouvement->reference_externe);
         $this->assertSame(60_000, $banque->refresh()->solde());
-        $this->assertSame(40_000, $caisseEspeces->refresh()->solde());
+        $this->assertSame(0, $caisse->refresh()->solde());
     }
 
     #[Test]

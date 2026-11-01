@@ -6,7 +6,6 @@ use App\Enums\NatureMouvement;
 use App\Enums\SensMouvement;
 use App\Enums\StatutDepense;
 use App\Enums\StatutPret;
-use App\Enums\TypeCompte;
 use App\Exceptions\OperationRefusee;
 use App\Models\Achat;
 use App\Models\Campagne;
@@ -69,26 +68,34 @@ class Tresorerie
         NatureMouvement $nature = NatureMouvement::Virement,
         ?string $reference = null,
     ): array {
+        if ($nature === NatureMouvement::Retrait) {
+            throw new OperationRefusee('Un retrait est une sortie externe, pas un virement entre comptes.');
+        }
         if ($depuis->is($vers)) {
             throw new OperationRefusee('Un virement se fait entre deux comptes différents.');
         }
 
         return DB::transaction(function () use ($depuis, $vers, $montant, $date, $libelle, $auteur, $nature, $reference) {
             $comptes = self::verrouiller([$depuis->id, $vers->id]);
-            if ($nature === NatureMouvement::Retrait) {
-                if ($comptes[$depuis->id]->type === TypeCompte::Caisse) {
-                    throw new OperationRefusee('Un retrait doit partir d\'un compte bancaire ou Mobile Money.');
-                }
-                if ($comptes[$vers->id]->type !== TypeCompte::Caisse) {
-                    throw new OperationRefusee('Un retrait doit arriver sur un compte de caisse.');
-                }
-            }
             $lien = (string) Str::uuid7();
 
             return [
                 'sortie' => self::ecrire($comptes[$depuis->id], SensMouvement::Sortie, $montant, $nature, $date, $libelle, $auteur, lien: $lien, reference: $reference),
                 'entree' => self::ecrire($comptes[$vers->id], SensMouvement::Entree, $montant, $nature, $date, $libelle, $auteur, lien: $lien, reference: $reference),
             ];
+        });
+    }
+
+    /** Retrait externe : l'argent quitte la trésorerie, sans compte de destination. */
+    public static function retirer(CompteTresorerie $compte, int $montant, Carbon $date, string $libelle, User $auteur, ?string $reference = null): MouvementTresorerie
+    {
+        return DB::transaction(function () use ($compte, $montant, $date, $libelle, $auteur, $reference) {
+            $comptes = self::verrouiller([$compte->id]);
+
+            return self::ecrire(
+                $comptes[$compte->id], SensMouvement::Sortie, $montant, NatureMouvement::Retrait,
+                $date, $libelle, $auteur, reference: $reference,
+            );
         });
     }
 

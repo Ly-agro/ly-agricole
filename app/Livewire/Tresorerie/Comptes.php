@@ -144,7 +144,7 @@ class Comptes extends Component
                 $regles['investisseurId'] = ['required', 'string', 'max:150'];
                 $regles['campagneId'] = ['required', 'integer', Rule::exists('campagnes', 'id')];
             }
-        } else {
+        } elseif (in_array($this->formulaire, ['virement', 'avance'], true)) {
             $regles['compteDestinationId'] = ['required', 'integer', 'different:compteId', Rule::exists('comptes_tresorerie', 'id')];
         }
 
@@ -177,7 +177,7 @@ class Comptes extends Component
                 ),
                 $this->formulaire === 'entree' => Tresorerie::entree($compte, $montant, NatureMouvement::from($this->nature), $date, $this->libelle, $auteur, $this->reference ?: null),
                 $this->formulaire === 'virement' => Tresorerie::virement($compte, CompteTresorerie::query()->findOrFail((int) $this->compteDestinationId), $montant, $date, $this->libelle, $auteur, reference: $this->reference ?: null),
-                $this->formulaire === 'retrait' => Tresorerie::virement($compte, CompteTresorerie::query()->findOrFail((int) $this->compteDestinationId), $montant, $date, $this->libelle, $auteur, nature: NatureMouvement::Retrait, reference: $this->reference ?: null),
+                $this->formulaire === 'retrait' => Tresorerie::retirer($compte, $montant, $date, $this->libelle, $auteur, $this->reference ?: null),
                 $this->formulaire === 'avance' => Tresorerie::avanceAgent($compte, CompteTresorerie::query()->findOrFail((int) $this->compteDestinationId), $montant, $date, $this->libelle, $auteur),
                 default => abort(404),
             };

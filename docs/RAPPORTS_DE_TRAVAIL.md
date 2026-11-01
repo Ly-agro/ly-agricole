@@ -30,20 +30,20 @@ réelle n'a été touchée.
 
 ---
 
-## 2026-11-01 — Retrait d'espèces en trésorerie — CODE FAIT, PARCOURS NAVIGATEUR À FAIRE
+## 2026-11-01 — Retrait externe de trésorerie — CODE FAIT, PARCOURS NAVIGATEUR À FAIRE
 
-**Fait.** « Retrait d'espèces » est traité prudemment comme un transfert interne lié d'un compte
-bancaire ou Mobile Money vers une caisse : deux mouvements immuables de même nature et même lien,
-et aucun argent ne disparaît du registre. Le service refuse une caisse comme source et tout compte
-non-caisse comme destination. Cette interprétation reste à confirmer par le responsable projet.
+**Fait.** Un retrait est une sortie définitive de trésorerie vers l'extérieur : un mouvement
+immuable sortant sur le compte source, référence externe conservée, aucun compte de destination,
+aucune seconde jambe et aucun crédit d'une autre caisse. La nature « retrait » est refusée par le
+service de virement pour éviter de recréer l'ancien transfert interne.
 
-**Vérifié en l'exécutant.** Le test ciblé vérifie les deux jambes du retrait et les soldes. Après
-`php artisan config:clear`, les tests Trésorerie hors deux cas d'envoi d'image : 37 tests, 37 passés,
-158 assertions. L'exécution complète de ces tests a 2 erreurs préexistantes, car l'extension PHP GD
-est absente. Pint et PHPStan passent (0 erreur).
+**Vérifié en l'exécutant.** Le test ciblé vérifie la sortie unique, l'absence de compte de
+destination, la référence et le solde de la banque. Après `php artisan config:clear`, les tests
+Trésorerie hors deux cas d'envoi d'image : 38 tests, 38 passés, 162 assertions. Les deux tests
+exclus échouent ici car l'extension PHP GD est absente. Pint et PHPStan passent (0 erreur).
 
-**À faire avant de déclarer le parcours fini.** Essayer dans le navigateur un retrait d'une banque
-vers une caisse, puis vérifier les deux lignes liées dans les relevés. Aucun navigateur ou outil
+**À faire avant de déclarer le parcours fini.** Essayer dans le navigateur un retrait depuis
+Ecobank et vérifier qu'une seule sortie apparaît et que son solde baisse. Aucun navigateur ou outil
 d'automatisation n'est installé ici ; ne pas lancer le serveur avant d'isoler la base du `.env`.
 
 **Toujours en attente.** Le virement compté comme apport doit rester bloqué tant que la règle

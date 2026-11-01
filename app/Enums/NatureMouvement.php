@@ -25,7 +25,7 @@ enum NatureMouvement: string
             self::Apport => 'Apport de fonds',
             self::AutreEntree => 'Autre entrée',
             self::Virement => 'Virement interne',
-            self::Retrait => 'Retrait d\'espèces',
+            self::Retrait => 'Retrait externe',
             self::AvanceAgent => 'Avance à un agent',
             self::Depense => 'Dépense',
             self::DecaissementPret => 'Décaissement de prêt',

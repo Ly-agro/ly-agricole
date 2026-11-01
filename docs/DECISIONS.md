@@ -199,3 +199,10 @@ Après le dernier jour de la période, une campagne encore ouverte passe automat
 « Suspendue » chaque jour à 00:05 (commande `campagnes:suspendre-expirees`, planificateur et
 Vercel Cron). La clôture formelle et le partage du résultat restent des actions humaines ; une
 campagne suspendue n'est pas déclarée clôturée.
+
+## D15 — Retrait = sortie externe de trésorerie (2026-11-01)
+
+**Choix.** Un retrait est une sortie d'argent du système LY vers le monde extérieur, sans compte
+de destination interne. Il écrit un seul mouvement de trésorerie sortant, avec le montant, le motif
+et la référence externe éventuelle. Ce n'est pas un virement vers une caisse ; la sortie réduit
+immédiatement le solde du compte source. La contre-passation reste possible avec motif, selon D5.
