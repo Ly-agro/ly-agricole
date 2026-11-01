@@ -4,6 +4,7 @@ namespace App\Livewire\Referentiels;
 
 use App\Enums\StatutCampagne;
 use App\Models\Campagne;
+use App\Models\CompteTresorerie;
 use App\Models\Produit;
 use App\Support\Format;
 use Illuminate\Database\Eloquent\Builder;
@@ -156,6 +157,24 @@ class Campagnes extends EcranReferentiel
             if (! in_array($campagne->statut, $autorises, true)) {
                 throw ValidationException::withMessages(['ligne' => 'Cette transition de statut est impossible.']);
             }
+
+            if ($statut === StatutCampagne::Ouverte) {
+                $this->exigerCampagneUniqueOuverte($campagne);
+            }
+
+            if ($statut === StatutCampagne::Cloturee) {
+                $comptes = CompteTresorerie::query()->where('campagne_id', $campagne->id)->get();
+                $soldeNonNul = $comptes->first(fn (CompteTresorerie $compte) => $compte->solde() !== 0);
+                if ($soldeNonNul !== null) {
+                    throw ValidationException::withMessages([
+                        'ligne' => "La campagne ne peut pas être clôturée tant que le compte {$soldeNonNul->nom} a un solde non nul.",
+                    ]);
+                }
+                foreach ($comptes as $compte) {
+                    $compte->update(['actif' => false]);
+                }
+            }
+
             $campagne->update(['statut' => $statut]);
             $this->statut = $this->nomLigne($campagne)." : {$libelle}.";
         });
@@ -174,20 +193,26 @@ class Campagnes extends EcranReferentiel
                 throw ValidationException::withMessages(['ligne' => 'Seule une campagne en préparation peut être ouverte.']);
             }
 
-            $dejaOuverte = Campagne::query()
-                ->where('produit_id', $campagne->produit_id)
-                ->where('statut', StatutCampagne::Ouverte)
-                ->first();
-
-            if ($dejaOuverte) {
-                throw ValidationException::withMessages([
-                    'ligne' => "La campagne {$dejaOuverte->code} est déjà ouverte pour ce produit : une seule à la fois.",
-                ]);
-            }
+            $this->exigerCampagneUniqueOuverte($campagne);
 
             $campagne->update(['statut' => StatutCampagne::Ouverte]);
             $this->statut = $this->nomLigne($campagne).' : ouverte.';
         });
+    }
+
+    private function exigerCampagneUniqueOuverte(Campagne $campagne): void
+    {
+        $dejaOuverte = Campagne::query()
+            ->where('produit_id', $campagne->produit_id)
+            ->where('statut', StatutCampagne::Ouverte)
+            ->where('id', '!=', $campagne->id)
+            ->first();
+
+        if ($dejaOuverte !== null) {
+            throw ValidationException::withMessages([
+                'ligne' => "La campagne {$dejaOuverte->code} est déjà ouverte pour ce produit : une seule à la fois.",
+            ]);
+        }
     }
 
     protected function colonnes(): array

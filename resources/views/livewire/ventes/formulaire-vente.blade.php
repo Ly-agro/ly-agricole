@@ -8,9 +8,10 @@
         <div>
             <label for="campagneId" class="mb-1 block text-sm font-medium text-stone-700">Campagne</label>
             <select wire:model.live="campagneId" id="campagneId" class="block w-full rounded-md border border-stone-300 px-3 py-2 focus:border-emerald-600 focus:outline-none">
-                @if ($campagne)
-                    <option value="{{ $campagne->id }}">{{ $campagne->produit->nom }} · {{ $campagne->code }}</option>
-                @endif
+                <option value="">— Choisir —</option>
+                @foreach ($campagnes as $c)
+                    <option value="{{ $c->id }}">{{ $c->produit->nom }} · {{ $c->code }} · {{ $c->statut->libelle() }}</option>
+                @endforeach
             </select>
             @error('campagneId') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
         </div>

@@ -1,9 +1,21 @@
 # Rapports de travail
-
 Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui a été
 **vérifié en l'exécutant** (et comment), ce qui reste, ce qui a surpris.
 
 ---
+
+## 2026-11-01 — Réactivation d'une campagne : unicité par produit — FAIT, VÉRIFIÉ
+
+**Constaté.** L'ouverture initiale vérifiait qu'aucune campagne du même produit n'était déjà
+ouverte, mais la réactivation d'une campagne suspendue contournait ce contrôle.
+
+**Fait.** `Campagnes` applique désormais le même contrôle aux deux transitions vers « ouverte ».
+Un test de régression confirme qu'une campagne suspendue reste suspendue si une autre campagne
+du même produit est déjà ouverte.
+
+**Vérifié en l'exécutant.** Après `php artisan config:clear`,
+`./vendor/bin/phpunit tests/Feature/Referentiels/CampagnesTest.php` : 13 tests, 13 passés,
+68 assertions. Pint passe sur les deux fichiers PHP touchés.
 
 ## 2026-11-01 — Correction du partage de résultat avec investisseur sans compte — FAIT, VÉRIFIÉ
 

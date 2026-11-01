@@ -124,6 +124,25 @@ class EcransVentesTest extends TestCase
     }
 
     #[Test]
+    public function la_vente_d_un_lot_reste_possible_apres_cloture_de_la_campagne(): void
+    {
+        $this->campagne->update(['statut' => StatutCampagne::Cloturee]);
+        $this->actingAs($this->direction);
+
+        Livewire::test(FormulaireVente::class)
+            ->assertSee($this->campagne->code)
+            ->set('campagneId', (string) $this->campagne->id)
+            ->set('lotId', (string) $this->lot->id)
+            ->set('acheteurNom', 'Ivoire Export SA')
+            ->set('poidsKg', '100')
+            ->set('prixKg', '900')
+            ->call('enregistrer')
+            ->assertHasNoErrors();
+
+        $this->assertSame(400_000, $this->lot->refresh()->stock());
+    }
+
+    #[Test]
     public function une_vente_sous_le_seuil_se_valide_depuis_la_liste_par_un_autre(): void
     {
         Parametre::query()->create(['cle' => CleParametre::SeuilValidationVente, 'valeur' => '100']);

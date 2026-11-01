@@ -189,6 +189,9 @@ class FormulaireVente extends Component
 
         return view('livewire.ventes.formulaire-vente', [
             'campagne' => $campagne,
+            'campagnes' => Campagne::query()->with('produit')
+                ->whereIn('statut', [StatutCampagne::Ouverte, StatutCampagne::Cloturee])
+                ->orderByDesc('debut')->get(),
             'lots' => $this->lotsVendables(),
             'typesAcheteur' => TypeAcheteur::cases(),
             'apercu' => $this->apercu(),

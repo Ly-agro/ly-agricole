@@ -3,14 +3,18 @@
 namespace Tests\Feature\Referentiels;
 
 use App\Enums\ActionJournal;
+use App\Enums\NatureMouvement;
 use App\Enums\Role;
 use App\Enums\StatutCampagne;
 use App\Livewire\Referentiels\Campagnes;
 use App\Models\Campagne;
+use App\Models\CompteTresorerie;
 use App\Models\JournalActivite;
 use App\Models\Produit;
 use App\Models\User;
+use App\Services\Tresorerie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
@@ -136,6 +140,19 @@ class CampagnesTest extends TestCase
     }
 
     #[Test]
+    public function une_campagne_suspendue_ne_peut_pas_etre_reactivee_si_une_autre_est_ouverte_pour_le_meme_produit(): void
+    {
+        Campagne::factory()->statut(StatutCampagne::Ouverte)->create(['produit_id' => $this->anacarde->id]);
+        $suspendue = Campagne::factory()->statut(StatutCampagne::Suspendue)->create(['produit_id' => $this->anacarde->id]);
+
+        Livewire::test(Campagnes::class)
+            ->call('reactiver', $suspendue->id)
+            ->assertHasErrors('ligne');
+
+        $this->assertSame(StatutCampagne::Suspendue, $suspendue->refresh()->statut);
+    }
+
+    #[Test]
     public function on_n_ouvre_pas_deux_fois_la_meme_campagne(): void
     {
         $campagne = Campagne::factory()->statut(StatutCampagne::Ouverte)->create();
@@ -179,6 +196,35 @@ class CampagnesTest extends TestCase
             ->assertDontSee('Modifier')
             ->call('modifier', $campagne->id)
             ->assertForbidden();
+    }
+
+    #[Test]
+    public function une_campagne_ne_peut_pas_se_cloturer_si_un_compte_dedie_a_un_solde_non_nul(): void
+    {
+        $campagne = Campagne::factory()->statut(StatutCampagne::Ouverte)->create();
+        $compte = CompteTresorerie::factory()->create(['campagne_id' => $campagne->id, 'actif' => true]);
+        $direction = User::factory()->role(Role::Direction)->create();
+        Tresorerie::entree($compte, 1_000, NatureMouvement::Apport, Carbon::today(), 'Fonds d’essai', $direction);
+
+        Livewire::test(Campagnes::class)
+            ->call('cloturer', $campagne->id)
+            ->assertHasErrors('ligne');
+
+        $this->assertSame(StatutCampagne::Ouverte, $campagne->refresh()->statut);
+    }
+
+    #[Test]
+    public function une_campagne_cloturee_desactive_les_comptes_dedies_a_solde_nul(): void
+    {
+        $campagne = Campagne::factory()->statut(StatutCampagne::Ouverte)->create();
+        $compte = CompteTresorerie::factory()->create(['campagne_id' => $campagne->id, 'actif' => true]);
+
+        Livewire::test(Campagnes::class)
+            ->call('cloturer', $campagne->id)
+            ->assertHasNoErrors();
+
+        $this->assertSame(StatutCampagne::Cloturee, $campagne->refresh()->statut);
+        $this->assertFalse($compte->refresh()->actif);
     }
 
     #[Test]
