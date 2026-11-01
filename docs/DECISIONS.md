@@ -184,3 +184,18 @@ automatiquement : la clôture (résultat, partage) reste une décision.
 
 **À confirmer par le responsable projet.** L'abandon du compte dédié (art. 5) touche à ce qui
 est promis aux investisseurs.
+
+## D14 — Déclaration d'apport investisseur et suspension à échéance (2026-11-01)
+
+**Choix.** Un investisseur connecté peut déclarer un virement pour une campagne ouverte. La
+déclaration n'est pas un apport comptable : elle n'entre ni dans le solde de trésorerie ni dans
+les parts avant confirmation par la direction ou la comptabilité, qui choisit le compte actif
+crédité. Un refus exige un motif. Une déclaration encore en attente bloque la clôture formelle ;
+si la campagne est automatiquement suspendue après sa date de fin, un virement déclaré à temps
+reste confirmable tant que la campagne n'est pas clôturée. Depuis la trésorerie, la valeur initiale
+de l'apporteur pour une entrée « Apport campagne » est LY AGRICOLE.
+
+Après le dernier jour de la période, une campagne encore ouverte passe automatiquement à
+« Suspendue » chaque jour à 00:05 (commande `campagnes:suspendre-expirees`, planificateur et
+Vercel Cron). La clôture formelle et le partage du résultat restent des actions humaines ; une
+campagne suspendue n'est pas déclarée clôturée.

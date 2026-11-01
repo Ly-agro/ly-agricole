@@ -2,7 +2,12 @@
 
 namespace Tests\Feature\Notifications;
 
+use App\Enums\Role;
+use App\Enums\StatutCampagne;
+use App\Models\Campagne;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -45,5 +50,24 @@ class TacheCronTest extends TestCase
         $this->withToken('le-bon-secret')->get('/cron/alertes')
             ->assertOk()
             ->assertJson(['tache' => 'alertes', 'code' => 0]);
+    }
+
+    #[Test]
+    public function le_cron_suspend_automatiquement_les_campagnes_expirees(): void
+    {
+        config(['services.cron.secret' => 'le-bon-secret']);
+        $this->actingAs(User::factory()->role(Role::Direction)->create());
+        $campagne = Campagne::factory()->statut(StatutCampagne::Ouverte)->create(['fin' => '2027-09-30']);
+        Carbon::setTestNow('2027-10-01 00:06:00');
+
+        try {
+            $this->withToken('le-bon-secret')->get('/cron/suspendre-campagnes')
+                ->assertOk()
+                ->assertJson(['tache' => 'suspendre-campagnes', 'code' => 0]);
+        } finally {
+            Carbon::setTestNow();
+        }
+
+        $this->assertSame(StatutCampagne::Suspendue, $campagne->refresh()->statut);
     }
 }

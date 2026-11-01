@@ -59,8 +59,11 @@ filtre `''`, mais mieux vaut supprimer la ligne que la laisser vide.
 - **Planificateur** (sauvegardes) : une tâche cron chaque minute :
   `* * * * * cd /chemin/ly-agricole && php artisan schedule:run >> /dev/null 2>&1`
   - chaque nuit à 02:00 : `ly:sauvegarder` ;
+  - chaque jour à 00:05 : suspendre automatiquement les campagnes dont la date de fin est passée ;
   - chaque dimanche à 03:00 : `ly:verifier-sauvegarde` (restauration complète dans une
     base jetable, comparaison, suppression).
+- **Vercel** : le Cron `/cron/suspendre-campagnes` suspend les campagnes expirées à 00:05 UTC ;
+  le jeton `CRON_SECRET` protège cet appel, comme `/cron/alertes`.
 
 ## 5. Sauvegardes et restauration
 

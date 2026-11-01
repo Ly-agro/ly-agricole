@@ -7,7 +7,22 @@ use App\Models\Concerns\Journalise;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $investisseur_id
+ * @property int $campagne_id
+ * @property int $montant_fcfa
+ * @property Carbon $date_virement
+ * @property string|null $reference_virement
+ * @property StatutDeclarationApport $statut
+ * @property int|null $compte_id
+ * @property int|null $apport_id
+ * @property int|null $traite_par
+ * @property Carbon|null $traite_at
+ * @property string|null $motif_refus
+ */
 #[Fillable([
     'investisseur_id', 'campagne_id', 'montant_fcfa', 'date_virement', 'reference_virement',
     'statut', 'compte_id', 'apport_id', 'traite_par', 'traite_at', 'motif_refus',

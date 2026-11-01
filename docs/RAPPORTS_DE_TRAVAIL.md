@@ -4,6 +4,32 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-11-01 — Suspension automatique et déclarations d'apport — CODE FAIT, À DÉPLOYER
+
+**Campagnes.** La commande `campagnes:suspendre-expirees` passe à « suspendue » toute campagne
+encore ouverte dont le dernier jour est passé. Elle est planifiée à 00:05 et reliée à Vercel Cron
+(`/cron/suspendre-campagnes`, protégé par `CRON_SECRET`). La modification reste journalisée ; la
+clôture formelle n'est pas automatique. Une déclaration de virement faite avant la fin reste
+confirmable après cette suspension ; une déclaration en attente bloque la clôture formelle.
+
+**Apports.** Depuis « Mon investissement », un investisseur déclare le montant, la date et la
+référence facultative du virement. Aucune ligne comptable ni aucun mouvement de trésorerie n'est
+créé avant confirmation par la direction ou la comptabilité ; le bureau choisit le compte actif
+crédité, ou refuse avec un motif. Depuis Trésorerie → Entrée → Apport campagne, LY AGRICOLE est
+sélectionnée par défaut. Les vues Apports et Résultat masquent l'apport de LY quand son montant
+net est nul.
+
+**Vérifié en l'exécutant.** 103 tests ciblés passent (387 assertions), en excluant les deux tests
+d'images qui requièrent l'extension GD absente. Pint passe, PHPStan : 0 erreur. `schedule:list`
+confirme l'heure quotidienne et `vercel.json` est valide ; l'inspection du planificateur utilise
+`CACHE_STORE=array`, le pilote MySQL PDO n'étant pas installé dans ce conteneur.
+
+**À faire.** Déployer la configuration Vercel pour activer le Cron en production et essayer le
+parcours dans un navigateur. Aucun navigateur automatisable n'est installé ici ; aucune base
+réelle n'a été touchée.
+
+---
+
 ## 2026-11-01 — Retrait d'espèces en trésorerie — CODE FAIT, PARCOURS NAVIGATEUR À FAIRE
 
 **Fait.** « Retrait d'espèces » est traité prudemment comme un transfert interne lié d'un compte

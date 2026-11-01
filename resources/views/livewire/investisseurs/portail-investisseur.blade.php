@@ -3,7 +3,7 @@
 <div class="space-y-6">
     <div>
         <h1 class="text-xl font-semibold">Mon investissement</h1>
-        <p class="mt-1 text-sm text-stone-600">Vos apports et votre part de chaque campagne, en lecture seule.</p>
+        <p class="mt-1 text-sm text-stone-600">Vos apports confirmés et vos déclarations de virement, en attente de confirmation du bureau.</p>
     </div>
 
     @if ($statutDeclaration !== '')
