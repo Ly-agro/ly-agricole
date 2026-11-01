@@ -119,6 +119,42 @@ class EcransTresorerieTest extends TestCase
     }
 
     #[Test]
+    public function un_compte_de_campagne_cloturee_reste_visible_mais_pas_dans_un_nouvel_apport(): void
+    {
+        $campagneCloturee = Campagne::factory()->statut(StatutCampagne::Cloturee)->create();
+        $compteCloture = CompteTresorerie::factory()->create([
+            'nom' => 'Caisse campagne clôturée',
+            'campagne_id' => $campagneCloturee->id,
+        ]);
+        $this->actingAs($this->comptable);
+
+        Livewire::test(Comptes::class)
+            ->assertSee($compteCloture->nom)
+            ->call('ouvrir', 'entree')
+            ->set('nature', 'apport_campagne')
+            ->assertViewHas('comptesPourOperation', fn ($comptes) => ! $comptes->contains('id', $compteCloture->id))
+            ->assertViewHas('campagnesApport', fn ($campagnes) => ! $campagnes->contains('id', $campagneCloturee->id));
+    }
+
+    #[Test]
+    public function un_virement_vers_un_compte_cloture_reste_possible_sans_option_d_apport(): void
+    {
+        $campagneCloturee = Campagne::factory()->statut(StatutCampagne::Cloturee)->create();
+        $compteCloture = CompteTresorerie::factory()->create([
+            'nom' => 'Compte clôturé',
+            'campagne_id' => $campagneCloturee->id,
+        ]);
+        $this->actingAs($this->comptable);
+
+        Livewire::test(Comptes::class)
+            ->call('ouvrir', 'virement')
+            ->set('compteDestinationId', (string) $compteCloture->id)
+            ->assertSet('marquerCommeApportLy', false)
+            ->assertSee($compteCloture->nom)
+            ->assertDontSee('Comptabiliser comme apport propre de LY');
+    }
+
+    #[Test]
     public function un_montant_ambigu_ou_un_virement_a_decouvert_est_explique(): void
     {
         $this->actingAs($this->comptable);

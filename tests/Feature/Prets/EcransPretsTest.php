@@ -105,6 +105,7 @@ class EcransPretsTest extends TestCase
 
         Livewire::test(FormulairePret::class)
             ->assertSet('campagneId', (string) $this->campagne->id)
+            ->assertSee('Une demande saisie par un agent nécessite une seule validation de la direction, quel que soit le montant.')
             ->set('producteurId', $producteur->id)
             ->assertSee('Champ du marigot')
             ->set('parcelleIds', [$parcelle->id])

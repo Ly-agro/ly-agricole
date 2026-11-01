@@ -4,6 +4,27 @@ Une entrée par session, la plus récente en haut : ce qui a été fait, ce qui 
 
 ---
 
+## 2026-11-01 — Validation des prêts agent et fermeture des comptes vides — CODE FAIT, NAVIGATEUR À VÉRIFIER
+
+**Prêts.** Une demande saisie par un agent requiert désormais une validation indépendante, quel
+que soit son montant ; les seuils continuent de s'appliquer aux prêts saisis par les autres rôles.
+
+**Comptes.** Depuis Paramètres, seule la direction peut fermer un compte au solde nul, avec son
+historique conservé. La suppression est réservée aux comptes jamais utilisés et reste journalisée.
+Les comptes dédiés aux campagnes non ouvertes restent visibles dans Trésorerie et les historiques,
+mais ne sont pas proposés pour de nouveaux apports ou achats. Les opérations encore permises après
+clôture et leurs choix de compte restent disponibles.
+
+**Vérifié en l'exécutant.** ParametresTest : 11 tests passés ; PretsTest, ParametresTest et
+CampagneTermineeTest : 32 tests passés ; écrans Prêts, Trésorerie, Apports et Achats ciblés, ainsi
+que Ventes : tous les tests lancés passent. Pint, PHPStan (0 erreur) et `git diff --check` passent.
+
+**À faire.** Vérifier les boutons Fermer/Supprimer dans Paramètres et les options de compte au
+navigateur. La suppression réelle n'est proposée que si aucune table d'opérations ne référence le
+compte.
+
+---
+
 ## 2026-11-01 — Apport LY facultatif sur virement interne — CODE FAIT, NAVIGATEUR À VÉRIFIER
 
 **Fait.** Le formulaire « Virement interne » affiche, pour une destination dédiée à une campagne,

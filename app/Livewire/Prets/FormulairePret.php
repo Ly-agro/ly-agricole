@@ -196,14 +196,16 @@ class FormulairePret extends Component
             'parcelles' => $this->producteurId === ''
                 ? collect()
                 : Parcelle::query()->where('producteur_id', $this->producteurId)->where('actif', true)->orderBy('nom')->get(),
-            'campagnes' => Campagne::query()->with('produit')->where('statut', '!=', StatutCampagne::Cloturee)->orderByDesc('debut')->get(),
+            'campagnes' => Campagne::query()->with('produit')->where('statut', StatutCampagne::Ouverte)->orderByDesc('debut')->get(),
             'formes' => FormePret::cases(),
             'pretCorrige' => $this->corrigeId === '' ? null : Pret::query()->find($this->corrigeId),
             'regleValidation' => $moi->aLeRole(Role::Direction)
                 ? 'Vous êtes la direction : votre prêt est accordé dès l\'enregistrement, sans autre validation.'
+                : ($moi->aLeRole(Role::Agent)
+                ? 'Une demande saisie par un agent nécessite une seule validation de la direction, quel que soit le montant.'
                 : ($seuil === null
                 ? 'Seuil non défini : toute demande sera validée par deux personnes de la direction.'
-                : 'Au-dessus de '.Format::fcfa($seuil).', deux validations de la direction ; en dessous, une.'),
+                : 'Au-dessus de '.Format::fcfa($seuil).', deux validations de la direction ; en dessous, une.')),
         ]);
     }
 }

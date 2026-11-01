@@ -4,12 +4,16 @@ namespace Tests\Feature\Referentiels;
 
 use App\Enums\ActionJournal;
 use App\Enums\CleParametre;
+use App\Enums\NatureMouvement;
 use App\Enums\Role;
 use App\Livewire\Referentiels\Parametres;
+use App\Models\CompteTresorerie;
 use App\Models\JournalActivite;
 use App\Models\Parametre;
 use App\Models\User;
+use App\Services\Tresorerie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -106,6 +110,85 @@ class ParametresTest extends TestCase
     public function l_admin_ne_touche_pas_aux_seuils(): void
     {
         $this->actingAs(User::factory()->role(Role::Admin)->create());
+
+        Livewire::test(Parametres::class)->assertForbidden();
+    }
+
+    #[Test]
+    public function la_direction_ferme_un_compte_vide_et_conserve_son_historique(): void
+    {
+        $compte = CompteTresorerie::factory()->create(['nom' => 'Caisse à fermer']);
+        $direction = auth()->user();
+        Tresorerie::entree($compte, 10_000, NatureMouvement::Apport, Carbon::today(), 'Fonds', $direction);
+        Tresorerie::retirer($compte, 10_000, Carbon::today(), 'Retrait', $direction);
+
+        $this->assertSame(0, $compte->solde());
+        Livewire::test(Parametres::class)
+            ->call('preparerActionCompte', $compte->id, 'fermer')
+            ->assertSee('son historique sera conservé')
+            ->call('confirmerActionCompte')
+            ->assertHasNoErrors()
+            ->assertSet('statut', 'Compte « Caisse à fermer » fermé ; son historique est conservé.');
+
+        $this->assertFalse($compte->refresh()->actif);
+        $this->assertSame(2, $compte->mouvements()->count());
+    }
+
+    #[Test]
+    public function la_direction_peut_supprimer_un_compte_jamais_utilise(): void
+    {
+        $compte = CompteTresorerie::factory()->create(['nom' => 'Compte inutilisé']);
+
+        Livewire::test(Parametres::class)
+            ->call('preparerActionCompte', $compte->id, 'supprimer')
+            ->assertSee('suppression définitive')
+            ->call('confirmerActionCompte')
+            ->assertHasNoErrors()
+            ->assertSet('statut', 'Compte « Compte inutilisé » supprimé.');
+
+        $this->assertDatabaseMissing('comptes_tresorerie', ['id' => $compte->id]);
+        $this->assertDatabaseHas('journal_activite', [
+            'objet_type' => 'compte_tresorerie',
+            'objet_id' => (string) $compte->id,
+            'action' => ActionJournal::Suppression->value,
+        ]);
+    }
+
+    #[Test]
+    public function un_compte_avec_historique_ne_peut_pas_etre_supprime_meme_si_son_solde_est_nul(): void
+    {
+        $compte = CompteTresorerie::factory()->create();
+        $direction = auth()->user();
+        Tresorerie::entree($compte, 5_000, NatureMouvement::Apport, Carbon::today(), 'Fonds', $direction);
+        Tresorerie::retirer($compte, 5_000, Carbon::today(), 'Retrait', $direction);
+
+        Livewire::test(Parametres::class)
+            ->call('preparerActionCompte', $compte->id, 'supprimer')
+            ->assertHasErrors('actionCompte')
+            ->assertSee('fermez-le pour le conserver');
+
+        $this->assertNotNull($compte->fresh());
+        $this->assertTrue($compte->refresh()->actif);
+    }
+
+    #[Test]
+    public function un_compte_non_vide_ne_peut_pas_etre_ferme(): void
+    {
+        $compte = CompteTresorerie::factory()->create();
+        Tresorerie::entree($compte, 1_000, NatureMouvement::Apport, Carbon::today(), 'Fonds', auth()->user());
+
+        Livewire::test(Parametres::class)
+            ->call('preparerActionCompte', $compte->id, 'fermer')
+            ->assertHasErrors('actionCompte')
+            ->assertSee('solde est nul');
+
+        $this->assertTrue($compte->refresh()->actif);
+    }
+
+    #[Test]
+    public function seul_le_role_direction_peut_gerer_les_comptes_depuis_les_parametres(): void
+    {
+        $this->actingAs(User::factory()->role(Role::Comptable)->create());
 
         Livewire::test(Parametres::class)->assertForbidden();
     }

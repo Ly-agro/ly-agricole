@@ -91,7 +91,7 @@ class FormulaireAchat extends Component
         $this->dateAchat = now()->format('Y-m-d\TH:i');
         /** @var User $moi */
         $moi = auth()->user();
-        $this->compteId = (string) (CompteTresorerie::query()->where('titulaire_id', $moi->id)->where('actif', true)->value('id') ?? '');
+        $this->compteId = (string) (CompteTresorerie::query()->where('titulaire_id', $moi->id)->where('actif', true)->pourOperationCampagneEnCours()->value('id') ?? '');
         $this->choisirPretParDefaut();
 
         if ($this->corrigeId !== '') {
@@ -303,7 +303,7 @@ class FormulaireAchat extends Component
             'producteurs' => Producteur::query()->with('village')->where('actif', true)->orderBy('nom')->orderBy('prenoms')->get(),
             'pisteurs' => Pisteur::query()->where('actif', true)->orderBy('nom')->get(),
             'pointsCollecte' => PointCollecte::query()->where('actif', true)->orderBy('nom')->get(),
-            'comptes' => CompteTresorerie::query()->orderBy('nom')->get()->filter(fn (CompteTresorerie $c) => Depenses::peutPayerDepuis($moi, $c)),
+            'comptes' => CompteTresorerie::query()->pourOperationCampagneEnCours()->orderBy('nom')->get()->filter(fn (CompteTresorerie $c) => Depenses::peutPayerDepuis($moi, $c)),
             'prets' => $this->pretsOuverts(),
             'apercu' => $this->apercu(),
             'regleChoisie' => Parametre::regleRemboursementNature(),

@@ -4,6 +4,7 @@ namespace App\Livewire\Tresorerie;
 
 use App\Enums\NatureMouvement;
 use App\Enums\Role;
+use App\Enums\StatutCampagne;
 use App\Enums\TypeCompte;
 use App\Exceptions\OperationRefusee;
 use App\Livewire\Investisseurs\GestionApports;
@@ -135,9 +136,9 @@ class Comptes extends Component
     {
         $destination = $this->compteDestinationId === ''
             ? null
-            : CompteTresorerie::query()->find((int) $this->compteDestinationId);
+            : CompteTresorerie::query()->with('campagne')->find((int) $this->compteDestinationId);
 
-        if ($destination?->campagne_id === null) {
+        if ($destination?->campagne?->statut !== StatutCampagne::Ouverte) {
             $this->marquerCommeApportLy = false;
         }
     }
@@ -256,9 +257,19 @@ class Comptes extends Component
     {
         $comptes = CompteTresorerie::query()->with('titulaire', 'campagne.produit')->orderByDesc('actif')->orderBy('nom')->get();
         $soldes = $comptes->mapWithKeys(fn (CompteTresorerie $c) => [$c->id => $c->solde()]);
+        $comptesPourOperation = $comptes->where('actif', true);
+        $campagnesApport = Campagne::query()->with('produit')->orderByDesc('debut')->get();
+
+        if ($this->formulaire === 'entree' && $this->nature === NatureMouvement::ApportCampagne->value) {
+            $comptesPourOperation = CompteTresorerie::query()->where('actif', true)->pourOperationCampagneEnCours()->orderBy('nom')->get();
+            $campagnesApport = $campagnesApport->where('statut', StatutCampagne::Ouverte);
+        }
 
         return view('livewire.tresorerie.comptes', [
             'comptes' => $comptes,
+            'comptesPourOperation' => $comptesPourOperation,
+            'peutMarquerApportLy' => $this->compteDestinationId !== ''
+                && $comptes->firstWhere('id', (int) $this->compteDestinationId)?->campagne?->statut === StatutCampagne::Ouverte,
             'compteDestination' => $this->compteDestinationId === '' ? null : $comptes->firstWhere('id', (int) $this->compteDestinationId),
             'soldes' => $soldes,
             'types' => TypeCompte::cases(),
@@ -267,6 +278,7 @@ class Comptes extends Component
             'nomsSansCompte' => Apport::query()->whereNotNull('apporteur_nom')->distinct()->orderBy('apporteur_nom')->pluck('apporteur_nom'),
             'agents' => User::query()->where('role', Role::Agent->value)->where('actif', true)->orderBy('nom')->get(),
             'campagnes' => Campagne::query()->with('produit')->orderByDesc('debut')->get(),
+            'campagnesApport' => $campagnesApport,
         ]);
     }
 }

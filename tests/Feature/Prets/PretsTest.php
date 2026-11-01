@@ -63,7 +63,7 @@ class PretsTest extends TestCase
     }
 
     /** @param  array<string, mixed>  $surcharge */
-    private function demander(int $montant = 3_000_000, array $surcharge = [], ?string $accord = null): Pret
+    private function demander(int $montant = 3_000_000, array $surcharge = [], ?string $accord = null, ?User $auteur = null): Pret
     {
         return Prets::demander(array_merge([
             'producteur_id' => Producteur::factory()->create()->id,
@@ -71,7 +71,7 @@ class PretsTest extends TestCase
             'montant_fcfa' => $montant,
             'forme' => FormePret::Especes,
             'echeance' => Carbon::today()->addMonths(6),
-        ], $surcharge), $this->agent, $accord);
+        ], $surcharge), $auteur ?? $this->agent, $accord);
     }
 
     private function decaisserTout(Pret $pret): Decaissement
@@ -153,7 +153,7 @@ class PretsTest extends TestCase
     #[Test]
     public function sans_seuil_defini_il_faut_deux_validateurs_distincts(): void
     {
-        $pret = $this->demander(100_000);
+        $pret = $this->demander(100_000, auteur: $this->comptable);
         $this->assertSame(2, $pret->validations_requises);
 
         $pret = Prets::valider($pret, $this->directeur);
@@ -173,7 +173,20 @@ class PretsTest extends TestCase
         $this->parametre(CleParametre::SeuilValidationPret, 1_000_000);
 
         $this->assertSame(1, $this->demander(1_000_000)->validations_requises);
-        $this->assertSame(2, $this->demander(1_000_001)->validations_requises);
+        $this->assertSame(2, $this->demander(1_000_001, auteur: $this->comptable)->validations_requises);
+    }
+
+    #[Test]
+    public function un_pret_saisi_par_un_agent_ne_requiert_qu_une_validation_meme_au_dessus_du_seuil(): void
+    {
+        $this->parametre(CleParametre::SeuilValidationPret, 1_000_000);
+
+        $pret = $this->demander(1_000_001);
+
+        $this->assertSame(1, $pret->validations_requises);
+        $pret = Prets::valider($pret, $this->directeur);
+        $this->assertSame(StatutPret::Valide, $pret->statut);
+        $this->assertSame([$this->directeur->id], $pret->validations()->pluck('user_id')->all());
     }
 
     #[Test]

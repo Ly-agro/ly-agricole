@@ -3,6 +3,7 @@
 namespace App\Livewire\Investisseurs;
 
 use App\Enums\Role;
+use App\Enums\StatutCampagne;
 use App\Enums\StatutDeclarationApport;
 use App\Exceptions\OperationRefusee;
 use App\Models\Apport;
@@ -206,8 +207,9 @@ class GestionApports extends Component
         return view('livewire.investisseurs.gestion-apports', [
             'campagnes' => Campagne::query()->with('produit')->orderByDesc('debut')->get(),
             'campagne' => $campagne,
-            // Tous les comptes actifs (décision du 2026-10-07), ceux de la campagne en premier.
-            'comptesDedies' => CompteTresorerie::query()->where('actif', true)
+            'peutEnregistrerApport' => $campagne?->statut === StatutCampagne::Ouverte,
+            // Un compte d'une campagne terminée reste visible en trésorerie, mais pas pour un nouvel apport.
+            'comptesDedies' => CompteTresorerie::query()->where('actif', true)->pourOperationCampagneEnCours()
                 ->orderByRaw('CASE WHEN campagne_id = ? THEN 0 ELSE 1 END', [$campagne->id ?? 0])->orderBy('nom')->get(),
             'nomsSansCompte' => Apport::query()->whereNotNull('apporteur_nom')->distinct()->orderBy('apporteur_nom')->pluck('apporteur_nom'),
             'investisseurs' => User::query()->where('role', Role::Investisseur->value)->where('actif', true)->orderBy('nom')->get(),

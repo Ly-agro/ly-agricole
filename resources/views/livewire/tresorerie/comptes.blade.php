@@ -63,7 +63,7 @@
                         <label for="compteId" class="mb-1 block text-sm font-medium text-stone-700">{{ $formulaire === 'entree' ? 'Compte' : 'Depuis le compte' }}</label>
                         <select wire:model.live="compteId" id="compteId" class="{{ $champ }}">
                             <option value="">— Choisir —</option>
-                            @foreach ($comptes->where('actif', true) as $c)
+                            @foreach ($comptesPourOperation as $c)
                                 <option value="{{ $c->id }}">{{ $c->nom }} ({{ \App\Support\Format::fcfa($soldes[$c->id]) }})</option>
                             @endforeach
                         </select>
@@ -101,7 +101,7 @@
                                 <label for="campagneApport" class="mb-1 block text-sm font-medium text-stone-700">Campagne</label>
                                 <select wire:model="campagneId" id="campagneApport" class="{{ $champ }}">
                                     <option value="">— Choisir —</option>
-                                    @foreach ($campagnes as $camp)
+                                    @foreach ($campagnesApport as $camp)
                                         <option value="{{ $camp->id }}">{{ $camp->produit->nom }} {{ $camp->code }}</option>
                                     @endforeach
                                 </select>
@@ -120,7 +120,7 @@
                                 @endforeach
                             </select>
                             @error('compteDestinationId') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-                            @if ($formulaire === 'virement' && $compteDestination?->campagne_id !== null)
+                            @if ($formulaire === 'virement' && $peutMarquerApportLy)
                                 <label class="mt-3 flex items-start gap-2 text-sm text-stone-700">
                                     <input wire:model="marquerCommeApportLy" type="checkbox" class="mt-1 rounded border-stone-300 text-emerald-700">
                                     <span>Comptabiliser comme apport propre de LY

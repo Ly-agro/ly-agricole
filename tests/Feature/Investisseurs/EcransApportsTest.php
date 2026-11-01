@@ -94,6 +94,28 @@ class EcransApportsTest extends TestCase
     }
 
     #[Test]
+    public function un_compte_de_campagne_cloturee_ne_peut_pas_servir_a_un_nouvel_apport(): void
+    {
+        $campagneCloturee = Campagne::factory()->statut(StatutCampagne::Cloturee)->create();
+        $compteCloture = CompteTresorerie::factory()->create([
+            'nom' => 'Compte terminé',
+            'campagne_id' => $campagneCloturee->id,
+        ]);
+        $this->actingAs($this->direction);
+
+        Livewire::test(GestionApports::class)
+            ->set('campagneId', (string) $this->campagne->id)
+            ->call('ouvrir')
+            ->assertViewHas('comptesDedies', fn ($comptes) => ! $comptes->contains('id', $compteCloture->id))
+            ->assertSee($this->compteDedie->nom);
+
+        Livewire::test(GestionApports::class)
+            ->set('campagneId', (string) $campagneCloturee->id)
+            ->assertSee($campagneCloturee->code)
+            ->assertDontSee('Nouvel apport');
+    }
+
+    #[Test]
     public function un_nom_tape_dans_le_champ_investisseur_enregistre_un_investisseur_sans_compte(): void
     {
         $compteLibre = CompteTresorerie::factory()->create();

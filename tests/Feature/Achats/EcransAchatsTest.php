@@ -159,6 +159,21 @@ class EcransAchatsTest extends TestCase
     }
 
     #[Test]
+    public function un_compte_d_une_campagne_cloturee_n_est_pas_propose_pour_un_nouvel_achat(): void
+    {
+        $campagneCloturee = Campagne::factory()->statut(StatutCampagne::Cloturee)->create();
+        $compteCloture = CompteTresorerie::factory()->create([
+            'nom' => 'Caisse clôturée',
+            'campagne_id' => $campagneCloturee->id,
+        ]);
+        $this->actingAs($this->direction);
+
+        Livewire::test(FormulaireAchat::class)
+            ->assertViewHas('comptes', fn ($comptes) => ! $comptes->contains('id', $compteCloture->id))
+            ->assertSee($this->caisseCentrale->nom);
+    }
+
+    #[Test]
     public function sans_regle_choisie_l_ecran_l_explique_et_l_achat_avec_pret_est_refuse(): void
     {
         $this->pretDecaisse(100_000);

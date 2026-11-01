@@ -209,3 +209,25 @@ campagne suspendue n'est pas déclarée clôturée.
 de destination interne. Il écrit un seul mouvement de trésorerie sortant, avec le montant, le motif
 et la référence externe éventuelle. Ce n'est pas un virement vers une caisse ; la sortie réduit
 immédiatement le solde du compte source. La contre-passation reste possible avec motif, selon D5.
+
+## D16 — Un seul accord pour un prêt saisi par un agent (2026-11-01)
+
+**Choix.** Un prêt saisi par un agent requiert une seule validation de la direction, quel
+que soit son montant et même si le seuil de double validation n'est pas défini. L'auteur
+ne peut toujours pas valider son propre prêt. Les demandes des autres rôles restent
+soumises au seuil ; la direction conserve l'accord immédiat défini par D6.
+
+**Pourquoi.** Demande du responsable projet : « dans prêt par un agent fais une seule
+validation pas 2 ».
+
+## D17 — Fermer les comptes vides, supprimer seulement les comptes jamais utilisés (2026-11-01)
+
+**Choix.** Dans Paramètres, seule la direction de LY AGRICOLE peut fermer un compte dont le solde est nul ;
+la fermeture le désactive et garde tout son historique consultable. La suppression physique
+est proposée uniquement si le compte n'a jamais été référencé par un mouvement ou une
+opération. Les comptes dédiés à une campagne non ouverte restent visibles dans Trésorerie et
+les historiques, mais ne sont pas proposés pour un nouvel apport ou achat.
+
+**Pourquoi.** Un compte ayant un historique fait partie de la piste d'audit des registres
+immuables ; le supprimer casserait cette piste. Un compte jamais utilisé peut être supprimé
+et l'action reste inscrite au journal.

@@ -25,9 +25,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * Règles des prêts de campagne (cahier §3, contrat art. 9.2 et 17.3, D6).
  *
- * - Toute demande est validée par une autre personne que son auteur ; au-dessus du
- *   seuil — ou si le seuil n'est pas défini — par DEUX personnes distinctes. Sauf un prêt
- *   saisi par la direction : accordé dès la saisie (2026-10-06).
+ * - Toute demande saisie par un agent est validée une fois par une autre personne.
+ *   Les autres demandes non saisies par la direction suivent le seuil, avec deux
+ *   validations au-dessus ou si le seuil n'est pas défini. La direction est accordée
+ *   dès la saisie (2026-10-06).
  * - Plafonds par producteur et par hectare, s'ils sont définis.
  * - Proche de la direction (art. 17.3) : accord écrit joint, sinon refus.
  * - Décaissement par tranches, jamais au-delà du montant ; chaque tranche est un
@@ -81,6 +82,7 @@ class Prets
             // La direction est le compte supérieur : son prêt est accordé dès la saisie, sans
             // 2e accord (demande du 2026-10-06). Trace : une validation à son nom, = auteur.
             $direct = $auteur->aLeRole(Role::Direction);
+            $saisiParAgent = $auteur->aLeRole(Role::Agent);
 
             $pret = Pret::query()->create([
                 'producteur_id' => $producteur->id,
@@ -91,7 +93,7 @@ class Prets
                 'grammes_attendus' => $prix === null ? null : self::grammesAttendus($montant, $prix),
                 'echeance' => $donnees['echeance']->toDateString(),
                 'statut' => $direct ? StatutPret::Valide : StatutPret::Demande,
-                'validations_requises' => $direct ? 1 : ($seuil === null || $montant > $seuil ? 2 : 1),
+                'validations_requises' => $direct || $saisiParAgent ? 1 : ($seuil === null || $montant > $seuil ? 2 : 1),
                 'partie_liee' => $partieLiee,
                 'accord_ecrit' => $partieLiee ? $accordEcrit : null,
                 'cree_par' => $auteur->id,

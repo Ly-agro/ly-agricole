@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Enums\SensMouvement;
+use App\Enums\StatutCampagne;
 use App\Enums\TypeCompte;
 use App\Models\Concerns\Journalise;
 use Database\Factories\CompteTresorerieFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,6 +49,18 @@ class CompteTresorerie extends Model
     public function mouvements(): HasMany
     {
         return $this->hasMany(MouvementTresorerie::class, 'compte_id');
+    }
+
+    /**
+     * @param  Builder<CompteTresorerie>  $query
+     * @return Builder<CompteTresorerie>
+     */
+    public function scopePourOperationCampagneEnCours(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $comptes) => $comptes
+            ->whereNull('campagne_id')
+            ->orWhereHas('campagne', fn (Builder $campagnes) => $campagnes
+                ->where('statut', StatutCampagne::Ouverte->value)));
     }
 
     /** @return BelongsTo<User, $this> */

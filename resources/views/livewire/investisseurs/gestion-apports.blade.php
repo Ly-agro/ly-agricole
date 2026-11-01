@@ -56,19 +56,19 @@
                     @endforeach
                 </select>
             </div>
-            @if ($campagne && $comptesDedies->isNotEmpty())
+            @if ($peutEnregistrerApport && $comptesDedies->isNotEmpty())
                 <button type="button" wire:click="ouvrir" class="rounded-md bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800">Nouvel apport</button>
             @endif
         </div>
     </div>
 
-    @if ($campagne && $comptesDedies->isEmpty())
+    @if ($peutEnregistrerApport && $comptesDedies->isEmpty())
         <p class="mb-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
             Aucun compte de trésorerie n'est dédié à cette campagne (contrat art. 5). Créez-en un depuis la Trésorerie avant d'enregistrer un apport.
         </p>
     @endif
 
-    @if ($formulaire)
+    @if ($formulaire && $peutEnregistrerApport)
         <form wire:submit="enregistrer" class="mb-6 space-y-4 rounded-xl border border-stone-200 bg-white p-5">
             <div class="grid grid-cols-2 gap-4">
                 <div>
