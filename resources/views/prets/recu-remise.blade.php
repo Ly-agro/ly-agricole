@@ -68,7 +68,7 @@
     </p>
 
     <table class="signatures">
-        <tr><td>Signature ou empreinte du producteur</td><td style="padding-left: 8mm;">Pour LY AGRICOLE (nom et signature)</td></tr>
+        <tr><td>Signature électronique ou empreinte du producteur</td><td style="padding-left: 8mm;">Pour LY AGRICOLE — nom, qualité et signature électronique</td></tr>
     </table>
 </body>
 </html>

@@ -77,7 +77,7 @@
     </p>
 
     <table class="signatures">
-        <tr><td>Signature ou empreinte du fournisseur</td><td style="padding-left: 8mm;">L'acheteur pour LY AGRICOLE</td></tr>
+        <tr><td>Signature électronique ou empreinte du fournisseur</td><td style="padding-left: 8mm;">L'acheteur pour LY AGRICOLE — signature électronique</td></tr>
     </table>
 </body>
 </html>

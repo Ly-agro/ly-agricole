@@ -255,6 +255,7 @@ class EcransIntrantsTest extends TestCase
         $this->assertStringContainsString('74'.self::FINE.'000 FCFA', $html);
         $this->assertStringContainsString('Restant dû', $html);
         $this->assertStringContainsString('Aucun intérêt', $html);
+        $this->assertStringContainsString('Signature électronique', $html);
         $this->assertSame(1, MouvementIntrant::query()->where('pret_id', $pret->id)->count());
     }
 }

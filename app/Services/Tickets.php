@@ -83,10 +83,12 @@ class Tickets
         abort_unless($mouvement->pret_id === $pret->id && $mouvement->type->value === 'distribution', 404);
         $mouvement->loadMissing('intrant');
 
+        $quantite = abs((int) $mouvement->quantite);
+
         return self::remise($pret, 'R-'.$pret->reference.'-I'.$mouvement->id, $mouvement->date_mouvement->format('d/m/Y'),
             $mouvement->intrant->nom,
-            -$mouvement->quantite.' '.$mouvement->intrant->unite->libelle(-$mouvement->quantite).' × '.Format::fcfa((int) $mouvement->prix_unitaire_fcfa),
-            -(int) $mouvement->valeur_fcfa);
+            $quantite.' '.$mouvement->intrant->unite->libelle($quantite).' × '.Format::fcfa((int) $mouvement->prix_unitaire_fcfa),
+            abs((int) $mouvement->valeur_fcfa));
     }
 
     private static function remise(Pret $pret, string $numero, string $date, string $libelle, ?string $detail, int $valeur): Ticket58

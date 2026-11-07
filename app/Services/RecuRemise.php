@@ -32,11 +32,13 @@ class RecuRemise
         abort_unless($mouvement->pret_id === $pret->id && $mouvement->type->value === 'distribution', 404);
         $mouvement->loadMissing('intrant');
 
+        $quantite = abs((int) $mouvement->quantite);
+
         return self::rendre($pret, 'R-'.$pret->reference.'-I'.$mouvement->id, $mouvement->date_mouvement->format('d/m/Y'), [[
             'libelle' => $mouvement->intrant->nom,
-            'quantite' => -$mouvement->quantite.' '.$mouvement->intrant->unite->libelle(-$mouvement->quantite),
+            'quantite' => $quantite.' '.$mouvement->intrant->unite->libelle($quantite),
             'prix' => (int) $mouvement->prix_unitaire_fcfa,
-            'valeur' => -(int) $mouvement->valeur_fcfa,
+            'valeur' => abs((int) $mouvement->valeur_fcfa),
         ]]);
     }
 

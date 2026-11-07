@@ -10,9 +10,11 @@ use App\Enums\Role;
 use App\Enums\StatutCampagne;
 use App\Enums\StatutLot;
 use App\Enums\TypeFournisseur;
+use App\Enums\UniteIntrant;
 use App\Models\Achat;
 use App\Models\Campagne;
 use App\Models\CompteTresorerie;
+use App\Models\Intrant;
 use App\Models\Lot;
 use App\Models\Magasin;
 use App\Models\Parametre;
@@ -20,6 +22,7 @@ use App\Models\Producteur;
 use App\Models\User;
 use App\Services\Achats;
 use App\Services\Prets;
+use App\Services\StockIntrants;
 use App\Services\Tickets;
 use App\Services\Tresorerie;
 use App\Support\Ticket58;
@@ -133,6 +136,26 @@ class TicketsTest extends TestCase
 
         $this->actingAs($this->comptable)->get(route('tickets.remise', [$pret, 'argent', $d->id]))
             ->assertOk()->assertSee('Imprimer (58 mm)')->assertSee('RESTANT DÛ');
+    }
+
+    #[Test]
+    public function un_ticket_de_remise_d_intrants_affiche_des_valeurs_positives(): void
+    {
+        $intrant = Intrant::query()->create(['nom' => 'NPK 15-15-15 — sac de 50 kg', 'unite' => UniteIntrant::Sac, 'prix_unitaire_fcfa' => 18_500]);
+        $magasin = Magasin::factory()->create();
+        StockIntrants::entree($intrant, $magasin, 10, Carbon::today(), $this->comptable);
+
+        $pret = Prets::valider(Prets::demander([
+            'producteur_id' => Producteur::factory()->create()->id, 'campagne_id' => $this->campagne->id,
+            'montant_fcfa' => 500_000, 'forme' => FormePret::Intrants, 'echeance' => Carbon::today()->addMonths(6),
+        ], $this->agent), $this->direction);
+        $remise = StockIntrants::distribuer($pret, $intrant, $magasin, 4, Carbon::today(), $this->comptable);
+
+        $texte = Tickets::remiseIntrants($pret->refresh(), $remise)->enTexte();
+        $this->assertStringContainsString('4 sacs', $texte);
+        $this->assertStringContainsString('74', $texte);
+        $this->assertStringNotContainsString('-4 sacs', $texte);
+        $this->assertStringNotContainsString('-74', $texte);
     }
 
     #[Test]

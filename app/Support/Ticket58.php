@@ -86,7 +86,7 @@ class Ticket58
     {
         $this->vide()->vide();
 
-        return $this->texte($qui.' : '.str_repeat('_', max(4, self::LARGEUR - mb_strlen($qui) - 3)));
+        return $this->texte('Signature électronique — '.$qui.' : '.str_repeat('_', max(4, self::LARGEUR - mb_strlen($qui) - 23)));
     }
 
     /** @return list<array{texte: string, gras: bool, centre: bool, grand: bool}> */
